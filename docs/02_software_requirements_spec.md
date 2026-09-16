@@ -197,7 +197,7 @@ implemented by one of them. TC-001 verifies it.
 3. Training executes on Kaggle; this specification governs the pipeline, not the training host.
 4. Orthanc in Docker is the DICOMweb peer for SRS-043..SRS-045. No other PACS is assumed conformant.
 5. MONAI provides transforms, networks and metrics; `pydicom` and `highdicom` provide DICOM read, write and de-identification primitives. SOUP entries in `docs/04` govern.
-6. The UID root in `configs/data.yaml` is a placeholder, as that file states. SRS-007 requires UIDs to be generated under the configured root; it does not assert that the current value is registered to this project (§6, item 3).
+6. The UID root in `configs/data.yaml` is a placeholder, as that file states, and will remain one. SRS-007 requires UIDs to be generated under the configured root; it asserts nothing about that root being registered, and the objects this software creates are confined to the local Orthanc instance in consequence (`docs/06` §7.1).
 
 ## 6. Open items
 
@@ -205,6 +205,6 @@ implemented by one of them. TC-001 verifies it.
 |---|---|---|
 | 1 | SRS-042: the conformant means of expressing the research-use-only designation inside a SEG and an SR is unresolved. Carried from `docs/01` §8 item 1; to be settled in `docs/11` before milestone 6. | `docs/11`, milestone 6 |
 | 2 | SRS-048: the criteria for judging a volume in or out of scope depend on what the converted DICOM objects carry, which is not known until milestone 3. The requirement is deliberately not narrowed on speculation. Carried from `docs/01` §8 item 2. | Milestone 3 |
-| 3 | SRS-007: the UID root is a placeholder. Whether this project obtains its own registered root, or documents the placeholder as a research-only limitation, is undecided. Nothing may be published as conformant DICOM under an unregistered root without that decision being recorded. | `docs/11`, milestone 6 |
+| 3 | ~~SRS-007: the UID root is a placeholder.~~ **Resolved 2026-09-16:** the placeholder is documented rather than replaced, and no root will be registered. UIDs under it carry no claim of global uniqueness and objects must not leave the local Orthanc instance. Recorded in `docs/06` §7.1, `docs/11` §7 and §10, and the README. | — closed |
 | 4 | SRS-030: the confidence threshold for recommending review has no value yet. It cannot be chosen before evaluation data exists, and choosing it will be a change-controlled decision under NFR-007. | Milestone 5 |
 | 5 | Hazard and test allocations are absent throughout §3. They are filled as `docs/05` and `docs/07` are drafted; `docs/09` carries the coverage count until then. | `docs/05`, `docs/07` |

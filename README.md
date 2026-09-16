@@ -108,6 +108,15 @@ python scripts/05_evaluate.py         --run artifacts/runs/<run_id>
 python scripts/06_push_to_pacs.py     --run artifacts/runs/<run_id>
 ```
 
+### DICOM output stays local
+
+The UID root in `configs/data.yaml` is **not registered** to this project or to anyone
+else. UIDs generated under it are structurally valid but carry no claim of global
+uniqueness, so DICOM objects produced here must not be sent anywhere but the local
+Orthanc instance — not to a shared or institutional PACS, and not published as files.
+This is a declared limitation rather than an oversight; see `docs/06` §7.1 and
+`docs/11` §7. Substituting a different-looking root would be worse, not better.
+
 ---
 
 ## Licence

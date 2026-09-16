@@ -253,6 +253,26 @@ private; a public one would breach DMP-C1.
 
 No cloud object storage, no shared drives, no third-party annotation services.
 
+### 7.1 UID root — unregistered, and declared as such
+
+The UID root configured in `configs/data.yaml` (`dicom.uid_root`) is **not registered**
+to this project, to its author, or to any organisation. This is a recorded limitation,
+not an oversight awaiting repair. It is deliberately not remedied by substituting a
+different-looking root: a plausible but unregistered root is worse than a declared one,
+because it invites the reader to assume someone checked.
+
+Consequences, binding on the whole project:
+
+- UIDs generated under this root are structurally valid but carry **no claim of global
+  uniqueness**. They may collide with UIDs generated elsewhere.
+- Objects produced by this project **must not be transmitted beyond the local Orthanc
+  instance**. They must not be sent to a shared, institutional or third-party PACS, and
+  must not be published as DICOM files.
+- Any use outside those bounds requires a registered root first, recorded under change
+  control.
+
+Carried into `docs/11` §7 and §10. Resolves `docs/02` §6 item 3.
+
 ---
 
 ## 8. Retention and disposal
