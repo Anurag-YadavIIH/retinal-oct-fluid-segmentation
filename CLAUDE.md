@@ -134,6 +134,11 @@ Accuracy alone is never reported. The classes are imbalanced and it is misleadin
 Next milestones, in order:
 1. ~~Repo skeleton, tooling, CI green on an empty test suite.~~ **done** — 2026-09-16.
    Package imports, ruff clean, 5 passed / 1 xfailed (the leakage gate placeholder).
+   That run was local and pre-dates version control: the working tree was not a git
+   repository at the time, so no commit carries it and the CI workflow had never run.
+   `git init` and the initial commit followed on 2026-09-16 (see
+   `docs/13_change_control_log.md`); the result above was re-confirmed from inside the
+   repo at that point.
 2. `docs/01`, `docs/02`, `docs/03` drafted — intended use, SRS, safety classification.
 3. RETOUCH reader + DICOM conversion + de-identification, with tests.
 4. Splits and leakage gate.
