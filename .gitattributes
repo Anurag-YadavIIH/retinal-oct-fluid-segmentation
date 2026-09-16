@@ -1,0 +1,15 @@
+# Normalise line endings. Without this, core.autocrlf on a Windows clone checks
+# these files out with CRLF, which breaks shell scripts and Dockerfiles inside the
+# Linux containers (docker/) and shows every line as changed across platforms.
+# Git stores LF; these paths also get LF in the working tree everywhere.
+
+* text=auto
+
+*.sh        text eol=lf
+Dockerfile* text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.json      text eol=lf
+*.md        text eol=lf
+*.py        text eol=lf
+*.cfg       text eol=lf
