@@ -1,15 +1,12 @@
 <!--
 Document: Traceability Matrix
-Status: NOT DRAFTED — template only
+Status: LIVING — updated per commit
 Owner: Anurag Yadav
-Last reviewed: -
+Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 -->
 
 # Traceability Matrix
-
-> **Status: template.** This document has not been drafted. Fill it in before
-> writing any code that depends on it — see CLAUDE.md rule 1.
 
 Updated in the same commit as any change to a requirement, hazard, or test.
 A stale matrix is worse than no matrix (CLAUDE.md rule 5).

@@ -1,15 +1,12 @@
 <!--
 Document: Change Control Log
-Status: NOT DRAFTED — template only
+Status: LIVING — updated per commit
 Owner: Anurag Yadav
-Last reviewed: -
-Change history: docs/13_change_control_log.md
+Last reviewed: 2026-09-16
+Change history: this document
 -->
 
 # Change Control Log
-
-> **Status: template.** This document has not been drafted. Fill it in before
-> writing any code that depends on it — see CLAUDE.md rule 1.
 
 Any change to a requirement, hazard, risk control, evaluation definition, or
 frozen contract is recorded here with a date and rationale. Metrics never change
