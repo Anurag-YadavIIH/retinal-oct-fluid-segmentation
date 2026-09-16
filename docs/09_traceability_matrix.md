@@ -38,6 +38,11 @@ requirement by design — it asserts only that the package exposes a version
 identifier, which is a precondition of SRS-031 and SRS-049 rather than a
 verification of either.
 
+`docs/03` assigns the system **software safety class B** and identifies hazardous
+situations HS-1..HS-7. `HS-n` are local to `docs/03`; `docs/05` allocates the `HAZ-nnn`
+identifiers and may merge or split them, at which point the HAZ column here is filled
+and the interim `DMP-C` entries below are superseded by `RC-nnn`.
+
 `DMP-C7` and `DMP-C8` are the data management plan's control identifiers
 (`docs/06` §6), used here as interim entries because `docs/05` does not yet exist
 and no `RC-nnn` has been allocated. They are re-issued as `RC-nnn` when the risk
@@ -50,7 +55,9 @@ management file is drafted — `docs/06` §10 item 5 tracks that.
 - Software requirements with at least one test case: **4 of 49** — SRS-002 (TC-001),
   SRS-019, SRS-020 and SRS-021 (all TC-004). The remaining 45 await `docs/07`. This is
   now the largest coverage gap in the project and is the work of milestone 3 onward.
-- Hazards with at least one risk control: _n/a — `docs/05` not drafted_
+- Hazardous situations with at least one risk control: **0 of 7 formally** — HS-1..HS-7
+  in `docs/03` §3 are identified but carry no allocated `HAZ-nnn` or `RC-nnn` until
+  `docs/05` is drafted. External controls ERC-1..ERC-6 are assessed in `docs/03` §4.
 - Risk controls with at least one verifying test: 2 of the 10 `DMP-C` controls
   (C7 and C8, both by TC-004). C9 and C10 are marked `TC-TBD` in `docs/06` §6;
   C1–C6 are verified by review or configuration rather than by test.
