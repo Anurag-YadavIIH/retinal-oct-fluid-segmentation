@@ -67,6 +67,17 @@ make pacs-up      # Orthanc at http://localhost:8042, DICOMweb at /dicom-web
 make pacs-down
 ```
 
+The `Makefile` is a convenience for Unix-like shells and is not required. Where `make`
+is unavailable — a plain Windows shell, for instance — run the recipe bodies directly;
+they are ordinary `ruff`, `pytest`, `pip` and `docker compose` calls. CI does not use
+`make` either, it invokes those tools itself:
+
+```bash
+ruff check src tests scripts          # make lint
+ruff format --check src tests scripts
+pytest -m "not slow and not requires_data and not requires_pacs"   # make test-fast
+```
+
 ---
 
 ## Repository map
