@@ -1,0 +1,16 @@
+# Leave-one-vendor-out fold: train on the other two vendors, evaluate on spectralis.
+# This is the experiment the project exists to run.
+
+fold_id: spectralis_holdout
+held_out_vendor: spectralis
+
+split:
+  strategy: leave_one_vendor_out
+  level: patient          # splits are patient-level. Never relax this (CLAUDE.md rule 2).
+  val_fraction: 0.15      # carved from the training vendors, patient-level
+  seed: 20260916
+
+report:
+  # In-domain comparison: the same model evaluated on held-out patients from the
+  # training vendors. The gap between the two is the headline number.
+  include_in_domain_reference: true

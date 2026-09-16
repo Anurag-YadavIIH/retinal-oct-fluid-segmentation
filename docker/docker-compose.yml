@@ -1,0 +1,27 @@
+services:
+  orthanc:
+    image: orthancteam/orthanc:24.7.3
+    container_name: ocuval-orthanc
+    ports:
+      - "8042:8042"   # HTTP / DICOMweb
+      - "4242:4242"   # DIMSE
+    volumes:
+      - ./orthanc/orthanc.json:/etc/orthanc/orthanc.json:ro
+      - orthanc-db:/var/lib/orthanc/db
+    environment:
+      ORTHANC__NAME: OcuVal
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: ocuval-api
+    ports:
+      - "8000:8000"
+    environment:
+      OCUVAL_PACS_URL: http://orthanc:8042/dicom-web
+    depends_on:
+      - orthanc
+
+volumes:
+  orthanc-db:

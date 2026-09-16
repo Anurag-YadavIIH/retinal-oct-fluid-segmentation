@@ -1,0 +1,42 @@
+# Data configuration.
+# Label indices and vendor keys are FIXED. Reordering them invalidates every
+# trained checkpoint and every reported metric. See CLAUDE.md section 4.
+
+paths:
+  raw_root: data/raw/retouch          # as downloaded from grand-challenge
+  dicom_root: data/dicom              # after 01_convert_to_dicom.py
+  deident_root: data/dicom_deident    # after 02_deidentify.py
+  splits_root: data/splits            # after 03_make_splits.py
+
+labels:
+  background: 0
+  IRF: 1    # intraretinal fluid
+  SRF: 2    # subretinal fluid
+  PED: 3    # pigment epithelial detachment
+
+label_names: [background, IRF, SRF, PED]
+foreground_labels: [IRF, SRF, PED]
+
+vendors:
+  - cirrus
+  - spectralis
+  - topcon
+
+# Vendor is a first-class field on every sample and must survive the whole
+# pipeline into evaluation output. Subgroup reporting depends on it.
+vendor_field: vendor
+patient_field: patient_id
+
+dicom:
+  sop_class: "1.2.840.10008.5.1.4.1.1.77.1.5.4"  # Ophthalmic Tomography Image Storage
+  # Root UID is a placeholder for a research project; replace before any real use.
+  uid_root: "1.2.826.0.1.3680043.10.9999"
+  modality: "OPT"
+
+deidentification:
+  # DICOM PS3.15 Annex E — Basic Application Confidentiality Profile.
+  profile: basic_application_confidentiality
+  retain_options: []                 # no retention options applied
+  pseudonym_salt_env: OCUVAL_DEID_SALT
+
+seed: 20260916

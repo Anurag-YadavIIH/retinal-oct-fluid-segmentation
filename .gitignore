@@ -1,0 +1,35 @@
+# Data and run outputs are never committed. See CLAUDE.md rule 3.
+data/*
+!data/.gitkeep
+artifacts/*
+!artifacts/.gitkeep
+*.dcm
+*.mhd
+*.raw
+*.nii
+*.nii.gz
+*.pt
+*.pth
+*.ckpt
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.ruff_cache/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

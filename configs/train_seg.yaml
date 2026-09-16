@@ -1,0 +1,53 @@
+# Segmentation training configuration.
+# Determinism is a hard requirement (CLAUDE.md rule 4): the seed here is
+# recorded into every run directory alongside the resolved config.
+
+run:
+  name: null            # set on the command line; run dir is artifacts/runs/<name>
+  seed: 20260916
+  deterministic: true
+
+data:
+  config: configs/data.yaml
+  fold: configs/folds/spectralis_holdout.yaml
+  mode: "2d"            # 2d | 2.5d — full 3D is explicitly out of scope
+  slice_context: 1      # B-scans either side, used only when mode == 2.5d
+  roi_size: [512, 512]
+  cache: persistent     # persistent | memory | none — see CLAUDE.md on 16GB RAM
+  cache_rate: 0.2
+  num_workers: 4
+
+model:
+  name: unet            # unet | segresnet
+  in_channels: 1
+  out_channels: 4       # background + IRF + SRF + PED
+  channels: [32, 64, 128, 256, 512]
+  strides: [2, 2, 2, 2]
+  dropout: 0.2          # non-zero: required for MC-dropout at inference
+
+loss:
+  name: dice_ce
+  include_background: false
+  to_onehot_y: true
+  softmax: true
+
+optim:
+  name: adamw
+  lr: 0.0003
+  weight_decay: 0.00001
+  scheduler: cosine
+  warmup_epochs: 5
+
+train:
+  epochs: 150
+  batch_size: 8
+  amp: true
+  grad_clip: 1.0
+  early_stopping_patience: 25
+  val_interval: 1
+  monitor: "val/dice_mean_foreground"
+  monitor_mode: max
+
+inference:
+  mc_dropout_passes: 20
+  sliding_window_overlap: 0.25

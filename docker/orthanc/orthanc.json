@@ -1,0 +1,24 @@
+{
+  "Name": "OcuVal",
+  "StorageDirectory": "/var/lib/orthanc/db",
+  "IndexDirectory": "/var/lib/orthanc/db",
+
+  "HttpPort": 8042,
+  "DicomPort": 4242,
+  "DicomAet": "OCUVAL",
+
+  "RemoteAccessAllowed": true,
+  "AuthenticationEnabled": false,
+
+  "//": "Authentication is off because this instance is local-only, holds no PHI, and is never exposed beyond the Docker network. Do not copy this configuration anywhere real.",
+
+  "DicomWeb": {
+    "Enable": true,
+    "Root": "/dicom-web/",
+    "EnableWado": true,
+    "WadoRoot": "/wado"
+  },
+
+  "OverwriteInstances": true,
+  "StorageCompression": false
+}
