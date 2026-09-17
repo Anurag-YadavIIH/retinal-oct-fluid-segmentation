@@ -188,11 +188,16 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `data/transforms.py` | SRS-025, SRS-026 |
 | `models/seg_unet.py` | SRS-027, SRS-028, SRS-061 |
 | `models/uncertainty.py` | SRS-029, SRS-030 |
-| `eval/metrics.py` | SRS-032, SRS-033, SRS-034, SRS-035, SRS-050, SRS-051, SRS-052, SRS-053 |
+| `eval/metrics.py` | SRS-032, SRS-033, SRS-034, SRS-035, SRS-040, SRS-050, SRS-051, SRS-052, SRS-053, SRS-059 |
 | `eval/subgroup.py` | SRS-036, SRS-053 |
 | `eval/report.py` | SRS-037 |
 | `report/seg_object.py` | SRS-038, SRS-039, SRS-042 |
 | `report/sr_object.py` | SRS-040, SRS-041, SRS-042, SRS-054, SRS-057, SRS-058, SRS-059 |
+
+SRS-040 and SRS-059 appear against two modules deliberately: `eval/metrics.py` performs
+the arithmetic as a pure function over arrays, and `report/sr_object.py` records the
+result and its terms in the SR. Splitting them is what lets the volume derivation be
+verified by TC-072 without a DICOM runtime.
 | `service/api.py` | SRS-046, SRS-047, SRS-048, SRS-049, SRS-061 |
 | `service/schemas.py` | SRS-046 |
 | `ocuval/__init__.py` | SRS-031 (version identifier) |
