@@ -214,7 +214,7 @@ disagree.
 | 5.5.4 | Additional software unit acceptance criteria | Class C only | Out of scope |
 | 5.5.5 | **Software unit verification** | **Required for B, not for A** | Partial — `pytest` suite exists but no unit verification process or acceptance criteria govern it |
 | 5.6 | **Software integration and integration testing** | **Required for B, not for A** | **Not yet drafted — gap** |
-| 5.7 | **Software system testing** | **Required for B, not for A** | `docs/07` planned, not drafted |
+| 5.7 | Software system testing | Required (all classes, under A1:2015) | `docs/07` planned, not drafted |
 | 5.8 | Software release | Required | Not yet applicable |
 | 6 | Software maintenance | Required | `docs/13` serves as the change record |
 | 7 | **Software risk management** | **Required for B, not for A** | `docs/05` planned, not drafted |
@@ -223,10 +223,17 @@ disagree.
 
 Choosing B rather than A therefore has a concrete cost, which is the point of choosing
 it honestly. It obliges an architectural design document (5.3), integration testing
-(5.6), system testing (5.7), a full software risk management file (clause 7), and — the
-part easiest to overlook — a defined **software unit verification process and unit
-acceptance criteria** (5.5.2, 5.5.3) governing the unit verification itself (5.5.5).
-Class A requires none of these; under Class A, 5.5.1 alone would apply.
+(5.6), a full software risk management file (clause 7), and — the part easiest to
+overlook — a defined **software unit verification process and unit acceptance criteria**
+(5.5.2, 5.5.3) governing the unit verification itself (5.5.5). Of the 5.5 group, only
+5.5.1 would apply under Class A.
+
+**Software system testing (5.7) is not among those costs.** Under IEC 62304
+Amendment 1 (2015) it is mandatory for every class including A, so `docs/07` was owed
+regardless of how this classification came out. Counting it as a consequence of choosing
+B would overstate what the decision costs, and §6's job is to state that cost accurately.
+This is an amendment-dependent point: the obligation follows from A1:2015, not from the
+2006 text alone.
 
 A passing `pytest` suite does not discharge 5.5.2 and 5.5.3. Tests existing is not the
 same as a documented process stating what unit verification must cover and what a unit
@@ -273,4 +280,4 @@ true.
 | 4 | Software problem resolution (62304 §9) has no process recorded. | — |
 | 5 | HS-1..HS-7 and ERC-1..ERC-6 are local identifiers. `docs/05` allocates HAZ-nnn and RC-nnn and may merge or split them; the RC identifiers that follow supersede the interim `DMP-C` entries in `docs/09`. | `docs/05` |
 | 6 | Any widening of `docs/01` intended use voids this classification (§5.2), and nothing yet enforces re-classification beyond the change control log. **Intended resolution:** a test case in `docs/07` that records a hash of `docs/01` §2 (indications for use) and fails when that hash changes unless `docs/03` was modified in the same commit. `docs/07` allocates the TC number and settles the mechanism — in particular how "the same commit" is established under a CI checkout. Not implemented; specified here so it is owned rather than remembered. | `docs/07` |
-| 7 | The clause numbers and class applicability in §6 are unverified against the normative text of IEC 62304 (§1.2). They must be checked against a licensed copy before this document is relied on. The §4.3 reasoning in §3 to §5 does not depend on them; the process scope in §6 does. | — |
+| 7 | The clause numbers and class applicability in §6 are **corroborated across multiple independent secondary sources but remain unverified against the normative text** of IEC 62304 (§1.2). Corroborated: 5.3 and 5.5–5.7 as documented processes for Class B, 5.4 detailed design as Class C only, unit implementation for all classes, unit verification for B and C, and 5.7 as mandatory for all classes under A1:2015. Convergence of independent sources is evidence of a weaker kind than the standard — it does not discharge the check. A licensed copy must still be consulted before this document is relied on. | — |
