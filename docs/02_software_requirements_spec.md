@@ -62,61 +62,61 @@ measurement, and that gap is HAZ-012.
 
 | ID | Requirement | Trace (URS) | Verified by (TC) |
 |---|---|---|---|
-| SRS-001 | The reader shall load a RETOUCH MetaImage volume and return the pixel array, the reference label array where one exists, the patient identifier, the vendor, the voxel spacing in millimetres, and the source path, as a single immutable record. | URS-001, URS-006 | TBD |
+| SRS-001 | The reader shall load a RETOUCH MetaImage volume and return the pixel array, the reference label array where one exists, the patient identifier, the vendor, the voxel spacing in millimetres, and the source path, as a single immutable record. | URS-001, URS-006 | TC-010 |
 | SRS-002 | Label indices and vendor keys shall be read from `configs/data.yaml` and shall not be redefined anywhere else in the codebase. Changing either is a requirements change, not an edit. | URS-001 | TC-001 |
-| SRS-003 | Voxel spacing shall be taken from the source volume header. The software shall not assume, default, or hard-code a spacing value. | URS-002, URS-008 | TBD |
-| SRS-004 | The reader shall raise on unreadable or malformed input, naming the offending path. It shall not return a partially populated record, and it shall not skip a volume silently. | URS-009 | TBD |
-| SRS-005 | Knowledge of the RETOUCH on-disk directory layout shall be confined to the reader module. No other module shall depend on that layout. | URS-001 | TBD |
-| SRS-054 | Voxel spacing shall be carried as a first-class field of every sample, on the same terms as vendor, and shall survive ingestion, DICOM conversion, de-identification, inference and volume computation. | URS-002, URS-006 | TBD |
-| SRS-055 | Voxel spacing shall be asserted present at ingestion. No default, fallback or assumed value shall exist anywhere in the codebase, and absence shall abort the run naming the offending volume. | URS-002 | TBD |
-| SRS-056 | Each spacing component shall be checked against a per-vendor plausibility range held in `configs/data.yaml`. A value outside the range shall **reject the volume**, not warn and continue. The ranges shall be expressed in millimetres and the units stated in the configuration. | URS-002, URS-009 | TBD |
+| SRS-003 | Voxel spacing shall be taken from the source volume header. The software shall not assume, default, or hard-code a spacing value. | URS-002, URS-008 | TC-011 |
+| SRS-004 | The reader shall raise on unreadable or malformed input, naming the offending path. It shall not return a partially populated record, and it shall not skip a volume silently. | URS-009 | TC-012 |
+| SRS-005 | Knowledge of the RETOUCH on-disk directory layout shall be confined to the reader module. No other module shall depend on that layout. | URS-001 | TC-013 |
+| SRS-054 | Voxel spacing shall be carried as a first-class field of every sample, on the same terms as vendor, and shall survive ingestion, DICOM conversion, de-identification, inference and volume computation. | URS-002, URS-006 | TC-010, TC-016, TC-110 |
+| SRS-055 | Voxel spacing shall be asserted present at ingestion. No default, fallback or assumed value shall exist anywhere in the codebase, and absence shall abort the run naming the offending volume. | URS-002 | TC-005, TC-014 |
+| SRS-056 | Each spacing component shall be checked against a per-vendor plausibility range held in `configs/data.yaml`. A value outside the range shall **reject the volume**, not warn and continue. The ranges shall be expressed in millimetres and the units stated in the configuration. | URS-002, URS-009 | TC-015 |
 
 ### 3.2 DICOM conversion
 
 | ID | Requirement | Trace (URS) | Verified by (TC) |
 |---|---|---|---|
-| SRS-006 | Each volume shall be written as DICOM instances of the SOP class configured in `configs/data.yaml` (`dicom.sop_class`), using `pydicom` and `highdicom`. DICOM encoding shall not be hand-rolled. | URS-001 | TBD |
-| SRS-007 | Instance, series and study UIDs shall be generated under the UID root configured in `configs/data.yaml` (`dicom.uid_root`). | URS-010 | TBD |
-| SRS-008 | Conversion of the same source volume with the same configuration shall produce the same set of instances, differing only in the generated UIDs, which shall themselves be recorded in the run output. | URS-010 | TBD |
-| SRS-009 | The scanner vendor shall be written into the converted object and shall be recoverable from it without reference to the source directory layout. | URS-006 | TBD |
-| SRS-010 | Conversion shall preserve the acquisition's native slice count and voxel spacing. It shall not resample, pad, crop or interpolate the volume to a common geometry. | URS-008 | TBD |
-| SRS-011 | Where a required tag, UID or IOD constraint is not established, conversion shall fail with that uncertainty stated, rather than writing a plausible value. The behaviour implemented shall match `docs/11_dicom_conformance_statement.md`. | URS-001 | TBD |
+| SRS-006 | Each volume shall be written as DICOM instances of the SOP class configured in `configs/data.yaml` (`dicom.sop_class`), using `pydicom` and `highdicom`. DICOM encoding shall not be hand-rolled. | URS-001 | TC-020 |
+| SRS-007 | Instance, series and study UIDs shall be generated under the UID root configured in `configs/data.yaml` (`dicom.uid_root`). | URS-010 | TC-021 |
+| SRS-008 | Conversion of the same source volume with the same configuration shall produce the same set of instances, differing only in the generated UIDs, which shall themselves be recorded in the run output. | URS-010 | TC-022 |
+| SRS-009 | The scanner vendor shall be written into the converted object and shall be recoverable from it without reference to the source directory layout. | URS-006 | TC-023, TC-110 |
+| SRS-010 | Conversion shall preserve the acquisition's native slice count and voxel spacing. It shall not resample, pad, crop or interpolate the volume to a common geometry. | URS-008 | TC-024 |
+| SRS-011 | Where a required tag, UID or IOD constraint is not established, conversion shall fail with that uncertainty stated, rather than writing a plausible value. The behaviour implemented shall match `docs/11_dicom_conformance_statement.md`. | URS-001 | TC-025 |
 
 ### 3.3 De-identification
 
 | ID | Requirement | Trace (URS) | Verified by (TC) |
 |---|---|---|---|
-| SRS-012 | De-identification shall apply the DICOM PS3.15 Annex E Basic Application Confidentiality Profile with no retention options, as configured in `configs/data.yaml` (`deidentification`). | URS-010 | TBD |
-| SRS-013 | Patient identifiers shall be replaced by a salted-hash pseudonym. The salt shall be read from the environment variable named in `configs/data.yaml` (`deidentification.pseudonym_salt_env`) and shall never be written to any committed file or run output. | URS-010 | TBD |
-| SRS-014 | Pseudonyms shall be stable within a run, so that patient-level splitting remains valid after de-identification. | URS-010 | TBD |
-| SRS-015 | A verification function shall return the identity of every tag that the profile requires to be removed and that remains present. An empty result shall be the only condition under which an instance passes. | URS-010 | TBD |
-| SRS-016 | A non-empty verification result shall abort the run. Failing instances shall never be skipped, quarantined or logged-and-continued. | URS-010 | TBD |
-| SRS-017 | The vendor attribute shall survive de-identification. Its loss shall abort the run on the same terms as SRS-016. | URS-006 | TBD |
+| SRS-012 | De-identification shall apply the DICOM PS3.15 Annex E Basic Application Confidentiality Profile with no retention options, as configured in `configs/data.yaml` (`deidentification`). | URS-010 | TC-030 |
+| SRS-013 | Patient identifiers shall be replaced by a salted-hash pseudonym. The salt shall be read from the environment variable named in `configs/data.yaml` (`deidentification.pseudonym_salt_env`) and shall never be written to any committed file or run output. | URS-010 | TC-031 |
+| SRS-014 | Pseudonyms shall be stable within a run, so that patient-level splitting remains valid after de-identification. | URS-010 | TC-032 |
+| SRS-015 | A verification function shall return the identity of every tag that the profile requires to be removed and that remains present. An empty result shall be the only condition under which an instance passes. | URS-010 | TC-033 |
+| SRS-016 | A non-empty verification result shall abort the run. Failing instances shall never be skipped, quarantined or logged-and-continued. | URS-010 | TC-034 |
+| SRS-017 | The vendor attribute shall survive de-identification. Its loss shall abort the run on the same terms as SRS-016. | URS-006 | TC-035, TC-110 |
 
 ### 3.4 Dataset splitting
 
 | ID | Requirement | Trace (URS) | Verified by (TC) |
 |---|---|---|---|
-| SRS-018 | `ocuval.data.splits` shall be the only module that assigns samples to splits. No other module shall partition data. | URS-007 | TBD |
+| SRS-018 | `ocuval.data.splits` shall be the only module that assigns samples to splits. No other module shall partition data. | URS-007 | TC-003 |
 | SRS-019 | Splits shall be constructed at patient level. Every patient shall appear in exactly one of train, validation and test, and no B-scan from a patient shall appear in a split other than that patient's. | URS-007 | TC-004 |
 | SRS-020 | The disjointness assertion shall operate on the patient identifier and shall be executed both at the end of split construction and at the start of training. The exception it raises shall never be caught. | URS-007 | TC-004 |
 | SRS-021 | Each fold shall hold out exactly one vendor. The test split shall contain no sample whose vendor differs from the fold's held-out vendor. | URS-007 | TC-004 |
-| SRS-022 | Each fold shall additionally resolve an in-domain reference set of held-out patients drawn from the training vendors, disjoint from train and validation on the same terms as SRS-019. | URS-007 | TBD |
-| SRS-023 | Split construction shall be seeded, and the resolved split shall be persisted such that it can be reconstructed from the committed configuration alone. | URS-010 | TBD |
+| SRS-022 | Each fold shall additionally resolve an in-domain reference set of held-out patients drawn from the training vendors, disjoint from train and validation on the same terms as SRS-019. | URS-007 | TC-040 |
+| SRS-023 | Split construction shall be seeded, and the resolved split shall be persisted such that it can be reconstructed from the committed configuration alone. | URS-010 | TC-041 |
 
 ### 3.5 Training
 
 | ID | Requirement | Trace (URS) | Verified by (TC) |
 |---|---|---|---|
-| SRS-024 | Datasets and dataloaders shall be constructed only from a resolved, persisted split. Training shall not accept an unresolved or ad-hoc sample list. | URS-007 | TBD |
-| SRS-025 | Intensity normalisation shall be computed per volume. No statistic derived across the dataset or across vendors shall be used to normalise. | URS-008 | TBD |
-| SRS-026 | Preprocessing shall not resample volumes from different vendors onto a common geometry. Patch or ROI extraction for training shall not be construed as such resampling. | URS-008 | TBD |
-| SRS-027 | The network shall be 2D or 2.5D as selected by `configs/train_seg.yaml` (`data.mode`). Full 3D architectures shall not be provided. | URS-001 | TBD |
-| SRS-028 | The network shall be constructed with non-zero dropout, and the configuration shall be rejected if dropout is zero, since MC-dropout inference depends on it. | URS-005 | TBD |
-| SRS-029 | Inference shall support repeated stochastic forward passes with dropout active, returning the mean class probabilities and the per-voxel standard deviation across passes. | URS-005 | TBD |
-| SRS-030 | A scan-level confidence value in the range 0 to 1 shall be derived from the per-voxel uncertainty, together with a boolean indication of whether review is recommended, determined against a threshold recorded in the run configuration. | URS-005 | TBD |
-| SRS-031 | The random seed, the resolved configuration and the software version shall be written into the run output directory at the start of every run. | URS-010 | TBD |
-| SRS-061 | Model checkpoints shall be loaded only from the project's own `artifacts/` directory. A cryptographic hash of every checkpoint shall be recorded when it is written and verified before it is loaded; a mismatch, or a checkpoint with no recorded hash, shall abort without loading. No checkpoint from any other source shall be loaded. | URS-010 | TBD |
+| SRS-024 | Datasets and dataloaders shall be constructed only from a resolved, persisted split. Training shall not accept an unresolved or ad-hoc sample list. | URS-007 | TC-050 |
+| SRS-025 | Intensity normalisation shall be computed per volume. No statistic derived across the dataset or across vendors shall be used to normalise. | URS-008 | TC-051 |
+| SRS-026 | Preprocessing shall not resample volumes from different vendors onto a common geometry. Patch or ROI extraction for training shall not be construed as such resampling. | URS-008 | TC-052 |
+| SRS-027 | The network shall be 2D or 2.5D as selected by `configs/train_seg.yaml` (`data.mode`). Full 3D architectures shall not be provided. | URS-001 | TC-053 |
+| SRS-028 | The network shall be constructed with non-zero dropout, and the configuration shall be rejected if dropout is zero, since MC-dropout inference depends on it. | URS-005 | TC-054 |
+| SRS-029 | Inference shall support repeated stochastic forward passes with dropout active, returning the mean class probabilities and the per-voxel standard deviation across passes. | URS-005 | TC-055 |
+| SRS-030 | A scan-level confidence value in the range 0 to 1 shall be derived from the per-voxel uncertainty, together with a boolean indication of whether review is recommended, determined against a threshold recorded in the run configuration. | URS-005 | TC-056 |
+| SRS-031 | The random seed, the resolved configuration and the software version shall be written into the run output directory at the start of every run. | URS-010 | TC-057 |
+| SRS-061 | Model checkpoints shall be loaded only from the project's own `artifacts/` directory. A cryptographic hash of every checkpoint shall be recorded when it is written and verified before it is loaded; a mismatch, or a checkpoint with no recorded hash, shall abort without loading. No checkpoint from any other source shall be loaded. | URS-010 | TC-058 |
 
 ### 3.6 Evaluation and reporting
 
@@ -129,47 +129,47 @@ reported for detection either, and the prevalence figures in `docs/06` §3.2 are
 
 | ID | Requirement | Trace (URS) | Verified by (TC) |
 |---|---|---|---|
-| SRS-032 | Segmentation performance shall be computed as Dice and HD95, separately for each of IRF, SRF and PED. A foreground-aggregate figure shall not be reported in place of the per-class figures. | URS-007 | TBD |
-| SRS-033 | Every reported metric shall be accompanied by a bootstrap 95% confidence interval and the number of units it was computed over. A point estimate shall not be emitted without both. | URS-007 | TBD |
-| SRS-034 | Bootstrap resampling shall be seeded from the run configuration and shall reproduce exactly on re-execution. | URS-010 | TBD |
-| SRS-035 | No accuracy metric shall be provided or reported. | URS-007 | TBD |
-| SRS-036 | Results shall be broken down by vendor, reporting held-out-vendor performance, in-domain reference performance, and the difference between them, per fluid class. | URS-007 | TBD |
-| SRS-037 | The rendered results table shall state, for every figure, the fluid class, the vendor, the confidence interval and the sample size. | URS-007 | TBD |
-| SRS-050 | Volume-level detection of each fluid class shall be **derived from the segmentation output of the same model**. No separate classifier shall be trained, stored or served, and no forward pass shall be required beyond the MC-dropout passes of SRS-029. | URS-001, URS-007 | TBD |
-| SRS-051 | A fluid class shall be reported present in a volume when the number of voxels predicted for that class exceeds a threshold read from the run configuration. The threshold shall not be hard-coded, and its resolved value shall be written to the run output with the rest of the configuration. | URS-007, URS-010 | TBD |
-| SRS-052 | The continuous score used for AUROC shall be derived, per class and per volume, from the MC-dropout mean class probability produced by SRS-029. | URS-005, URS-007 | TBD |
-| SRS-053 | Detection performance shall be reported as sensitivity, specificity and AUROC, per fluid class and per scanner platform, each accompanied by a bootstrap 95% confidence interval and the sample size, on the same terms as SRS-032 and SRS-033. | URS-007 | TBD |
+| SRS-032 | Segmentation performance shall be computed as Dice and HD95, separately for each of IRF, SRF and PED. A foreground-aggregate figure shall not be reported in place of the per-class figures. | URS-007 | TC-060 |
+| SRS-033 | Every reported metric shall be accompanied by a bootstrap 95% confidence interval and the number of units it was computed over. A point estimate shall not be emitted without both. | URS-007 | TC-061 |
+| SRS-034 | Bootstrap resampling shall be seeded from the run configuration and shall reproduce exactly on re-execution. | URS-010 | TC-062 |
+| SRS-035 | No accuracy metric shall be provided or reported. | URS-007 | TC-002 |
+| SRS-036 | Results shall be broken down by vendor, reporting held-out-vendor performance, in-domain reference performance, and the difference between them, per fluid class. | URS-007 | TC-063 |
+| SRS-037 | The rendered results table shall state, for every figure, the fluid class, the vendor, the confidence interval and the sample size. | URS-007 | TC-064 |
+| SRS-050 | Volume-level detection of each fluid class shall be **derived from the segmentation output of the same model**. No separate classifier shall be trained, stored or served, and no forward pass shall be required beyond the MC-dropout passes of SRS-029. | URS-001, URS-007 | TC-065 |
+| SRS-051 | A fluid class shall be reported present in a volume when the number of voxels predicted for that class exceeds a threshold read from the run configuration. The threshold shall not be hard-coded, and its resolved value shall be written to the run output with the rest of the configuration. | URS-007, URS-010 | TC-066 |
+| SRS-052 | The continuous score used for AUROC shall be derived, per class and per volume, from the MC-dropout mean class probability produced by SRS-029. | URS-005, URS-007 | TC-067 |
+| SRS-053 | Detection performance shall be reported as sensitivity, specificity and AUROC, per fluid class and per scanner platform, each accompanied by a bootstrap 95% confidence interval and the sample size, on the same terms as SRS-032 and SRS-033. | URS-007 | TC-068 |
 
 ### 3.7 Segmentation and structured report output
 
 | ID | Requirement | Trace (URS) | Verified by (TC) |
 |---|---|---|---|
-| SRS-038 | Segmentation results shall be written as DICOM Segmentation objects via `highdicom`, with one segment per fluid class using the label indices of SRS-002. | URS-001, URS-004 | TBD |
-| SRS-039 | The Segmentation object shall reference the source image instances it was derived from, so that it can be opened and reviewed against those images in standard DICOM tooling. | URS-004 | TBD |
-| SRS-040 | A Structured Report shall record, for the imaged eye, the volume in cubic millimetres of each fluid class, computed from the segmentation and the acquisition's own voxel spacing. | URS-002 | TBD |
-| SRS-057 | The voxel spacing used to compute a volume shall be asserted bit-identical to the spacing recorded at ingestion for that acquisition. Any difference shall abort before a volume is emitted. | URS-002, URS-010 | TBD |
-| SRS-058 | The Structured Report shall state the units of every quantity it carries explicitly. Units shall not be implied by convention or inferred by a consumer. | URS-002 | TBD |
-| SRS-059 | The Structured Report shall record, for each fluid class, the predicted voxel count and the voxel volume used, alongside the resulting volume in cubic millimetres, so that the derivation can be recomputed from the object alone. | URS-002, URS-010 | TBD |
-| SRS-041 | The Structured Report shall record the scan-level confidence and the review-recommended indication of SRS-030. These shall not appear only in run logs. | URS-005 | TBD |
-| SRS-042 | Every emitted Segmentation and Structured Report object shall carry, within the object, a designation readable both by software and by a person that the result is research-use-only, not clinically validated, and produced by an automated method requiring human review. The means of expressing this is specified in `docs/11` and is unresolved at the time of this draft (§6, item 1). | URS-011 | TBD |
+| SRS-038 | Segmentation results shall be written as DICOM Segmentation objects via `highdicom`, with one segment per fluid class using the label indices of SRS-002. | URS-001, URS-004 | TC-070 |
+| SRS-039 | The Segmentation object shall reference the source image instances it was derived from, so that it can be opened and reviewed against those images in standard DICOM tooling. | URS-004 | TC-071 |
+| SRS-040 | A Structured Report shall record, for the imaged eye, the volume in cubic millimetres of each fluid class, computed from the segmentation and the acquisition's own voxel spacing. | URS-002 | TC-072 |
+| SRS-057 | The voxel spacing used to compute a volume shall be asserted bit-identical to the spacing recorded at ingestion for that acquisition. Any difference shall abort before a volume is emitted. | URS-002, URS-010 | TC-073 |
+| SRS-058 | The Structured Report shall state the units of every quantity it carries explicitly. Units shall not be implied by convention or inferred by a consumer. | URS-002 | TC-074 |
+| SRS-059 | The Structured Report shall record, for each fluid class, the predicted voxel count and the voxel volume used, alongside the resulting volume in cubic millimetres, so that the derivation can be recomputed from the object alone. | URS-002, URS-010 | TC-075 |
+| SRS-041 | The Structured Report shall record the scan-level confidence and the review-recommended indication of SRS-030. These shall not appear only in run logs. | URS-005 | TC-076 |
+| SRS-042 | Every emitted Segmentation and Structured Report object shall carry, within the object, a designation readable both by software and by a person that the result is research-use-only, not clinically validated, and produced by an automated method requiring human review. The means of expressing this is specified in `docs/11` and is unresolved at the time of this draft (§6, item 1). | URS-011 | TC-077 |
 
 ### 3.8 PACS communication
 
 | ID | Requirement | Trace (URS) | Verified by (TC) |
 |---|---|---|---|
-| SRS-043 | The software shall store objects to, and retrieve objects from, a DICOMweb endpoint configured at runtime, using STOW-RS and WADO-RS. | URS-010 | TBD |
-| SRS-044 | A stored object shall be retrievable and shall match what was sent in its pixel data, its fluid volumes, its confidence value and its research-use designation. | URS-010, URS-011 | TBD |
-| SRS-045 | The software shall perform no action against the PACS beyond storing and retrieving its own objects. It shall not delete, modify or reconcile existing content, and it shall not mark any object as final, verified or signed off. | URS-003 | TBD |
-| SRS-060 | The DICOMweb client shall take its entire configuration from the run configuration and shall not read ambient environment configuration — no `.netrc`, no environment-supplied proxy or certificate settings. Sessions shall be constructed with `trust_env=False`. | URS-003, URS-010 | TBD |
+| SRS-043 | The software shall store objects to, and retrieve objects from, a DICOMweb endpoint configured at runtime, using STOW-RS and WADO-RS. | URS-010 | TC-080, TC-112 |
+| SRS-044 | A stored object shall be retrievable and shall match what was sent in its pixel data, its fluid volumes, its confidence value and its research-use designation. | URS-010, URS-011 | TC-081, TC-112 |
+| SRS-045 | The software shall perform no action against the PACS beyond storing and retrieving its own objects. It shall not delete, modify or reconcile existing content, and it shall not mark any object as final, verified or signed off. | URS-003 | TC-082 |
+| SRS-060 | The DICOMweb client shall take its entire configuration from the run configuration and shall not read ambient environment configuration — no `.netrc`, no environment-supplied proxy or certificate settings. Sessions shall be constructed with `trust_env=False`. | URS-003, URS-010 | TC-083 |
 
 ### 3.9 Inference API
 
 | ID | Requirement | Trace (URS) | Verified by (TC) |
 |---|---|---|---|
-| SRS-046 | The service shall accept one OCT volume per inference request and return the identifiers of the objects it produced, the per-class volumes in cubic millimetres, the scan-level confidence, and the review-recommended indication. | URS-002, URS-005 | TBD |
-| SRS-047 | Every inference response shall be identified as a candidate requiring grader review. The service shall expose no endpoint that records, finalises, approves or signs off a result. | URS-003 | TBD |
-| SRS-048 | The service shall determine whether the submitted volume falls within the indications of `docs/01` §2 and shall reject an out-of-scope volume with a stated reason and no segmentation. The criteria are unresolved pending milestone 3 (§6, item 2). | URS-009 | TBD |
-| SRS-049 | A health endpoint shall report the service status, the software version, and the identifier of the loaded model. | URS-010 | TBD |
+| SRS-046 | The service shall accept one OCT volume per inference request and return the identifiers of the objects it produced, the per-class volumes in cubic millimetres, the scan-level confidence, and the review-recommended indication. | URS-002, URS-005 | TC-090 |
+| SRS-047 | Every inference response shall be identified as a candidate requiring grader review. The service shall expose no endpoint that records, finalises, approves or signs off a result. | URS-003 | TC-091 |
+| SRS-048 | The service shall determine whether the submitted volume falls within the indications of `docs/01` §2 and shall reject an out-of-scope volume with a stated reason and no segmentation. The criteria are unresolved pending milestone 3 (§6, item 2). | URS-009 | TC-092 |
+| SRS-049 | A health endpoint shall report the service status, the software version, and the identifier of the loaded model. | URS-010 | TC-093 |
 
 ### 3.10 Module allocation
 

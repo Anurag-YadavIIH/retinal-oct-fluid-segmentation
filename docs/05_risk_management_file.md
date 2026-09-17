@@ -163,34 +163,34 @@ order of preference — information for safety is the weakest.
 
 | ID | Control | Type | Implements | Implemented in | Verified by (TC) |
 |---|---|---|---|---|---|
-| RC-001 | Splitting confined to one module; nothing else may partition data | Design | SRS-018 | `data/splits.py` | TBD |
+| RC-001 | Splitting confined to one module; nothing else may partition data | Design | SRS-018 | `data/splits.py` | TC-003 |
 | RC-002 | Patient-level disjointness asserted at split construction and again at start of training; exception never caught | Protective | SRS-019, SRS-020 | `data/splits.py` | TC-004 |
 | RC-003 | The disjointness test gates CI and is never skipped or weakened | Protective | NFR-005 | `.github/workflows/ci.yml` | TC-004 |
-| RC-004 | Splits seeded, persisted and reproducible from committed configuration | Design | SRS-023, NFR-002 | `data/splits.py` | TBD |
+| RC-004 | Splits seeded, persisted and reproducible from committed configuration | Design | SRS-023, NFR-002 | `data/splits.py` | TC-041 |
 | RC-005 | Test split contains only the held-out vendor | Design | SRS-021 | `data/splits.py` | TC-004 |
-| RC-006 | Per-class and per-vendor reporting with bootstrap CI and sample size | Protective | SRS-032, SRS-033, SRS-036, SRS-037, SRS-053 | `eval/metrics.py`, `eval/subgroup.py` | TBD |
-| RC-007 | Accuracy is not provided and not reported | Design | SRS-035 | `eval/metrics.py` | TBD |
-| RC-008 | Vendor preserved through conversion, de-identification and into evaluation output | Design | SRS-009, SRS-017 | `io/dicom_writer.py`, `io/deident.py` | TBD |
-| RC-009 | MC-dropout scan-level confidence and review-recommended indication, carried in the SR | Protective | SRS-029, SRS-030, SRS-041 | `models/uncertainty.py`, `report/sr_object.py` | TBD |
-| RC-010 | Out-of-scope input rejected with a stated reason, no segmentation returned | Protective | SRS-004, SRS-048 | `io/retouch_reader.py`, `service/api.py` | TBD |
-| RC-011 | Confidentiality profile applied and verified; non-empty verification aborts the run | Protective | SRS-012, SRS-015, SRS-016 | `io/deident.py` | TBD |
-| RC-012 | Salted-hash pseudonyms, salt from environment, stable within a run | Design | SRS-013, SRS-014 | `io/deident.py` | TBD |
-| RC-013 | SEG references the source image instances it was derived from | Design | SRS-039 | `report/seg_object.py` | TBD |
-| RC-014 | Research-use-only designation carried inside every output object | Information | SRS-042 | `report/seg_object.py`, `report/sr_object.py` | TBD |
-| RC-015 | UIDs generated under the configured root and recorded in the run output | Design | SRS-007, SRS-008 | `io/dicom_writer.py` | TBD |
-| RC-016 | Native acquisition geometry preserved; no cross-vendor resampling | Design | SRS-010, SRS-026 | `io/dicom_writer.py`, `data/transforms.py` | TBD |
-| RC-017 | Human review required before any result is recorded; no automated action and no sign-off endpoint | Information | SRS-045, SRS-047 | `io/dicomweb.py`, `service/api.py` | TBD |
-| RC-018 | Outputs attributable to model version, resolved config and seed | Protective | SRS-031, SRS-049 | `ocuval/__init__.py`, `service/api.py` | TBD |
-| RC-019 | Data governance — no redistribution, no commercial use, scope limited to fluid segmentation and detection, single registered user | Information | NFR-004 | `.gitignore`, `.pre-commit-config.yaml` | TBD |
+| RC-006 | Per-class and per-vendor reporting with bootstrap CI and sample size | Protective | SRS-032, SRS-033, SRS-036, SRS-037, SRS-053 | `eval/metrics.py`, `eval/subgroup.py` | TC-060, TC-061, TC-063, TC-064, TC-068 |
+| RC-007 | Accuracy is not provided and not reported | Design | SRS-035 | `eval/metrics.py` | TC-002 |
+| RC-008 | Vendor preserved through conversion, de-identification and into evaluation output | Design | SRS-009, SRS-017 | `io/dicom_writer.py`, `io/deident.py` | TC-023, TC-035, TC-110 |
+| RC-009 | MC-dropout scan-level confidence and review-recommended indication, carried in the SR | Protective | SRS-029, SRS-030, SRS-041 | `models/uncertainty.py`, `report/sr_object.py` | TC-055, TC-056, TC-076 |
+| RC-010 | Out-of-scope input rejected with a stated reason, no segmentation returned | Protective | SRS-004, SRS-048 | `io/retouch_reader.py`, `service/api.py` | TC-092 |
+| RC-011 | Confidentiality profile applied and verified; non-empty verification aborts the run | Protective | SRS-012, SRS-015, SRS-016 | `io/deident.py` | TC-030, TC-033, TC-034 |
+| RC-012 | Salted-hash pseudonyms, salt from environment, stable within a run | Design | SRS-013, SRS-014 | `io/deident.py` | TC-031, TC-032 |
+| RC-013 | SEG references the source image instances it was derived from | Design | SRS-039 | `report/seg_object.py` | TC-071 |
+| RC-014 | Research-use-only designation carried inside every output object | Information | SRS-042 | `report/seg_object.py`, `report/sr_object.py` | TC-077, TC-081 |
+| RC-015 | UIDs generated under the configured root and recorded in the run output | Design | SRS-007, SRS-008 | `io/dicom_writer.py` | TC-021, TC-022 |
+| RC-016 | Native acquisition geometry preserved; no cross-vendor resampling | Design | SRS-010, SRS-026 | `io/dicom_writer.py`, `data/transforms.py` | TC-024, TC-052 |
+| RC-017 | Human review required before any result is recorded; no automated action and no sign-off endpoint | Information | SRS-045, SRS-047 | `io/dicomweb.py`, `service/api.py` | TC-082, TC-091 |
+| RC-018 | Outputs attributable to model version, resolved config and seed | Protective | SRS-031, SRS-049 | `ocuval/__init__.py`, `service/api.py` | TC-057, TC-093 |
+| RC-019 | Data governance — no redistribution, no commercial use, scope limited to fluid segmentation and detection, single registered user | Information | NFR-004 | `.gitignore`, `.pre-commit-config.yaml` | TC-100 |
 | RC-020 | Label indices and vendor keys frozen in configuration; reordering is a requirements change | Design | SRS-002 | `configs/data.yaml` | TC-001 |
-| RC-021 | Voxel spacing carried as a first-class field, on the same terms as vendor, through every stage | Design | SRS-054 | `io/retouch_reader.py`, `io/dicom_writer.py`, `io/deident.py` | TBD |
-| RC-022 | Spacing asserted present at ingestion; no default or fallback value exists anywhere; absence aborts | Protective | SRS-055 | `io/retouch_reader.py` | TBD |
-| RC-023 | Per-vendor spacing plausibility range in configuration; out-of-range **rejects** the volume rather than warning | Protective | SRS-056 | `io/retouch_reader.py`, `configs/data.yaml` | TBD |
-| RC-024 | Spacing used for volume computation asserted bit-identical to spacing recorded at ingestion | Protective | SRS-057 | `report/sr_object.py` | TBD |
-| RC-025 | Units declared explicitly in the SR, never implied by convention | Design | SRS-058 | `report/sr_object.py` | TBD |
-| RC-026 | Voxel count and voxel volume recorded alongside mm³ so the derivation is auditable from the object alone | Protective | SRS-059 | `report/sr_object.py` | TBD |
-| RC-027 | DICOMweb client takes configuration only from the run configuration; `trust_env=False`, no ambient `.netrc`, proxy or certificate settings | Design | SRS-060 | `io/dicomweb.py` | TBD |
-| RC-028 | Checkpoints loaded only from the project's own `artifacts/` directory, hash recorded at write time and verified before load; mismatch or missing hash aborts | Protective | SRS-061 | `models/seg_unet.py`, `service/api.py` | TBD |
+| RC-021 | Voxel spacing carried as a first-class field, on the same terms as vendor, through every stage | Design | SRS-054 | `io/retouch_reader.py`, `io/dicom_writer.py`, `io/deident.py` | TC-016, TC-110 |
+| RC-022 | Spacing asserted present at ingestion; no default or fallback value exists anywhere; absence aborts | Protective | SRS-055 | `io/retouch_reader.py` | TC-005, TC-014 |
+| RC-023 | Per-vendor spacing plausibility range in configuration; out-of-range **rejects** the volume rather than warning | Protective | SRS-056 | `io/retouch_reader.py`, `configs/data.yaml` | TC-015 |
+| RC-024 | Spacing used for volume computation asserted bit-identical to spacing recorded at ingestion | Protective | SRS-057 | `report/sr_object.py` | TC-072, TC-073 |
+| RC-025 | Units declared explicitly in the SR, never implied by convention | Design | SRS-058 | `report/sr_object.py` | TC-074 |
+| RC-026 | Voxel count and voxel volume recorded alongside mm³ so the derivation is auditable from the object alone | Protective | SRS-059 | `report/sr_object.py` | TC-072, TC-075 |
+| RC-027 | DICOMweb client takes configuration only from the run configuration; `trust_env=False`, no ambient `.netrc`, proxy or certificate settings | Design | SRS-060 | `io/dicomweb.py` | TC-083 |
+| RC-028 | Checkpoints loaded only from the project's own `artifacts/` directory, hash recorded at write time and verified before load; mismatch or missing hash aborts | Protective | SRS-061 | `models/seg_unet.py`, `service/api.py` | TC-058 |
 
 ### 4.3 RC-017 is deliberately typed as Information
 
@@ -283,8 +283,9 @@ does not, and §5.3 applies.
 
 ### 5.3 Controls not yet real
 
-Of the 28 controls in §4.2, **four are verified by a test that exists today** — RC-002,
-RC-003 and RC-005 by TC-004, RC-020 by TC-001. The rest carry `TBD` and are specified
+Every one of the 28 controls in §4.2 now carries a test case from `docs/07`. **Four are
+verified by a test that exists today** — RC-002, RC-003 and RC-005 by TC-004, RC-020 by
+TC-001. The other 24 name a test case that has been specified and not yet written. The rest carry `TBD` and are specified
 but unverified, because `src/` is stubs and `docs/07` is not drafted.
 
 This file therefore describes a control set that is, as of 2026-09-17, mostly a plan.
@@ -340,7 +341,7 @@ be reopened rather than amended:
 
 | # | Item | Blocks |
 |---|---|---|
-| 1 | 24 of 28 controls have no verifying test (§5.3). Every RC needs a TC in `docs/07`; CLAUDE.md §3 requires each risk control to trace to a requirement and each requirement to a test. | `docs/07` |
+| 1 | ~~24 of 28 controls have no verifying test.~~ **Partly resolved 2026-09-17:** `docs/07` allocates a test case to all 28. 24 of those test cases are unimplemented (§5.3). Every RC needs a TC in `docs/07`; CLAUDE.md §3 requires each risk control to trace to a requirement and each requirement to a test. | `docs/07` |
 | 2 | RC-010's criteria are unresolved until the converted DICOM exists, so HAZ-006's residual is larger than §5.1 states. | Milestone 3 |
 | 3 | RC-014's mechanism is unresolved (`docs/11` §10 item 2), so HAZ-011 is specified but uncontrolled in practice. | `docs/11` |
 | 4 | RC-009 is a single-point control for HAZ-007 with no independent check. Whether that is acceptable, or whether a second signal is needed, is undecided. | `docs/07` |

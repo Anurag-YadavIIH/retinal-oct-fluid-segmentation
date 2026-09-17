@@ -30,8 +30,8 @@ A stale matrix is worse than no matrix (CLAUDE.md rule 5).
 
 The eleven `URS` rows now carry their software requirements from `docs/02` §3.
 Hazard and risk-control columns remain TBD: `docs/05` does not exist, so there is
-nothing to allocate to. Test allocation is held in `docs/02` per requirement rather
-than duplicated here, and is summarised under Coverage below.
+nothing to allocate to. Test allocation is held in `docs/02` and `docs/05` per row,
+from `docs/07`, and is summarised under Coverage below.
 
 The `TC` rows are the three existing tests. TC-000 is a smoke test allocated to no
 requirement by design — it asserts only that the package exposes a version
@@ -57,11 +57,12 @@ those RCs controls it.
 
 - User requirements with at least one software requirement: **11 of 11**. Every URS in
   `docs/01` derives at least one SRS or NFR in `docs/02`.
-- Software requirements with at least one test case: **4 of 61** — SRS-002 (TC-001),
-  SRS-019, SRS-020 and SRS-021 (all TC-004). The remaining 57 await `docs/07`. This is
-  now the largest coverage gap in the project and is the work of milestone 3 onward.
+- Software requirements with at least one test case: **61 of 61** — `docs/07` allocates
+  TC-000..TC-113 and every SRS, NFR and RC now names a verifying test case. **3 of those
+  76 test cases are implemented** (TC-000, TC-001, TC-004); the rest are specified and
+  unwritten, so this line measures allocation, not evidence.
 - Hazards with at least one risk control: **14 of 14** — HAZ-001..HAZ-014 in `docs/05`
   §3.2 each carry at least one RC.
-- Risk controls with at least one verifying test: **4 of 28** — RC-002, RC-003 and RC-005
-  by TC-004, RC-020 by TC-001. The other 24 are specified but unverified (`docs/05` §5.3),
-  which is the same `docs/07` gap as the SRS coverage above.
+- Risk controls with a verifying test allocated: **28 of 28**; implemented: **4 of 28** — RC-002, RC-003 and RC-005
+  by TC-004, RC-020 by TC-001. The other 24 name an allocated but unimplemented test case
+  (`docs/05` §5.3, `docs/07` §1.2).
