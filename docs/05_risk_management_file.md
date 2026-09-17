@@ -221,7 +221,7 @@ acceptable residual on the strength of RC-017 alone.**
 | HAZ-011 | ALARP | RC-014 is Information-type and its mechanism is unresolved (`docs/11` §10 item 2). Until that is settled the control is specified but not realised |
 | HAZ-012 | **ALARP — second-highest residual** | RC-022 and RC-023 remove the two silent paths: nothing defaults, and an implausible value is rejected rather than logged. RC-024 closes the in-transit case. RC-026 makes the derivation auditable after the fact. But **every one of these controls is inside the software whose failure is assumed**, and RC-017 reaches none of them — a grader reviewing a correct mask has no way to see that the millimetres are wrong. See §5.4 |
 | HAZ-013 | ALARP | RC-028 is the control on which `docs/04` accepts the PyTorch and MONAI deserialisation findings (§5.5). Residual is the case where the recorded hash itself is wrong, which nothing independently checks |
-| HAZ-014 | Acceptable | RC-027 removes the mechanism entirely rather than mitigating it. No PHI is involved and the only credentials are to a local Orthanc instance |
+| HAZ-014 | Acceptable | RC-027 removes the mechanism entirely rather than mitigating it. No PHI is involved and the only credentials are to a local Orthanc instance. **The control is over-broad** — it also disables proxy and CA-bundle environment settings, which would break the client in the reading-centre environment `docs/01` §4 describes (`docs/04` §2.6). Correct here, wrong there, and stated rather than fixed |
 
 ### 5.2 HAZ-005 — stated plainly
 

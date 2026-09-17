@@ -96,7 +96,7 @@ Justified acceptance is a valid outcome; an unexamined bump is not a better one.
 | Component | Disposition | Rationale |
 |---|---|---|
 | python-multipart 0.0.9 → **0.0.31** | **Remediated** | Direct hit on SRS-046, which accepts an uploaded volume over HTTP — the exact entry point the DoS targets. No in-code mitigation exists for a parser defect, so remediation was the only route. 0.0.31 is the lowest version clearing all six advisory families OSV names for 0.0.9; confirmed clean by re-query on 2026-09-17 and confirmed published. Version taken from OSV's `fixed` events, not assumed |
-| requests 2.32.3 | **Remediated in code, pin unchanged** — RC-027 / SRS-060 | The DICOMweb client now takes its entire configuration from the run configuration, with `trust_env=False`. Chosen over the 2.32.4 bump because it is strictly broader: it removes ambient `.netrc`, proxy *and* certificate pickup, so client behaviour no longer depends on machine state at all. That serves NFR-002 reproducibility as well as the advisory, and it is verifiable by a test this project owns rather than by trusting a version number. The pin may still move to ≥ 2.32.4 opportunistically; it is not load-bearing |
+| requests 2.32.3 | **Remediated in code, pin unchanged** — RC-027 / SRS-060 | The DICOMweb client now takes its entire configuration from the run configuration, with `trust_env=False`. Chosen over the 2.32.4 bump because it is strictly broader: it removes ambient `.netrc`, proxy *and* certificate pickup, so client behaviour no longer depends on machine state at all. That serves NFR-002 reproducibility as well as the advisory, and it is verifiable by a test this project owns rather than by trusting a version number. The pin may still move to ≥ 2.32.4 opportunistically; it is not load-bearing. **Known limitation — see §2.6** |
 | PyTorch 2.3.1 | **Accepted** — RC-028 / SRS-061 | See §2.5 |
 | MONAI 1.3.2 | **Accepted** — RC-028 / SRS-061 | See §2.5 |
 | FastAPI 0.111.1 | No action | OSV reports nothing at this version. The secondary claim in §2.1 remains uncorroborated and is not acted on |
@@ -121,6 +121,27 @@ coupled change to close a threat the intended use already excludes.
 The acceptance is conditional on RC-028 existing. It does not yet: `src/` is stubs. Until
 then the acceptance rests on a requirement rather than a control, and `docs/05` §5.3 and
 §5.5 say so.
+
+### 2.6 RC-027 — known limitation of `trust_env=False`
+
+`trust_env=False` is not a targeted `.netrc` switch. It disables **all** environment-derived
+HTTP configuration in the client: `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` and
+`REQUESTS_CA_BUNDLE` as well as `.netrc`.
+
+Against a localhost Orthanc that is harmless, and for this project it is the desired
+behaviour — it is exactly why the control was chosen over the patch bump (§2.4).
+
+**But it would break the client in the deployment the intended use describes.** A reading
+centre sits behind a corporate proxy with an internal certificate authority, and a client
+that ignores `HTTPS_PROXY` and `REQUESTS_CA_BUNDLE` cannot reach a PACS through it. The
+control as written is correct for this project and wrong for the environment `docs/01` §4
+describes.
+
+This is stated rather than fixed. Changing the control to a narrower one — passing
+`auth=None` per request, or clearing only `.netrc` — would weaken the reproducibility
+property that justified choosing it. If this software were ever deployed into a real
+reading centre, RC-027 and SRS-060 would need proxy and CA settings moved into the run
+configuration as explicit fields rather than simply re-enabled from the environment.
 
 ## 3. Shipped components
 
