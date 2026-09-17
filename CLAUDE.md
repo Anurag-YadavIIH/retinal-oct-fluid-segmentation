@@ -98,7 +98,12 @@ survive the whole pipeline into the evaluation output — subgroup reporting dep
 ## 5. Metrics — what counts as a result
 
 Segmentation: **Dice** and **HD95**, per fluid class, reported separately.
-Classification arm: **sensitivity, specificity, AUROC**.
+
+Detection: **sensitivity, specificity, AUROC**, per fluid class. This is *derived from
+the segmentation output* — a class counts as present when its predicted voxel count
+exceeds a configured threshold, and the AUROC score comes from the MC-dropout mean
+probability. It is a second view of one model, not a second model: there is no separate
+classifier and no second training run. See `docs/02` SRS-050..SRS-053.
 
 Every metric is reported with a **bootstrap 95% confidence interval** and broken down
 **per vendor**. A bare point estimate is not an acceptable result anywhere in this repo —

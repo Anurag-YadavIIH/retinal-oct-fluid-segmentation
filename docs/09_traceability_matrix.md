@@ -13,16 +13,16 @@ A stale matrix is worse than no matrix (CLAUDE.md rule 5).
 
 | URS | SRS | HAZ | RC | TC | Implemented in |
 |---|---|---|---|---|---|
-| URS-001 | SRS-001, SRS-002, SRS-005, SRS-006, SRS-011, SRS-027, SRS-038 | TBD | TBD | TBD | `docs/02` §3 |
+| URS-001 | SRS-001, SRS-002, SRS-005, SRS-006, SRS-011, SRS-027, SRS-050, SRS-038 | TBD | TBD | TBD | `docs/02` §3 |
 | URS-002 | SRS-003, SRS-040, SRS-046 | TBD | TBD | TBD | `docs/02` §3 |
 | URS-003 | SRS-045, SRS-047, NFR-006 | TBD | TBD | TBD | `docs/02` §3 |
 | URS-004 | SRS-038, SRS-039 | TBD | TBD | TBD | `docs/02` §3 |
-| URS-005 | SRS-028, SRS-029, SRS-030, SRS-041, SRS-046 | TBD | TBD | TBD | `docs/02` §3 |
+| URS-005 | SRS-028, SRS-029, SRS-030, SRS-052, SRS-041, SRS-046 | TBD | TBD | TBD | `docs/02` §3 |
 | URS-006 | SRS-001, SRS-009, SRS-017 | TBD | TBD | TBD | `docs/02` §3 |
-| URS-007 | SRS-018, SRS-019, SRS-020, SRS-021, SRS-022, SRS-024, SRS-032, SRS-033, SRS-035, SRS-036, SRS-037, NFR-003, NFR-005 | TBD | TBD | TBD | `docs/02` §3 |
+| URS-007 | SRS-018, SRS-019, SRS-020, SRS-021, SRS-022, SRS-024, SRS-032, SRS-033, SRS-035, SRS-036, SRS-037, SRS-050, SRS-051, SRS-052, SRS-053, NFR-003, NFR-005 | TBD | TBD | TBD | `docs/02` §3 |
 | URS-008 | SRS-003, SRS-010, SRS-025, SRS-026 | TBD | TBD | TBD | `docs/02` §3 |
 | URS-009 | SRS-004, SRS-048 | TBD | TBD | TBD | `docs/02` §3 |
-| URS-010 | SRS-007, SRS-008, SRS-012, SRS-013, SRS-014, SRS-015, SRS-016, SRS-023, SRS-031, SRS-034, SRS-043, SRS-044, SRS-049, NFR-001, NFR-002, NFR-004, NFR-007, NFR-008 | TBD | TBD | TBD | `docs/02` §3 |
+| URS-010 | SRS-007, SRS-008, SRS-012, SRS-013, SRS-014, SRS-015, SRS-016, SRS-023, SRS-031, SRS-034, SRS-051, SRS-043, SRS-044, SRS-049, NFR-001, NFR-002, NFR-004, NFR-007, NFR-008 | TBD | TBD | TBD | `docs/02` §3 |
 | URS-011 | SRS-042, SRS-044 | TBD | TBD | TBD | `docs/02` §3 |
 | — | — | — | — | TC-000 | `src/ocuval/__init__.py` — smoke test, allocated to no requirement (`docs/02` §3) |
 | URS-001 | SRS-002 | TBD | TBD | TC-001 | `configs/data.yaml` |
@@ -52,8 +52,8 @@ management file is drafted — `docs/06` §10 item 5 tracks that.
 
 - User requirements with at least one software requirement: **11 of 11**. Every URS in
   `docs/01` derives at least one SRS or NFR in `docs/02`.
-- Software requirements with at least one test case: **4 of 49** — SRS-002 (TC-001),
-  SRS-019, SRS-020 and SRS-021 (all TC-004). The remaining 45 await `docs/07`. This is
+- Software requirements with at least one test case: **4 of 53** — SRS-002 (TC-001),
+  SRS-019, SRS-020 and SRS-021 (all TC-004). The remaining 49 await `docs/07`. This is
   now the largest coverage gap in the project and is the work of milestone 3 onward.
 - Hazardous situations with at least one risk control: **0 of 7 formally** — HS-1..HS-7
   in `docs/03` §3 are identified but carry no allocated `HAZ-nnn` or `RC-nnn` until

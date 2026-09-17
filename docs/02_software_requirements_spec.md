@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-049 and NFR-001..NFR-008. Every requirement here derives
+Allocates SRS-001..SRS-053 and NFR-001..NFR-008. Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -110,6 +110,13 @@ SRS-031 and SRS-049 rather than a verification of either.
 
 ### 3.6 Evaluation and reporting
 
+Covers both the segmentation metrics and the volume-level **detection** metrics. The
+detection figures are a second view of one model's output, not a second model:
+SRS-050 fixes that, so that nothing in this specification can be read as authorising a
+separate classifier or a second training run. SRS-035 applies to both — accuracy is not
+reported for detection either, and the prevalence figures in `docs/06` §3.2 are why.
+
+
 | ID | Requirement | Trace (URS) | Verified by (TC) |
 |---|---|---|---|
 | SRS-032 | Segmentation performance shall be computed as Dice and HD95, separately for each of IRF, SRF and PED. A foreground-aggregate figure shall not be reported in place of the per-class figures. | URS-007 | TBD |
@@ -118,6 +125,10 @@ SRS-031 and SRS-049 rather than a verification of either.
 | SRS-035 | No accuracy metric shall be provided or reported. | URS-007 | TBD |
 | SRS-036 | Results shall be broken down by vendor, reporting held-out-vendor performance, in-domain reference performance, and the difference between them, per fluid class. | URS-007 | TBD |
 | SRS-037 | The rendered results table shall state, for every figure, the fluid class, the vendor, the confidence interval and the sample size. | URS-007 | TBD |
+| SRS-050 | Volume-level detection of each fluid class shall be **derived from the segmentation output of the same model**. No separate classifier shall be trained, stored or served, and no forward pass shall be required beyond the MC-dropout passes of SRS-029. | URS-001, URS-007 | TBD |
+| SRS-051 | A fluid class shall be reported present in a volume when the number of voxels predicted for that class exceeds a threshold read from the run configuration. The threshold shall not be hard-coded, and its resolved value shall be written to the run output with the rest of the configuration. | URS-007, URS-010 | TBD |
+| SRS-052 | The continuous score used for AUROC shall be derived, per class and per volume, from the MC-dropout mean class probability produced by SRS-029. | URS-005, URS-007 | TBD |
+| SRS-053 | Detection performance shall be reported as sensitivity, specificity and AUROC, per fluid class and per scanner platform, each accompanied by a bootstrap 95% confidence interval and the sample size, on the same terms as SRS-032 and SRS-033. | URS-007 | TBD |
 
 ### 3.7 Segmentation and structured report output
 
@@ -163,8 +174,8 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `data/transforms.py` | SRS-025, SRS-026 |
 | `models/seg_unet.py` | SRS-027, SRS-028 |
 | `models/uncertainty.py` | SRS-029, SRS-030 |
-| `eval/metrics.py` | SRS-032, SRS-033, SRS-034, SRS-035 |
-| `eval/subgroup.py` | SRS-036 |
+| `eval/metrics.py` | SRS-032, SRS-033, SRS-034, SRS-035, SRS-050, SRS-051, SRS-052, SRS-053 |
+| `eval/subgroup.py` | SRS-036, SRS-053 |
 | `eval/report.py` | SRS-037 |
 | `report/seg_object.py` | SRS-038, SRS-039, SRS-042 |
 | `report/sr_object.py` | SRS-040, SRS-041, SRS-042 |
@@ -207,5 +218,5 @@ implemented by one of them. TC-001 verifies it.
 | 2 | SRS-048: the criteria for judging a volume in or out of scope depend on what the converted DICOM objects carry, which is not known until milestone 3. The requirement is deliberately not narrowed on speculation. Carried from `docs/01` §8 item 2. | Milestone 3 |
 | 3 | ~~SRS-007: the UID root is a placeholder.~~ **Resolved 2026-09-16:** the placeholder is documented rather than replaced, and no root will be registered. UIDs under it carry no claim of global uniqueness and objects must not leave the local Orthanc instance. Recorded in `docs/06` §7.1, `docs/11` §7 and §10, and the README. | — closed |
 | 4 | SRS-030: the confidence threshold for recommending review has no value yet. It cannot be chosen before evaluation data exists, and choosing it will be a change-controlled decision under NFR-007. | Milestone 5 |
-| 6 | §3.6 specifies segmentation metrics only. The classification arm named in CLAUDE.md §5 — sensitivity, specificity, AUROC — has no requirement, yet scikit-learn is pinned for it (`docs/04` SOUP-008). Either the arm receives SRS requirements or the dependency is removed. Surfaced while drafting `docs/04`. | `docs/04`, milestone 5 |
+| 6 | ~~§3.6 specifies segmentation metrics only.~~ **Resolved 2026-09-17:** SRS-050..SRS-053 specify volume-level detection derived from the segmentation output — no second model, no second training run. scikit-learn (SOUP-008) now supports SRS-053. | — closed |
 | 5 | Hazard and test allocations are absent throughout §3. They are filled as `docs/05` and `docs/07` are drafted; `docs/09` carries the coverage count until then. | `docs/05`, `docs/07` |
