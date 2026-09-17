@@ -31,9 +31,10 @@ a real reading workflow. `docs/08` records that gap; nothing in this document cl
 
 ### 1.2 Status
 
-**12 of 76 test cases are implemented** as of 2026-09-17 — TC-000..TC-002, TC-004,
-TC-040..TC-042, TC-060..TC-062, TC-068 and TC-072, covering `eval/metrics.py` and
-`data/splits.py`. The
+**20 of 76 test cases are implemented** as of 2026-09-17 — TC-000..TC-002, TC-004,
+TC-014, TC-015, TC-030..TC-035, TC-040..TC-042, TC-060..TC-062, TC-068 and TC-072,
+covering `eval/metrics.py`, `data/splits.py`, `io/deident.py` and the spacing guard in
+`io/retouch_reader.py`. The
 rest specify what will be written when the corresponding module exists. A protocol
 written ahead of the code is the right order — it is what CLAUDE.md rule 1 asks for —
 but it means §10's coverage figures describe a plan, not a result.
@@ -348,9 +349,10 @@ run differently, or an acceptance criterion changed.
 
 | # | Item | Blocks |
 |---|---|---|
-| 1 | 64 of the 76 allocated test cases are unimplemented (§1.2). This protocol is a specification, not a result. | Milestones 3–7 |
+| 1 | 56 of the 76 allocated test cases are unimplemented (§1.2). This protocol is a specification, not a result. | Milestones 3–7 |
 | 2 | TC-107 cannot verify that a change control entry is *correct*, only that one exists (§8). No automation closes that; it is a review activity. | — |
 | 3 | TC-105's gate forces review rather than proving re-classification (§7.3). If a stronger guarantee is wanted it needs a commit-level check outside pytest. | — |
 | 4 | Validation, as distinct from verification, is not performed and cannot be (§1.1). `docs/08` must state this rather than letting a full verification table imply it. | `docs/08` |
 | 5 | No test verifies that a recorded checkpoint hash is itself correct — RC-028 degrades to trust-on-first-write (`docs/05` open item 7). TC-058 inherits that limit. | `docs/05` |
-| 6 | Per-vendor spacing plausibility ranges do not exist in `configs/data.yaml` yet. TC-015 cannot be written until they are defined, and defining them needs the data. | Milestone 3 |
+| 6 | Per-vendor spacing plausibility ranges still do not exist in `configs/data.yaml`, and defining them needs the data. **Partly mitigated 2026-09-17:** `io.retouch_reader.validate_spacing` rejects on physical grounds instead — a voxel edge above 0.5 mm cannot be retinal OCT, and isotropic spacing cannot be OCT at all — so TC-015's rejection cases including the micrometre case are implemented now. The per-vendor ranges will tighten that bound, not replace it. | Milestone 3 |
+| 7 | `io/deident.py` applies a **subset** of the PS3.15 Annex E attribute table, and its verification checks exactly that subset — so neither half can detect an identifying attribute the table omits. Closing this needs the standard's full table. | `docs/11` |
