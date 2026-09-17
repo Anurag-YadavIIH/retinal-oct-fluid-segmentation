@@ -1,6 +1,7 @@
 services:
   orthanc:
-    image: orthancteam/orthanc:24.7.3
+    # Pinned by digest; see SOUP-014 in docs/04. Resolved 2026-09-17.
+    image: orthancteam/orthanc:24.7.3@sha256:57a3d037729897331027ddc00c12695b50f1effbbf805f855396f3d0248d2d5f
     container_name: ocuval-orthanc
     ports:
       - "8042:8042"   # HTTP / DICOMweb

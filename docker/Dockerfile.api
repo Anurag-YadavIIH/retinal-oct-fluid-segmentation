@@ -1,4 +1,7 @@
-FROM python:3.11-slim
+# Pinned by digest, not by tag: a tag is mutable and defeats reproducible builds.
+# Resolved from the registry 2026-09-17; SOUP-017 in docs/04 records the same value.
+# Changing this line means updating that row and a change control entry.
+FROM python:3.11-slim@sha256:9534e5a8e315485d4061ed659af0fd78a284c015f9b73661b41d6bab25604534
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
