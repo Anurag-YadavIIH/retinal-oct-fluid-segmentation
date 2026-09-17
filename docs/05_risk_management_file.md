@@ -113,6 +113,8 @@ failure mode is the one review is least able to catch.
 |---|---|
 | HAZ-001..HAZ-007 | HS-1..HS-7 in `docs/03` §3, in order |
 | HAZ-008..HAZ-011 | New here — not identified in `docs/03`, which scoped itself to the output path |
+| HAZ-012 | New here. **Not a segmentation failure.** `docs/03` HS-1..HS-3 all concern the mask being wrong; HAZ-012 is the mask being right and the measurement being wrong anyway, which no HS covers and which none of the mask-directed controls reach |
+| HAZ-013, HAZ-014 | New here, from the SOUP anomaly findings in `docs/04` §2.2 |
 
 `docs/03` keeps its HS-n labels as written; they are not reissued retrospectively. This
 table is the join.
@@ -134,6 +136,9 @@ P1 is 1 in every row (§1.2). The Prob column is P2.
 | HAZ-009 | De-identification failure leaves an identifier in an output object | Profile not applied, or applied and not verified → object carrying an identifier is stored or shared | An identifier persists where it must not | Privacy. No PHI exists in this project's data, so realised harm is nil here — the control is demonstrated, not relied on | S1 | P-A | Acceptable | RC-011, RC-012 |
 | HAZ-010 | SEG or SR fails to reference its source instances correctly | Referencing wrong or absent → grader cannot open the result against the images it came from, or it attaches to the wrong study | The result is unreviewable, or reviewable against the wrong images | Defeats the precondition of RC-017 | S2 | P-B | ALARP | RC-013, RC-015 |
 | HAZ-011 | Output object leaves its context without its research-use designation | SEG or SR copied out of the repository or the local PACS → nothing in the object says it is research-use-only and automated → treated as a validated clinical result | An unvalidated measurement is read as a clinical one | The one hazard whose harm is *increased* by the artefact being well-formed | S2 | P-B | ALARP | RC-014, RC-019 |
+| HAZ-012 | **Acquisition metadata corruption — voxel spacing wrong, absent, or altered in transit** | Axial resolution conventionally quoted in micrometres arrives unconverted (0.0039 mm read as 3.9 → a 1000× volume error) → or spacing is absent and silently defaulted → or anisotropic spacing is collapsed to isotropic → or a transform alters spacing between ingestion and volume computation → mm³ computed from a **correct** mask is wrong by a constant factor | A confidently wrong volume is recorded from a segmentation that is right | Data integrity; the recorded measurement is wrong by orders of magnitude while every visible artefact looks correct | S2 | P-B → **escalated to P-C under §2.4** | **ALARP — second-highest residual in this file** | RC-021, RC-022, RC-023, RC-024, RC-025, RC-026 |
+| HAZ-013 | Checkpoint of unknown provenance or altered content is loaded | A checkpoint not produced by this project, or altered since it was written, is loaded → either the wrong model computes every result, or a crafted checkpoint executes code during deserialisation (`docs/04` §2.2, PyTorch and MONAI) | The system runs weights it did not produce | Data integrity; every output from that run is unattributable. In the deserialisation case, arbitrary code execution | S2 | P-A | ALARP | RC-028, RC-018 |
+| HAZ-014 | DICOMweb client picks up ambient environment configuration | `.netrc`, proxy or certificate settings present in the environment are used by the HTTP client → credentials leaked to a third party on a crafted URL (`docs/04` §2.2, requests), or traffic silently redirected | Client behaviour depends on state outside the run configuration | Confidentiality of local PACS credentials; loss of reproducibility. No PHI is involved | S1 | P-B | Acceptable | RC-027, RC-018 |
 
 ## 4. Risk control measures
 
@@ -178,6 +183,14 @@ order of preference — information for safety is the weakest.
 | RC-018 | Outputs attributable to model version, resolved config and seed | Protective | SRS-031, SRS-049 | `ocuval/__init__.py`, `service/api.py` | TBD |
 | RC-019 | Data governance — no redistribution, no commercial use, scope limited to fluid segmentation and detection, single registered user | Information | NFR-004 | `.gitignore`, `.pre-commit-config.yaml` | TBD |
 | RC-020 | Label indices and vendor keys frozen in configuration; reordering is a requirements change | Design | SRS-002 | `configs/data.yaml` | TC-001 |
+| RC-021 | Voxel spacing carried as a first-class field, on the same terms as vendor, through every stage | Design | SRS-054 | `io/retouch_reader.py`, `io/dicom_writer.py`, `io/deident.py` | TBD |
+| RC-022 | Spacing asserted present at ingestion; no default or fallback value exists anywhere; absence aborts | Protective | SRS-055 | `io/retouch_reader.py` | TBD |
+| RC-023 | Per-vendor spacing plausibility range in configuration; out-of-range **rejects** the volume rather than warning | Protective | SRS-056 | `io/retouch_reader.py`, `configs/data.yaml` | TBD |
+| RC-024 | Spacing used for volume computation asserted bit-identical to spacing recorded at ingestion | Protective | SRS-057 | `report/sr_object.py` | TBD |
+| RC-025 | Units declared explicitly in the SR, never implied by convention | Design | SRS-058 | `report/sr_object.py` | TBD |
+| RC-026 | Voxel count and voxel volume recorded alongside mm³ so the derivation is auditable from the object alone | Protective | SRS-059 | `report/sr_object.py` | TBD |
+| RC-027 | DICOMweb client takes configuration only from the run configuration; `trust_env=False`, no ambient `.netrc`, proxy or certificate settings | Design | SRS-060 | `io/dicomweb.py` | TBD |
+| RC-028 | Checkpoints loaded only from the project's own `artifacts/` directory, hash recorded at write time and verified before load; mismatch or missing hash aborts | Protective | SRS-061 | `models/seg_unet.py`, `service/api.py` | TBD |
 
 ### 4.3 RC-017 is deliberately typed as Information
 
@@ -206,6 +219,9 @@ acceptable residual on the strength of RC-017 alone.**
 | HAZ-009 | Acceptable | Harm is nil in this project: the data contains no PHI. The control is implemented and verified to demonstrate the capability, not because this dataset needs it |
 | HAZ-010 | ALARP | RC-013 addresses it; nothing verifies reviewability end to end, which would need a round-trip through a real viewer rather than a round-trip through Orthanc |
 | HAZ-011 | ALARP | RC-014 is Information-type and its mechanism is unresolved (`docs/11` §10 item 2). Until that is settled the control is specified but not realised |
+| HAZ-012 | **ALARP — second-highest residual** | RC-022 and RC-023 remove the two silent paths: nothing defaults, and an implausible value is rejected rather than logged. RC-024 closes the in-transit case. RC-026 makes the derivation auditable after the fact. But **every one of these controls is inside the software whose failure is assumed**, and RC-017 reaches none of them — a grader reviewing a correct mask has no way to see that the millimetres are wrong. See §5.4 |
+| HAZ-013 | ALARP | RC-028 is the control on which `docs/04` accepts the PyTorch and MONAI deserialisation findings (§5.5). Residual is the case where the recorded hash itself is wrong, which nothing independently checks |
+| HAZ-014 | Acceptable | RC-027 removes the mechanism entirely rather than mitigating it. No PHI is involved and the only credentials are to a local Orthanc instance |
 
 ### 5.2 HAZ-005 — stated plainly
 
@@ -214,6 +230,12 @@ the hazard that the measurement is itself wrong or absent, and it has a structur
 problem no amount of control design fixes: **the only thing that can detect it is the
 evaluation code, which is part of the software system whose failure is assumed.**
 
+This restates, from the risk side, the conclusion `docs/03` §5.1 reached from the
+classification side: the per-vendor reporting that would surface a systematic bias is
+inside the software and so cannot be credited as an external control. The two documents
+are making the same argument about the same hazard, and neither is independent evidence
+for the other.
+
 No external risk control reaches it. Grader review cannot see a systematic bias in a
 single case. Statistical aggregation does not dilute it. Supervision does not address
 it. It is reduced by RC-006, RC-008, RC-007 and RC-005, and what remains is accepted for
@@ -221,9 +243,47 @@ one reason only: the structural bound in `docs/01` that no individual's care dep
 an output. Remove that bound and this hazard alone would force the classification to be
 reopened.
 
+### 5.4 HAZ-012 — why the mask-directed controls do not reach it
+
+Everything in §4.2 that addresses a wrong measurement addresses a wrong **mask**.
+HAZ-012 is the case where the mask is right.
+
+A volume in cubic millimetres is voxel count × voxel volume, and voxel volume comes
+entirely from spacing metadata. SRS-010 and SRS-026 forbid resampling the *image* across
+vendors; neither says anything about the metadata, and that asymmetry is the hole. The
+OCT-specific version is concrete: axial resolution is conventionally quoted in
+micrometres, so a spacing that should read 0.0039 mm arriving as 3.9 is a thousand-fold
+volume error in which every pixel, every contour and every review screen looks exactly
+as it should.
+
+This is why RC-017 is worth nothing here, and why §2.4's invisibility escalation applies.
+A grader is asked to check a segmentation. They are not asked, and have no means, to
+check that the millimetres attached to it were derived from the right number.
+
+### 5.5 HAZ-013 — the basis on which the SOUP findings are accepted
+
+`docs/04` §2.2 records that PyTorch 2.3.1 and MONAI 1.3.2 are affected by deserialisation
+defects on the model-loading path. Both are **accepted rather than remediated**, and
+RC-028 is the basis.
+
+The threat in both advisories is a maliciously crafted model file. This system loads
+exactly one class of file: checkpoints it produced itself, from its own `artifacts/`
+directory, hash-verified against the value recorded when they were written. The intended
+use excludes loading a third-party checkpoint, and SRS-061 makes that a requirement
+rather than a habit.
+
+Bumping PyTorch to 2.6 to close a threat the intended use already excludes would move
+MONAI with it, invalidate the SOUP assessment of both, and change the numerical
+behaviour of every trained model — a large, coupled change to chase a risk that RC-028
+addresses directly. That is the wrong trade, and the rationale is recorded here so the
+acceptance is a decision rather than an omission.
+
+The acceptance is conditional on RC-028 actually existing. Until `src/` is implemented it
+does not, and §5.3 applies.
+
 ### 5.3 Controls not yet real
 
-Of the 20 controls in §4.2, **three are verified by a test that exists today** — RC-002,
+Of the 28 controls in §4.2, **four are verified by a test that exists today** — RC-002,
 RC-003 and RC-005 by TC-004, RC-020 by TC-001. The rest carry `TBD` and are specified
 but unverified, because `src/` is stubs and `docs/07` is not drafted.
 
@@ -280,10 +340,11 @@ be reopened rather than amended:
 
 | # | Item | Blocks |
 |---|---|---|
-| 1 | 16 of 20 controls have no verifying test (§5.3). Every RC needs a TC in `docs/07`; CLAUDE.md §3 requires each risk control to trace to a requirement and each requirement to a test. | `docs/07` |
+| 1 | 24 of 28 controls have no verifying test (§5.3). Every RC needs a TC in `docs/07`; CLAUDE.md §3 requires each risk control to trace to a requirement and each requirement to a test. | `docs/07` |
 | 2 | RC-010's criteria are unresolved until the converted DICOM exists, so HAZ-006's residual is larger than §5.1 states. | Milestone 3 |
 | 3 | RC-014's mechanism is unresolved (`docs/11` §10 item 2), so HAZ-011 is specified but uncontrolled in practice. | `docs/11` |
 | 4 | RC-009 is a single-point control for HAZ-007 with no independent check. Whether that is acceptable, or whether a second signal is needed, is undecided. | `docs/07` |
 | 5 | **No risk control reaches URS-002.** Surfaced by deriving `docs/09`: SRS-003, SRS-040 and SRS-046 — the path that computes and reports the fluid volume in mm³ — carry no RC, although a wrong volume is precisely the harm in HAZ-001 and HAZ-002. The controls there act on the segmentation, not on the derivation from segmentation to millimetres. Either that derivation gets its own control or the analysis must say why it needs none. | `docs/07` |
-| 6 | The SOUP findings in `docs/04` §2.2 are not represented as hazards here. PyTorch and MONAI deserialisation on the model-loading path, and the python-multipart upload DoS against SRS-046, are software risks this file does not yet analyse. | `docs/04` open items 7, 8 |
-| 7 | No post-release risk monitoring or production feedback process exists, which ISO 14971 expects. Nothing consumes field experience because there is no field. | — |
+| 6 | ~~The SOUP findings in `docs/04` §2.2 are not represented as hazards here.~~ **Resolved 2026-09-17:** HAZ-013 and HAZ-014 carry the PyTorch/MONAI and requests findings, controlled by RC-028 and RC-027. python-multipart was remediated by version bump instead (`docs/04` §2.5), so it needs no hazard here. | — closed |
+| 7 | RC-028 depends on a recorded checkpoint hash, and nothing independently verifies that the recorded hash is itself correct. The control degrades to trust-on-first-write. | `docs/07` |
+| 8 | No post-release risk monitoring or production feedback process exists, which ISO 14971 expects. Nothing consumes field experience because there is no field. | — |

@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-053 and NFR-001..NFR-008. Every requirement here derives
+Allocates SRS-001..SRS-061 and NFR-001..NFR-008. Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -54,6 +54,12 @@ SRS-031 and SRS-049 rather than a verification of either.
 
 ### 3.1 Data ingestion
 
+SRS-054 through SRS-056 govern **acquisition metadata**, not pixels. They are separated
+from the image requirements deliberately: SRS-010 and SRS-026 forbid harmonising the
+*image* across vendors but say nothing about the metadata that turns a mask into a
+measurement, and that gap is HAZ-012.
+
+
 | ID | Requirement | Trace (URS) | Verified by (TC) |
 |---|---|---|---|
 | SRS-001 | The reader shall load a RETOUCH MetaImage volume and return the pixel array, the reference label array where one exists, the patient identifier, the vendor, the voxel spacing in millimetres, and the source path, as a single immutable record. | URS-001, URS-006 | TBD |
@@ -61,6 +67,9 @@ SRS-031 and SRS-049 rather than a verification of either.
 | SRS-003 | Voxel spacing shall be taken from the source volume header. The software shall not assume, default, or hard-code a spacing value. | URS-002, URS-008 | TBD |
 | SRS-004 | The reader shall raise on unreadable or malformed input, naming the offending path. It shall not return a partially populated record, and it shall not skip a volume silently. | URS-009 | TBD |
 | SRS-005 | Knowledge of the RETOUCH on-disk directory layout shall be confined to the reader module. No other module shall depend on that layout. | URS-001 | TBD |
+| SRS-054 | Voxel spacing shall be carried as a first-class field of every sample, on the same terms as vendor, and shall survive ingestion, DICOM conversion, de-identification, inference and volume computation. | URS-002, URS-006 | TBD |
+| SRS-055 | Voxel spacing shall be asserted present at ingestion. No default, fallback or assumed value shall exist anywhere in the codebase, and absence shall abort the run naming the offending volume. | URS-002 | TBD |
+| SRS-056 | Each spacing component shall be checked against a per-vendor plausibility range held in `configs/data.yaml`. A value outside the range shall **reject the volume**, not warn and continue. The ranges shall be expressed in millimetres and the units stated in the configuration. | URS-002, URS-009 | TBD |
 
 ### 3.2 DICOM conversion
 
@@ -107,6 +116,7 @@ SRS-031 and SRS-049 rather than a verification of either.
 | SRS-029 | Inference shall support repeated stochastic forward passes with dropout active, returning the mean class probabilities and the per-voxel standard deviation across passes. | URS-005 | TBD |
 | SRS-030 | A scan-level confidence value in the range 0 to 1 shall be derived from the per-voxel uncertainty, together with a boolean indication of whether review is recommended, determined against a threshold recorded in the run configuration. | URS-005 | TBD |
 | SRS-031 | The random seed, the resolved configuration and the software version shall be written into the run output directory at the start of every run. | URS-010 | TBD |
+| SRS-061 | Model checkpoints shall be loaded only from the project's own `artifacts/` directory. A cryptographic hash of every checkpoint shall be recorded when it is written and verified before it is loaded; a mismatch, or a checkpoint with no recorded hash, shall abort without loading. No checkpoint from any other source shall be loaded. | URS-010 | TBD |
 
 ### 3.6 Evaluation and reporting
 
@@ -137,6 +147,9 @@ reported for detection either, and the prevalence figures in `docs/06` §3.2 are
 | SRS-038 | Segmentation results shall be written as DICOM Segmentation objects via `highdicom`, with one segment per fluid class using the label indices of SRS-002. | URS-001, URS-004 | TBD |
 | SRS-039 | The Segmentation object shall reference the source image instances it was derived from, so that it can be opened and reviewed against those images in standard DICOM tooling. | URS-004 | TBD |
 | SRS-040 | A Structured Report shall record, for the imaged eye, the volume in cubic millimetres of each fluid class, computed from the segmentation and the acquisition's own voxel spacing. | URS-002 | TBD |
+| SRS-057 | The voxel spacing used to compute a volume shall be asserted bit-identical to the spacing recorded at ingestion for that acquisition. Any difference shall abort before a volume is emitted. | URS-002, URS-010 | TBD |
+| SRS-058 | The Structured Report shall state the units of every quantity it carries explicitly. Units shall not be implied by convention or inferred by a consumer. | URS-002 | TBD |
+| SRS-059 | The Structured Report shall record, for each fluid class, the predicted voxel count and the voxel volume used, alongside the resulting volume in cubic millimetres, so that the derivation can be recomputed from the object alone. | URS-002, URS-010 | TBD |
 | SRS-041 | The Structured Report shall record the scan-level confidence and the review-recommended indication of SRS-030. These shall not appear only in run logs. | URS-005 | TBD |
 | SRS-042 | Every emitted Segmentation and Structured Report object shall carry, within the object, a designation readable both by software and by a person that the result is research-use-only, not clinically validated, and produced by an automated method requiring human review. The means of expressing this is specified in `docs/11` and is unresolved at the time of this draft (§6, item 1). | URS-011 | TBD |
 
@@ -147,6 +160,7 @@ reported for detection either, and the prevalence figures in `docs/06` §3.2 are
 | SRS-043 | The software shall store objects to, and retrieve objects from, a DICOMweb endpoint configured at runtime, using STOW-RS and WADO-RS. | URS-010 | TBD |
 | SRS-044 | A stored object shall be retrievable and shall match what was sent in its pixel data, its fluid volumes, its confidence value and its research-use designation. | URS-010, URS-011 | TBD |
 | SRS-045 | The software shall perform no action against the PACS beyond storing and retrieving its own objects. It shall not delete, modify or reconcile existing content, and it shall not mark any object as final, verified or signed off. | URS-003 | TBD |
+| SRS-060 | The DICOMweb client shall take its entire configuration from the run configuration and shall not read ambient environment configuration — no `.netrc`, no environment-supplied proxy or certificate settings. Sessions shall be constructed with `trust_env=False`. | URS-003, URS-010 | TBD |
 
 ### 3.9 Inference API
 
@@ -165,21 +179,21 @@ whose docstring names an SRS identifier not listed here, is a defect.
 
 | Module | Implements |
 |---|---|
-| `io/retouch_reader.py` | SRS-001, SRS-003, SRS-004, SRS-005 |
-| `io/dicom_writer.py` | SRS-006..SRS-011 |
-| `io/deident.py` | SRS-012..SRS-017 |
-| `io/dicomweb.py` | SRS-043, SRS-044, SRS-045 |
+| `io/retouch_reader.py` | SRS-001, SRS-003, SRS-004, SRS-005, SRS-054, SRS-055, SRS-056 |
+| `io/dicom_writer.py` | SRS-006..SRS-011, SRS-054 |
+| `io/deident.py` | SRS-012..SRS-017, SRS-054 |
+| `io/dicomweb.py` | SRS-043, SRS-044, SRS-045, SRS-060 |
 | `data/splits.py` | SRS-018..SRS-023 |
 | `data/datamodule.py` | SRS-024 |
 | `data/transforms.py` | SRS-025, SRS-026 |
-| `models/seg_unet.py` | SRS-027, SRS-028 |
+| `models/seg_unet.py` | SRS-027, SRS-028, SRS-061 |
 | `models/uncertainty.py` | SRS-029, SRS-030 |
 | `eval/metrics.py` | SRS-032, SRS-033, SRS-034, SRS-035, SRS-050, SRS-051, SRS-052, SRS-053 |
 | `eval/subgroup.py` | SRS-036, SRS-053 |
 | `eval/report.py` | SRS-037 |
 | `report/seg_object.py` | SRS-038, SRS-039, SRS-042 |
-| `report/sr_object.py` | SRS-040, SRS-041, SRS-042 |
-| `service/api.py` | SRS-046, SRS-047, SRS-048, SRS-049 |
+| `report/sr_object.py` | SRS-040, SRS-041, SRS-042, SRS-054, SRS-057, SRS-058, SRS-059 |
+| `service/api.py` | SRS-046, SRS-047, SRS-048, SRS-049, SRS-061 |
 | `service/schemas.py` | SRS-046 |
 | `ocuval/__init__.py` | SRS-031 (version identifier) |
 

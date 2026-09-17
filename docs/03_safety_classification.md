@@ -176,7 +176,9 @@ that the Class A route would require the residual risk from HS-5 — an undetect
 vendor-correlated, systematically biased measurement — to be acceptable. It is not: it
 is the failure this project exists to measure, it is invisible case by case, and the
 per-vendor reporting that would surface it is *inside* the software and therefore
-cannot be credited as an external control.
+cannot be credited as an external control. `docs/05` §5.2 reaches the same conclusion
+from the risk side and carries the residual as HAZ-005; the two are one argument stated
+twice, not two independent findings.
 
 ### 5.2 Why not Class C
 

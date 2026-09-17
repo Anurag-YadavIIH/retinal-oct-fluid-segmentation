@@ -87,14 +87,40 @@ read, and no row should be read as claiming that.
 Saying so is the point. A row implying per-advisory coverage that was not performed
 would be the fabricated assurance §1 exists to avoid.
 
-### 2.4 Consequence
+### 2.4 Disposition — remediate or accept, with rationale
 
-Four components are affected at their pinned versions in a way that bears on an
-allocated requirement: PyTorch, MONAI, requests and python-multipart. **No pin has been
-changed by this review.** Changing a pin means a new SOUP assessment, a compatibility
-question — a PyTorch 2.6 bump moves MONAI too — and a change control entry. Those are
-decisions to take deliberately, recorded as open items 7 and 8, not side effects of
-writing a document.
+Identifying an anomaly does not oblige a version bump. The obligation is to assess
+whether it affects the device **in its intended use** and to record the reasoning.
+Justified acceptance is a valid outcome; an unexamined bump is not a better one.
+
+| Component | Disposition | Rationale |
+|---|---|---|
+| python-multipart 0.0.9 → **0.0.31** | **Remediated** | Direct hit on SRS-046, which accepts an uploaded volume over HTTP — the exact entry point the DoS targets. No in-code mitigation exists for a parser defect, so remediation was the only route. 0.0.31 is the lowest version clearing all six advisory families OSV names for 0.0.9; confirmed clean by re-query on 2026-09-17 and confirmed published. Version taken from OSV's `fixed` events, not assumed |
+| requests 2.32.3 | **Remediated in code, pin unchanged** — RC-027 / SRS-060 | The DICOMweb client now takes its entire configuration from the run configuration, with `trust_env=False`. Chosen over the 2.32.4 bump because it is strictly broader: it removes ambient `.netrc`, proxy *and* certificate pickup, so client behaviour no longer depends on machine state at all. That serves NFR-002 reproducibility as well as the advisory, and it is verifiable by a test this project owns rather than by trusting a version number. The pin may still move to ≥ 2.32.4 opportunistically; it is not load-bearing |
+| PyTorch 2.3.1 | **Accepted** — RC-028 / SRS-061 | See §2.5 |
+| MONAI 1.3.2 | **Accepted** — RC-028 / SRS-061 | See §2.5 |
+| FastAPI 0.111.1 | No action | OSV reports nothing at this version. The secondary claim in §2.1 remains uncorroborated and is not acted on |
+| pydicom 2.4.4 | No action now | The advisory is reachable only through FileSet / DICOMDIR operations, which no requirement uses. A 2.4.5 patch bump remains cheap and is recommended when the pin is next touched — but acting on an unreachable defect ahead of the reachable ones would be theatre |
+
+### 2.5 PyTorch and MONAI — accepted, and why
+
+Both findings are deserialisation of an untrusted model file: `torch.load` reaching code
+execution, including with `weights_only=True` (CVE-2025-32434), and MONAI's pickle and
+`torch.load` paths.
+
+**The intended use excludes the threat.** This system loads exactly one class of file:
+checkpoints it produced itself. SRS-061 makes that a requirement rather than a
+convention — checkpoints load only from the project's own `artifacts/` directory, with a
+hash recorded at write time and verified before load, and a mismatch or missing hash
+aborts. `docs/05` RC-028 carries it, and HAZ-013 is the hazard.
+
+**The alternative is a bad trade.** PyTorch 2.6 moves MONAI with it, invalidates the SOUP
+assessment of both, and changes the numerical behaviour of every trained model — a large
+coupled change to close a threat the intended use already excludes.
+
+The acceptance is conditional on RC-028 existing. It does not yet: `src/` is stubs. Until
+then the acceptance rests on a requirement rather than a control, and `docs/05` §5.3 and
+§5.5 say so.
 
 ## 3. Shipped components
 
@@ -102,10 +128,10 @@ These execute as part of the software system.
 
 | ID | Component | Version | Purpose | Requirements supported | Anomalies reviewed | Risk notes |
 |---|---|---|---|---|---|---|
-| SOUP-001 | pydicom | 2.4.4 | DICOM read and write; de-identification primitives | SRS-006, SRS-011, SRS-012..SRS-017, SRS-044 | Yes — 2026-09-17, OSV. **Affected**, not reachable (§2.2) | Carries the de-identification path. A silent failure to remove a tag is invisible unless SRS-015 verification is correct and independent of the same library — it is not, which is a limitation of the control, not of the library |
+| SOUP-001 | pydicom | 2.4.4 | DICOM read and write; de-identification primitives | SRS-006, SRS-011, SRS-012..SRS-017, SRS-044 | Yes — 2026-09-17, OSV. **Affected**, not reachable; no action (§2.4) | Carries the de-identification path. A silent failure to remove a tag is invisible unless SRS-015 verification is correct and independent of the same library — it is not, which is a limitation of the control, not of the library |
 | SOUP-002 | highdicom | 0.22.0 | SEG and SR construction | SRS-006, SRS-038..SRS-042 | Yes — 2026-09-17, OSV. None found | Sole implementer of SRS-042, whose mechanism is still unresolved (`docs/11` §10 item 2). What this library exposes for algorithm identification is one of the candidate mechanisms and has not been examined |
-| SOUP-003 | MONAI | 1.3.2 | Transforms, networks, metrics | SRS-025..SRS-029, SRS-032 | Yes — 2026-09-17, OSV. **Affected**, borne (§2.2, §2.3) | Supplies both the Dice metric and the training loss. A defect common to both would not be caught by comparing them |
-| SOUP-004 | PyTorch | 2.3.1 | Tensor operations, training and inference | SRS-027, SRS-028, SRS-029 | Yes — 2026-09-17, OSV. **Affected**, borne (§2.2, §2.3) | Determinism under NFR-002 depends on this library's seeding and on non-deterministic kernel selection being disabled; `configs/train_seg.yaml` sets `deterministic: true` but nothing yet verifies it takes effect |
+| SOUP-003 | MONAI | 1.3.2 | Transforms, networks, metrics | SRS-025..SRS-029, SRS-032, SRS-061 | Yes — 2026-09-17, OSV. **Affected**, **accepted** on RC-028 (§2.5) | Supplies both the Dice metric and the training loss. A defect common to both would not be caught by comparing them |
+| SOUP-004 | PyTorch | 2.3.1 | Tensor operations, training and inference | SRS-027, SRS-028, SRS-029, SRS-061 | Yes — 2026-09-17, OSV. **Affected**, **accepted** on RC-028 (§2.5) | Determinism under NFR-002 depends on this library's seeding and on non-deterministic kernel selection being disabled; `configs/train_seg.yaml` sets `deterministic: true` but nothing yet verifies it takes effect |
 | SOUP-005 | SimpleITK | 2.3.1 | MetaImage (`.mhd`/`.raw`) reading | SRS-001, SRS-003 | Yes — 2026-09-17, OSV. None found | **The template described this as "MetaImage reading, resampling". Resampling is the concern:** SRS-010 and SRS-026 forbid resampling volumes onto a common cross-vendor geometry, and this library makes that easy to do by accident. Its resampling API must not be used for geometric harmonisation |
 | SOUP-006 | NumPy | 1.26.4 | Array operations throughout | SRS-001, SRS-040 | Yes — 2026-09-17, OSV. None found | Volume computation in SRS-040 depends on dtype and rounding behaviour |
 | SOUP-007 | SciPy | 1.13.1 | Distance transforms underlying HD95 | SRS-032 | Yes — 2026-09-17, OSV. None found | HD95 is sensitive to how an empty prediction or empty reference is handled; that is a definition decision for `docs/07`, not a library default to inherit silently |
@@ -113,9 +139,9 @@ These execute as part of the software system.
 | SOUP-009 | FastAPI | 0.111.1 | Inference API and request validation | SRS-046..SRS-049 | Yes — 2026-09-17, OSV. None found | Request model validation is the first line of SRS-048 out-of-scope rejection |
 | SOUP-010 | uvicorn | 0.30.3 | ASGI server | SRS-046 | Yes — 2026-09-17, OSV. None found | Transport only; no requirement depends on its behaviour beyond serving |
 | SOUP-011 | pandas | 2.2.2 | Manifest handling and results tables | SRS-037 | Yes — 2026-09-17, OSV. None found | Manifest indexing errors are a contributing failure for HS-4 (wrong-subject attribution) |
-| SOUP-012 | requests | 2.32.3 | DICOMweb client | SRS-043, SRS-044 | Yes — 2026-09-17, OSV. **Affected**, conditional (§2.2) | Multipart handling for STOW-RS is the part most likely to fail silently on a partial store |
+| SOUP-012 | requests | 2.32.3 | DICOMweb client | SRS-043, SRS-044, SRS-060 | Yes — 2026-09-17, OSV. **Affected**, **remediated in code** by RC-027 (§2.4) | Multipart handling for STOW-RS is the part most likely to fail silently on a partial store |
 | SOUP-013 | PyYAML | 6.0.2 | Configuration loading | SRS-002, SRS-012, SRS-023, SRS-031 | Yes — 2026-09-17, OSV. None found | `safe_load` only. Configuration is the frozen contract TC-001 defends |
-| SOUP-015 | python-multipart | 0.0.9 | Multipart form parsing for file upload to the API | SRS-046 | Yes — 2026-09-17, OSV. **Affected**, borne (§2.2, §2.3) | **Added by this draft.** Pinned in `pyproject.toml` but absent from the template list — the gap the §1 rule exists to catch |
+| SOUP-015 | python-multipart | 0.0.31 | Multipart form parsing for file upload to the API | SRS-046 | Yes — 2026-09-17, OSV. **Clean at 0.0.31** | Was pinned at 0.0.9 and absent from the template list. **Remediated 2026-09-17** (§2.5): 0.0.31 is the lowest version clearing all six advisory families OSV names for 0.0.9, confirmed clean by re-query. No in-code mitigation exists for a parser DoS, so remediation was the only route |
 
 ## 4. Runtime environment
 
@@ -149,6 +175,6 @@ These do not ship. A defect here does not corrupt an output; it conceals one.
 | 4 | SOUP-016 pins CPython to `3.11.*`, not to a patch version. Whether that is acceptable under NFR-002 needs deciding rather than inheriting. | — |
 | 5 | No component in this list has a recorded supplier support or end-of-life status, and no upgrade policy exists. 62304 expects SOUP to be monitored over the product lifecycle, not identified once. | `docs/13` |
 | 6 | The `Requirements supported` column is maintained by hand and nothing checks it against `docs/02`. It will drift. A test comparing the SRS identifiers cited here against those defined in `docs/02` would close this. | `docs/07` |
-| 7 | **PyTorch 2.3.1 and MONAI 1.3.2 are affected by deserialisation defects that bear on model loading (§2.2).** The current mitigation is a usage constraint — only self-produced checkpoints are ever loaded — which is not recorded as a requirement anywhere. Either it becomes one in `docs/02`, or the pins move. A PyTorch 2.6 bump moves MONAI with it, so this is a coupled decision, not two independent ones. | `docs/02`, `docs/05` |
-| 8 | **python-multipart 0.0.9 and requests 2.32.3 are affected in ways bearing directly on SRS-046 and SRS-043/044 (§2.2).** python-multipart is the clearest case in this document: a single crafted upload can stall the service. `requests` is disarmed by `trust_env=False`, which is either a requirement or a pin bump. Neither pin has been changed by this review. | `docs/02`, milestone 7 |
-| 9 | Nothing checks that the image digests recorded in SOUP-014 and SOUP-017 still match `docker/Dockerfile.api` and `docker/docker-compose.yml`. They can drift silently. | `docs/07` |
+| 7 | ~~PyTorch and MONAI deserialisation findings unaddressed.~~ **Resolved 2026-09-17: accepted** on the basis of RC-028 / SRS-061 (§2.5), with HAZ-013 in `docs/05`. Conditional on RC-028 being implemented — it is not yet. | `docs/05` §5.5 |
+| 8 | ~~python-multipart and requests findings unaddressed.~~ **Resolved 2026-09-17:** python-multipart remediated to 0.0.31; requests remediated in code by RC-027 / SRS-060 with the pin unchanged, rationale in §2.4. | — closed |
+| 9 | Nothing checks that the image digests recorded in SOUP-014 and SOUP-017 still match `docker/Dockerfile.api` and `docker/docker-compose.yml`. They can drift silently. **Intended resolution:** a `docs/07` test case asserting the Dockerfile and compose digests equal the SOUP rows. | `docs/07` |

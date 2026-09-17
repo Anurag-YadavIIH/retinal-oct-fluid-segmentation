@@ -14,15 +14,15 @@ A stale matrix is worse than no matrix (CLAUDE.md rule 5).
 | URS | SRS | HAZ | RC | TC | Implemented in |
 |---|---|---|---|---|---|
 | URS-001 | SRS-001, SRS-002, SRS-005, SRS-006, SRS-011, SRS-027, SRS-038, SRS-050 | HAZ-003 | RC-020 | TBD | `docs/02` §3 |
-| URS-002 | SRS-003, SRS-040, SRS-046 | — | **none — gap** | TBD | `docs/02` §3 |
-| URS-003 | SRS-045, SRS-047, NFR-006 | HAZ-001, HAZ-002, HAZ-003 | RC-017 | TBD | `docs/02` §3 |
+| URS-002 | SRS-003, SRS-040, SRS-046, SRS-054, SRS-055, SRS-056, SRS-057, SRS-058, SRS-059 | HAZ-012 | RC-021, RC-022, RC-023, RC-024, RC-025, RC-026 | TBD | `docs/02` §3 |
+| URS-003 | SRS-045, SRS-047, SRS-060, NFR-006 | HAZ-001, HAZ-002, HAZ-003, HAZ-014 | RC-017, RC-027 | TBD | `docs/02` §3 |
 | URS-004 | SRS-038, SRS-039 | HAZ-004, HAZ-010 | RC-013 | TBD | `docs/02` §3 |
 | URS-005 | SRS-028, SRS-029, SRS-030, SRS-041, SRS-046, SRS-052 | HAZ-001, HAZ-002, HAZ-007 | RC-009 | TBD | `docs/02` §3 |
-| URS-006 | SRS-001, SRS-009, SRS-017 | HAZ-004, HAZ-005 | RC-008 | TBD | `docs/02` §3 |
+| URS-006 | SRS-001, SRS-009, SRS-017, SRS-054 | HAZ-004, HAZ-005, HAZ-012 | RC-008, RC-021 | TBD | `docs/02` §3 |
 | URS-007 | SRS-018, SRS-019, SRS-020, SRS-021, SRS-022, SRS-024, SRS-032, SRS-033, SRS-035, SRS-036, SRS-037, SRS-050, SRS-051, SRS-052, SRS-053, NFR-003, NFR-005 | HAZ-001, HAZ-002, HAZ-003, HAZ-005, HAZ-008 | RC-001, RC-002, RC-003, RC-005, RC-006, RC-007 | TBD | `docs/02` §3 |
 | URS-008 | SRS-003, SRS-010, SRS-025, SRS-026 | HAZ-005 | RC-016 | TBD | `docs/02` §3 |
-| URS-009 | SRS-004, SRS-048 | HAZ-006 | RC-010 | TBD | `docs/02` §3 |
-| URS-010 | SRS-007, SRS-008, SRS-012, SRS-013, SRS-014, SRS-015, SRS-016, SRS-023, SRS-031, SRS-034, SRS-043, SRS-044, SRS-049, SRS-051, NFR-001, NFR-002, NFR-004, NFR-007, NFR-008 | HAZ-004, HAZ-008, HAZ-009, HAZ-010, HAZ-011 | RC-004, RC-011, RC-012, RC-015, RC-018, RC-019 | TBD | `docs/02` §3 |
+| URS-009 | SRS-004, SRS-048, SRS-056 | HAZ-006, HAZ-012 | RC-010, RC-023 | TBD | `docs/02` §3 |
+| URS-010 | SRS-007, SRS-008, SRS-012, SRS-013, SRS-014, SRS-015, SRS-016, SRS-023, SRS-031, SRS-034, SRS-043, SRS-044, SRS-049, SRS-051, SRS-057, SRS-059, SRS-060, SRS-061, NFR-001, NFR-002, NFR-004, NFR-007, NFR-008 | HAZ-004, HAZ-008, HAZ-009, HAZ-010, HAZ-011, HAZ-012, HAZ-013, HAZ-014 | RC-004, RC-011, RC-012, RC-015, RC-018, RC-019, RC-024, RC-026, RC-027, RC-028 | TBD | `docs/02` §3 |
 | URS-011 | SRS-042, SRS-044 | HAZ-006, HAZ-011 | RC-014 | TBD | `docs/02` §3 |
 | — | — | — | — | TC-000 | `src/ocuval/__init__.py` — smoke test, allocated to no requirement (`docs/02` §3) |
 | URS-001 | SRS-002 | HAZ-003 | RC-020 | TC-001 | `configs/data.yaml` |
@@ -41,12 +41,13 @@ verification of either.
 `docs/03` assigns the system **software safety class B**. `docs/05` allocates
 HAZ-001..HAZ-011 and RC-001..RC-020, and the interim identifiers used before it existed
 are now superseded: HS-1..HS-7 in `docs/03` §3 map to HAZ-001..HAZ-007, and DMP-C1..C10
-in `docs/06` map to RC-019, RC-001, RC-002, RC-003 and RC-004. `docs/05` §3.1 and §4.1
+in `docs/06` map to RC-019, RC-001, RC-002, RC-003 and RC-004. HAZ-012..HAZ-014 and
+RC-021..RC-028 are new in `docs/05` and supersede nothing. `docs/05` §3.1 and §4.1
 carry both mappings; the source documents keep their own labels.
 
-**URS-002 has no risk control.** That empty cell is the finding, not an omission in the
-table: the volume derivation path carries no RC although a wrong volume is the harm in
-HAZ-001 and HAZ-002. `docs/05` open item 5 owns it.
+URS-002 previously had no risk control at all. `docs/05` HAZ-012 and RC-021..RC-026 now
+cover the volume derivation path — the metadata half of it, which is where the invisible
+failure lives (`docs/05` §5.4).
 
 The HAZ and RC columns on the URS rows are derived, not authored: an RC appears against
 a URS when it implements a requirement that URS derives, and a HAZ appears when one of
@@ -56,11 +57,11 @@ those RCs controls it.
 
 - User requirements with at least one software requirement: **11 of 11**. Every URS in
   `docs/01` derives at least one SRS or NFR in `docs/02`.
-- Software requirements with at least one test case: **4 of 53** — SRS-002 (TC-001),
-  SRS-019, SRS-020 and SRS-021 (all TC-004). The remaining 49 await `docs/07`. This is
+- Software requirements with at least one test case: **4 of 61** — SRS-002 (TC-001),
+  SRS-019, SRS-020 and SRS-021 (all TC-004). The remaining 57 await `docs/07`. This is
   now the largest coverage gap in the project and is the work of milestone 3 onward.
-- Hazards with at least one risk control: **11 of 11** — HAZ-001..HAZ-011 in `docs/05`
+- Hazards with at least one risk control: **14 of 14** — HAZ-001..HAZ-014 in `docs/05`
   §3.2 each carry at least one RC.
-- Risk controls with at least one verifying test: **4 of 20** — RC-002, RC-003 and RC-005
-  by TC-004, RC-020 by TC-001. The other 16 are specified but unverified (`docs/05` §5.3),
+- Risk controls with at least one verifying test: **4 of 28** — RC-002, RC-003 and RC-005
+  by TC-004, RC-020 by TC-001. The other 24 are specified but unverified (`docs/05` §5.3),
   which is the same `docs/07` gap as the SRS coverage above.
