@@ -1,38 +1,289 @@
 <!--
 Document: Risk Management File (ISO 14971)
-Status: NOT DRAFTED — template only
+Status: DRAFT v0.1
 Owner: Anurag Yadav
-Last reviewed: -
+Last reviewed: 2026-09-17
 Change history: docs/13_change_control_log.md
+
+Allocates HAZ-001..HAZ-011 and RC-001..RC-020. Supersedes the interim identifiers
+used before this document existed: HS-1..HS-7 in docs/03 §3 and DMP-C1..DMP-C10 in
+docs/06. §3.1 and §4.1 carry the mappings. Like docs/03, this file assesses the
+intended use in docs/01 as if it were real.
 -->
 
 # Risk Management File (ISO 14971)
 
-> **Status: template.** This document has not been drafted. Fill it in before
-> writing any code that depends on it — see CLAUDE.md rule 1.
-
 ## 1. Scope and risk policy
+
+### 1.1 What this file covers
+
+Risk arising from the OcuVal software system in the intended use stated in `docs/01`: a
+pre-read for a supervised reading-centre grader in a retrospective research or
+clinical-trial reading workflow. The software safety class assigned in `docs/03` is
+**B**, and the harm pathway is endpoint corruption rather than point-of-care error.
+
+As in `docs/03` §1.1, the analysis treats that intended use as real. The repository as
+it exists is not deployed and its actual residual risk is nil.
+
+Clause references to ISO 14971 and IEC 62304 carry the caveat in `docs/03` §1.2: they
+are corroborated across secondary sources but unverified against normative text.
+
+### 1.2 Probability policy — the part that governs everything below
+
+IEC 62304 requires the probability of a software failure to be taken as **100%** for
+classification. Carrying that into risk estimation naively would make every probability
+identical and the analysis useless, so this file decomposes probability the way ISO
+14971 permits:
+
+- **P1** — probability that the hazardous situation occurs, given the software fails.
+  **Taken as 1 throughout.** No row below reduces risk by arguing the code is reliable.
+- **P2** — probability that the hazardous situation leads to harm. Estimated per hazard,
+  and this is where the workflow, the controls, and the structural bounds in `docs/01`
+  actually do their work.
+
+Every probability in §3 is a **P2**. This is the only honest way to run a software risk
+analysis that is not permitted to claim reliability.
+
+### 1.3 Two kinds of harm
+
+The hazards below produce harm of two kinds, and collapsing them would hide the more
+likely one:
+
+- **Harm to a person** — the ISO 14971 sense. Reachable only through a corrupted study
+  or trial endpoint influencing a later clinical decision, across several independent
+  organisations. Bounded at non-serious injury by `docs/03` §5.2.
+- **Harm to data integrity and to the research record** — a wrong measurement recorded,
+  a biased endpoint, a misleading published result. Not personal injury, far more
+  likely, and the thing this software can actually cause on its own.
+
+Severity below scores harm to a person, because that is what ISO 14971 asks for. Where
+the data-integrity harm is materially worse than the personal-harm score suggests, the
+row says so. **A low severity score in §3 is not a statement that the failure does not
+matter.**
 
 ## 2. Risk acceptability criteria
 
+### 2.1 Severity of harm to a person
+
+| Level | Meaning |
+|---|---|
+| S1 | Negligible — no injury; inconvenience or data loss only |
+| S2 | Minor — non-serious, reversible injury, or a delay in care not causing lasting effect |
+| S3 | Serious — injury requiring intervention, or lasting impairment |
+| S4 | Death |
+
+`docs/03` §5.2 concluded that the intended use structurally excludes S3 and S4: no
+individual's care depends on an output. **S3 appears nowhere in §3 by construction, not
+by optimism** — if a row ever needs S3, the intended use has changed and the
+classification is void.
+
+### 2.2 Probability (P2) that the hazardous situation leads to harm
+
+| Level | Meaning |
+|---|---|
+| P-A | Improbable — requires several independent failures outside this software |
+| P-B | Remote — plausible but requires an unlikely combination |
+| P-C | Occasional — expected to occur over the life of a study |
+| P-D | Frequent — expected in routine use |
+
+### 2.3 Acceptability matrix
+
+| | P-A | P-B | P-C | P-D |
+|---|---|---|---|---|
+| **S1** | Acceptable | Acceptable | Acceptable | ALARP |
+| **S2** | Acceptable | ALARP | ALARP | **Unacceptable** |
+| **S3** | ALARP | **Unacceptable** | **Unacceptable** | **Unacceptable** |
+
+**ALARP** means the risk is tolerable only with controls in place and the residual
+recorded. An **Unacceptable** residual blocks release.
+
+### 2.4 A criterion this project adds
+
+A risk whose realisation would be **invisible in normal use** is escalated one
+probability band when its residual is evaluated, regardless of estimate. A wrong result
+that announces itself is recoverable; one that does not is not. This is the criterion
+that drives HAZ-005, and it exists because `docs/03` §4.1 established that the dominant
+failure mode is the one review is least able to catch.
+
 ## 3. Hazard analysis
+
+### 3.1 Identifier mapping
+
+| This file | Supersedes |
+|---|---|
+| HAZ-001..HAZ-007 | HS-1..HS-7 in `docs/03` §3, in order |
+| HAZ-008..HAZ-011 | New here — not identified in `docs/03`, which scoped itself to the output path |
+
+`docs/03` keeps its HS-n labels as written; they are not reissued retrospectively. This
+table is the join.
+
+### 3.2 Analysis
+
+P1 is 1 in every row (§1.2). The Prob column is P2.
 
 | ID | Hazard | Foreseeable sequence of events | Hazardous situation | Harm | Sev | Prob | Risk | Controls |
 |---|---|---|---|---|---|---|---|---|
-| HAZ-001 | _TBD_ | | | | | | | |
-
-_Candidate hazards to work through: false negative on subretinal fluid; false positive
-driving unnecessary intervention; silent failure on an unseen scanner vendor; patient
-data leakage between training and evaluation producing an overstated performance claim;
-incorrect DICOM referencing associating a result with the wrong study; de-identification
-failure._
+| HAZ-001 | Under-segmentation — fluid present, reported absent or smaller | Model misses small or boundary lesions → candidate looks plausible → grader accepts under automation bias → understated volume recorded → enters study endpoint | Recorded measurement understates disease | Data integrity; via a biased endpoint, eventual non-serious injury | S2 | P-A | ALARP | RC-006, RC-009, RC-017 |
+| HAZ-002 | Over-segmentation — spurious or inflated fluid | Noise or artefact segmented as fluid → accepted at review → overstated volume recorded | Recorded measurement overstates disease | As HAZ-001 | S2 | P-A | ALARP | RC-006, RC-009, RC-017 |
+| HAZ-003 | Fluid assigned to the wrong compartment | IRF/SRF/PED confusion, or label indices reordered → an endpoint defined on one compartment is computed on another | A compartment-specific endpoint is silently wrong | Data integrity; misattributed clinical meaning | S2 | P-A | ALARP | RC-020, RC-006, RC-017 |
+| HAZ-004 | Result attributed to the wrong patient, eye or acquisition | Pseudonym collision, UID collision, or manifest index error → SEG/SR attached to the wrong study → recorded against a subject it did not come from | A measurement is recorded against the wrong person | Data integrity; a person's record carries another's measurement | S2 | P-B | ALARP | RC-012, RC-013, RC-015, RC-008 |
+| HAZ-005 | **Undetected vendor-correlated systematic bias** | Model performs materially worse on one platform → evaluation does not break results out per vendor, or does so wrongly → bias is invisible case by case → platform correlates with site or study arm → bias confounded with the effect under study | Every measurement from one platform is biased in the same direction | Data integrity at study scale; a wrong efficacy conclusion | S2 | P-B → **escalated to P-C under §2.4** | **ALARP, highest residual in this file** | RC-005, RC-006, RC-007, RC-008, RC-016 |
+| HAZ-006 | Out-of-scope acquisition processed | DME, OCTA, en-face, non-macular or unlisted platform submitted → no rejection → confident-looking result returned outside any validated domain | A measurement is produced where no performance claim exists | Data integrity; unwarranted confidence | S2 | P-B | ALARP | RC-010, RC-014 |
+| HAZ-007 | Low-confidence result not flagged | MC-dropout confidence wrong, absent, or not carried into the SR → the one signal designed to counteract over-acceptance is missing | Grader reviews a low-confidence result as if routine | Compounds HAZ-001, HAZ-002 | S2 | P-B | ALARP | RC-009 |
+| HAZ-008 | Patient overlap between splits inflates the reported performance | B-scans from one patient land in train and test → Dice reflects memorisation → published figure is optimistic → graders and readers trust the output more than the evidence supports | Every downstream use rests on an overstated claim | Data integrity; **weakens RC-017, so it degrades the control on every other hazard** | S2 | P-B | ALARP | RC-001, RC-002, RC-003, RC-004 |
+| HAZ-009 | De-identification failure leaves an identifier in an output object | Profile not applied, or applied and not verified → object carrying an identifier is stored or shared | An identifier persists where it must not | Privacy. No PHI exists in this project's data, so realised harm is nil here — the control is demonstrated, not relied on | S1 | P-A | Acceptable | RC-011, RC-012 |
+| HAZ-010 | SEG or SR fails to reference its source instances correctly | Referencing wrong or absent → grader cannot open the result against the images it came from, or it attaches to the wrong study | The result is unreviewable, or reviewable against the wrong images | Defeats the precondition of RC-017 | S2 | P-B | ALARP | RC-013, RC-015 |
+| HAZ-011 | Output object leaves its context without its research-use designation | SEG or SR copied out of the repository or the local PACS → nothing in the object says it is research-use-only and automated → treated as a validated clinical result | An unvalidated measurement is read as a clinical one | The one hazard whose harm is *increased* by the artefact being well-formed | S2 | P-B | ALARP | RC-014, RC-019 |
 
 ## 4. Risk control measures
 
+### 4.1 Identifier mapping
+
+| This file | Supersedes |
+|---|---|
+| RC-019 | DMP-C1, DMP-C2, DMP-C3, DMP-C4, DMP-C5 |
+| RC-001 | DMP-C6 |
+| RC-002 | DMP-C7, DMP-C9 |
+| RC-003 | DMP-C8 |
+| RC-004 | DMP-C10 |
+
+`docs/06` keeps its DMP-C labels; `docs/09` now carries RC identifiers in the RC column
+and the interim entries are retired. `docs/06` §10 item 5 is closed by this.
+
+### 4.2 Controls
+
+Type follows the ISO 14971 hierarchy: **Design** (inherent safety), **Protective**
+(detection or barrier), **Information** (labelling, user procedure). The hierarchy is an
+order of preference — information for safety is the weakest.
+
 | ID | Control | Type | Implements | Implemented in | Verified by (TC) |
 |---|---|---|---|---|---|
-| RC-001 | _TBD_ | | SRS-nnn | | |
+| RC-001 | Splitting confined to one module; nothing else may partition data | Design | SRS-018 | `data/splits.py` | TBD |
+| RC-002 | Patient-level disjointness asserted at split construction and again at start of training; exception never caught | Protective | SRS-019, SRS-020 | `data/splits.py` | TC-004 |
+| RC-003 | The disjointness test gates CI and is never skipped or weakened | Protective | NFR-005 | `.github/workflows/ci.yml` | TC-004 |
+| RC-004 | Splits seeded, persisted and reproducible from committed configuration | Design | SRS-023, NFR-002 | `data/splits.py` | TBD |
+| RC-005 | Test split contains only the held-out vendor | Design | SRS-021 | `data/splits.py` | TC-004 |
+| RC-006 | Per-class and per-vendor reporting with bootstrap CI and sample size | Protective | SRS-032, SRS-033, SRS-036, SRS-037, SRS-053 | `eval/metrics.py`, `eval/subgroup.py` | TBD |
+| RC-007 | Accuracy is not provided and not reported | Design | SRS-035 | `eval/metrics.py` | TBD |
+| RC-008 | Vendor preserved through conversion, de-identification and into evaluation output | Design | SRS-009, SRS-017 | `io/dicom_writer.py`, `io/deident.py` | TBD |
+| RC-009 | MC-dropout scan-level confidence and review-recommended indication, carried in the SR | Protective | SRS-029, SRS-030, SRS-041 | `models/uncertainty.py`, `report/sr_object.py` | TBD |
+| RC-010 | Out-of-scope input rejected with a stated reason, no segmentation returned | Protective | SRS-004, SRS-048 | `io/retouch_reader.py`, `service/api.py` | TBD |
+| RC-011 | Confidentiality profile applied and verified; non-empty verification aborts the run | Protective | SRS-012, SRS-015, SRS-016 | `io/deident.py` | TBD |
+| RC-012 | Salted-hash pseudonyms, salt from environment, stable within a run | Design | SRS-013, SRS-014 | `io/deident.py` | TBD |
+| RC-013 | SEG references the source image instances it was derived from | Design | SRS-039 | `report/seg_object.py` | TBD |
+| RC-014 | Research-use-only designation carried inside every output object | Information | SRS-042 | `report/seg_object.py`, `report/sr_object.py` | TBD |
+| RC-015 | UIDs generated under the configured root and recorded in the run output | Design | SRS-007, SRS-008 | `io/dicom_writer.py` | TBD |
+| RC-016 | Native acquisition geometry preserved; no cross-vendor resampling | Design | SRS-010, SRS-026 | `io/dicom_writer.py`, `data/transforms.py` | TBD |
+| RC-017 | Human review required before any result is recorded; no automated action and no sign-off endpoint | Information | SRS-045, SRS-047 | `io/dicomweb.py`, `service/api.py` | TBD |
+| RC-018 | Outputs attributable to model version, resolved config and seed | Protective | SRS-031, SRS-049 | `ocuval/__init__.py`, `service/api.py` | TBD |
+| RC-019 | Data governance — no redistribution, no commercial use, scope limited to fluid segmentation and detection, single registered user | Information | NFR-004 | `.gitignore`, `.pre-commit-config.yaml` | TBD |
+| RC-020 | Label indices and vendor keys frozen in configuration; reordering is a requirements change | Design | SRS-002 | `configs/data.yaml` | TC-001 |
+
+### 4.3 RC-017 is deliberately typed as Information
+
+RC-017 — mandatory human review — is the control most often mistaken for a Design or
+Protective measure. It is neither. It is a procedure the user performs, which places it
+at the weakest level of the ISO 14971 hierarchy, and `docs/03` §4.1 established why that
+matters here: automation bias makes review weakest against exactly the subtle,
+systematic errors that are most likely and most damaging.
+
+Typing it honestly has a consequence visible in §5: **no hazard in this file reaches an
+acceptable residual on the strength of RC-017 alone.**
 
 ## 5. Residual risk evaluation
 
+### 5.1 Per hazard
+
+| ID | Residual after controls | Rationale |
+|---|---|---|
+| HAZ-001, HAZ-002 | ALARP | RC-006 makes a systematic version of this visible in evaluation; RC-009 flags the low-confidence cases; RC-017 catches gross cases only. The residual is the subtle, individually plausible error that passes review — irreducible with the controls available |
+| HAZ-003 | ALARP | RC-020 and TC-001 make index reordering a hard failure rather than a silent one. Residual is genuine model confusion between compartments, which RC-006 surfaces per class |
+| HAZ-004 | ALARP | RC-012, RC-013 and RC-015 address the mechanisms. Residual is dominated by the unregistered UID root (`docs/06` §7.1): UIDs carry no claim of global uniqueness, which is accepted only because objects never leave the local Orthanc instance |
+| HAZ-005 | **ALARP — the highest residual in this file** | RC-006 is the only control that can surface it, and RC-006 is *inside the software whose failure is assumed*. There is no external control for this hazard: §2.4 escalates it for invisibility, ERC-5 aggregation is ineffective against systematic bias, and RC-017 cannot see it case by case. See §5.2 |
+| HAZ-006 | ALARP | RC-010 is the control; its criteria are unresolved until milestone 3 (`docs/02` §6 item 2), so the residual is currently larger than the table implies |
+| HAZ-007 | ALARP | RC-009 is single-point: if the confidence path fails, nothing else detects it. No independent check exists |
+| HAZ-008 | ALARP | The strongest control set in this file — RC-001 through RC-004, with RC-002 and RC-003 verified by a CI-gating test that exists today. Residual is low but non-zero until `splits.py` is implemented and the xfail is removed |
+| HAZ-009 | Acceptable | Harm is nil in this project: the data contains no PHI. The control is implemented and verified to demonstrate the capability, not because this dataset needs it |
+| HAZ-010 | ALARP | RC-013 addresses it; nothing verifies reviewability end to end, which would need a round-trip through a real viewer rather than a round-trip through Orthanc |
+| HAZ-011 | ALARP | RC-014 is Information-type and its mechanism is unresolved (`docs/11` §10 item 2). Until that is settled the control is specified but not realised |
+
+### 5.2 HAZ-005 — stated plainly
+
+The project's headline contribution is measuring cross-vendor degradation. HAZ-005 is
+the hazard that the measurement is itself wrong or absent, and it has a structural
+problem no amount of control design fixes: **the only thing that can detect it is the
+evaluation code, which is part of the software system whose failure is assumed.**
+
+No external risk control reaches it. Grader review cannot see a systematic bias in a
+single case. Statistical aggregation does not dilute it. Supervision does not address
+it. It is reduced by RC-006, RC-008, RC-007 and RC-005, and what remains is accepted for
+one reason only: the structural bound in `docs/01` that no individual's care depends on
+an output. Remove that bound and this hazard alone would force the classification to be
+reopened.
+
+### 5.3 Controls not yet real
+
+Of the 20 controls in §4.2, **three are verified by a test that exists today** — RC-002,
+RC-003 and RC-005 by TC-004, RC-020 by TC-001. The rest carry `TBD` and are specified
+but unverified, because `src/` is stubs and `docs/07` is not drafted.
+
+This file therefore describes a control set that is, as of 2026-09-17, mostly a plan.
+That is accurate for milestone 2 and is not a defect in the analysis, but no statement
+in §5.1 should be read as describing controls in operation.
+
 ## 6. Risk/benefit and overall residual risk statement
+
+### 6.1 Overall residual risk
+
+Every hazard is ALARP or Acceptable. None is Unacceptable, so nothing here blocks
+release on its own terms. That conclusion rests on three things, and it is worth being
+explicit that two of them are properties of the workflow rather than achievements of the
+software:
+
+1. **The structural bound.** No individual's care depends on any output (`docs/01` §5).
+   This is what holds severity at S2 across the entire file.
+2. **The bounded deployment.** Objects never leave the local Orthanc instance
+   (`docs/06` §7.1), which is what makes the unregistered UID root tolerable.
+3. **The control set in §4.2** — which is largely specified rather than implemented
+   (§5.3).
+
+### 6.2 Risk/benefit
+
+ISO 14971 asks whether the benefit outweighs the residual risk. For a deployed device
+this is a clinical judgment. For this project the honest answer is narrower: **there is
+no clinical benefit to weigh, because there is no clinical use.** The benefit is
+methodological — a quantified, per-vendor characterisation of how a fluid segmentation
+model degrades across scanner platforms, reported with intervals and sample sizes, which
+is information the field has too little of.
+
+Against that, the residual risks above are tolerable because the workflow interposes a
+competent human and an aggregated endpoint between the software and any patient, and
+because the software makes no claim its evaluation does not support.
+
+**This is not a statement that the software is safe to use clinically. It is not, it is
+not validated for it, and `docs/01` §5 forbids it.**
+
+### 6.3 Conditions on this conclusion
+
+This evaluation is void if any of the following changes, and each requires the file to
+be reopened rather than amended:
+
+- `docs/01` §2 indications widen, or any output comes to inform an individual's care
+  (`docs/03` §5.2 and §8 item 6).
+- Objects are transmitted beyond the local Orthanc instance.
+- The per-vendor reporting in RC-006 is weakened, aggregated or dropped — it is the only
+  control reaching HAZ-005.
+- TC-004 is skipped, weakened or removed, which would return HAZ-008 to an uncontrolled
+  state.
+
+## 7. Open items
+
+| # | Item | Blocks |
+|---|---|---|
+| 1 | 16 of 20 controls have no verifying test (§5.3). Every RC needs a TC in `docs/07`; CLAUDE.md §3 requires each risk control to trace to a requirement and each requirement to a test. | `docs/07` |
+| 2 | RC-010's criteria are unresolved until the converted DICOM exists, so HAZ-006's residual is larger than §5.1 states. | Milestone 3 |
+| 3 | RC-014's mechanism is unresolved (`docs/11` §10 item 2), so HAZ-011 is specified but uncontrolled in practice. | `docs/11` |
+| 4 | RC-009 is a single-point control for HAZ-007 with no independent check. Whether that is acceptable, or whether a second signal is needed, is undecided. | `docs/07` |
+| 5 | **No risk control reaches URS-002.** Surfaced by deriving `docs/09`: SRS-003, SRS-040 and SRS-046 — the path that computes and reports the fluid volume in mm³ — carry no RC, although a wrong volume is precisely the harm in HAZ-001 and HAZ-002. The controls there act on the segmentation, not on the derivation from segmentation to millimetres. Either that derivation gets its own control or the analysis must say why it needs none. | `docs/07` |
+| 6 | The SOUP findings in `docs/04` §2.2 are not represented as hazards here. PyTorch and MONAI deserialisation on the model-loading path, and the python-multipart upload DoS against SRS-046, are software risks this file does not yet analyse. | `docs/04` open items 7, 8 |
+| 7 | No post-release risk monitoring or production feedback process exists, which ISO 14971 expects. Nothing consumes field experience because there is no field. | — |

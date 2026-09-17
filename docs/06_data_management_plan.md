@@ -315,4 +315,4 @@ challenge dataset, and the mapping decisions are themselves documentable work.
 | 2 | Confirm actual Topcon B-scan count per volume against downloaded data; table in §3.1 uses a literature-derived figure | `docs/10` |
 | 3 | Confirm whether subject identifiers are recoverable from directory names alone, or require a manifest | `splits.py` |
 | 4 | Decide and record whether a registration acceptance date belongs in `docs/13` | — |
-| 5 | Populate the SRS and RC trace columns once `docs/02` and `docs/05` exist | `docs/09` |
+| 5 | ~~Populate the SRS and RC trace columns once `docs/02` and `docs/05` exist~~ **Resolved 2026-09-17:** both drafted; `docs/09` carries SRS and RC columns. DMP-C1..C5 are superseded by RC-019, C6 by RC-001, C7 and C9 by RC-002, C8 by RC-003, C10 by RC-004 (`docs/05` §4.1). | — closed |
