@@ -2,7 +2,7 @@
 Document: IEC 62304 Software Safety Classification
 Status: DRAFT v0.1
 Owner: Anurag Yadav
-Last reviewed: 2026-09-16
+Last reviewed: 2026-09-17
 Change history: docs/13_change_control_log.md
 
 Classifies the software system against the intended use in docs/01, treating that
@@ -31,7 +31,24 @@ read with that framing. The actual residual risk of this repository as it exists
 nil, because it is not used; the residual risk assessed here is the residual risk the
 stated intended use would carry.
 
-### 1.2 Governing assumption
+### 1.2 Sources this classification was developed against
+
+This classification was **not** developed against the normative text of IEC 62304. No
+licensed copy of the standard was available to the author while drafting it. It was
+developed against the publicly documented clause structure of IEC 62304:2006+A1:2015
+and secondary literature describing it.
+
+The consequence is specific and worth stating rather than burying: **the clause numbers
+and the class applicability in §6 are reported from that secondary understanding and
+have not been checked against the standard.** The reasoning in §3 to §5 does not depend
+on them — it depends on the §4.3 decision logic, which is quoted in substance and
+widely reproduced — but §6 is the part of this document most likely to contain an error
+of citation. It is recorded as open item 7 and must be checked against a licensed copy
+before this document is relied on. Substituting a confident-looking clause list for a
+verified one would be the same failure this project refuses elsewhere when it declines
+to invent a DICOM tag.
+
+### 1.3 Governing assumption
 
 IEC 62304 requires that, for classification purposes, the **probability of a software
 failure be taken as 100%**. No argument below may rest on a failure being unlikely.
@@ -180,8 +197,10 @@ reconsidered from the start.** That is recorded as a change-control trigger.
 ## 6. Processes in scope for this class
 
 Class B brings the following into scope, in addition to everything required of Class A.
-The table summarises the clause applicability of IEC 62304:2006+A1:2015; the normative
-text governs where this summary and the standard disagree.
+The table summarises the clause applicability of IEC 62304:2006+A1:2015 as understood
+from the sources in §1.2. **The clause numbers below are unverified against the
+normative text** (open item 7); the standard governs wherever it and this summary
+disagree.
 
 | Clause | Process | Class B | Status in this project |
 |---|---|---|---|
@@ -189,7 +208,11 @@ text governs where this summary and the standard disagree.
 | 5.2 | Software requirements analysis | Required | `docs/02`, SRS-001..SRS-049 |
 | 5.3 | **Software architectural design** | **Required for B, not for A** | **Not yet drafted — gap** |
 | 5.4 | Software detailed design | Class C only | Out of scope |
-| 5.5 | Software unit implementation and verification | Required | Partial — `src/` is stubs; `pytest` suite exists |
+| 5.5.1 | Implement each software unit | Required (all classes) | Partial — `src/` is stubs |
+| 5.5.2 | **Establish software unit verification process** | **Required for B, not for A** | **Not recorded — gap** |
+| 5.5.3 | **Software unit acceptance criteria** | **Required for B, not for A** | **Not recorded — gap** |
+| 5.5.4 | Additional software unit acceptance criteria | Class C only | Out of scope |
+| 5.5.5 | **Software unit verification** | **Required for B, not for A** | Partial — `pytest` suite exists but no unit verification process or acceptance criteria govern it |
 | 5.6 | **Software integration and integration testing** | **Required for B, not for A** | **Not yet drafted — gap** |
 | 5.7 | **Software system testing** | **Required for B, not for A** | `docs/07` planned, not drafted |
 | 5.8 | Software release | Required | Not yet applicable |
@@ -199,10 +222,20 @@ text governs where this summary and the standard disagree.
 | 9 | Software problem resolution | Required | Not yet drafted |
 
 Choosing B rather than A therefore has a concrete cost, which is the point of choosing
-it honestly: it obliges an architectural design document (5.3), integration testing
-(5.6), system testing (5.7) and a full software risk management file (7), none of which
-Class A would require. Three of those are already planned milestones; **5.3 and 5.6 are
-new gaps created by this classification** and are recorded in §8.
+it honestly. It obliges an architectural design document (5.3), integration testing
+(5.6), system testing (5.7), a full software risk management file (clause 7), and — the
+part easiest to overlook — a defined **software unit verification process and unit
+acceptance criteria** (5.5.2, 5.5.3) governing the unit verification itself (5.5.5).
+Class A requires none of these; under Class A, 5.5.1 alone would apply.
+
+A passing `pytest` suite does not discharge 5.5.2 and 5.5.3. Tests existing is not the
+same as a documented process stating what unit verification must cover and what a unit
+must satisfy to be accepted. `docs/07` as currently scoped is a system-level V&V
+protocol and does not carry unit-level criteria.
+
+Three of the obligations above are already planned milestones. **5.3, 5.6 and the 5.5
+unit verification clauses are new gaps created by this classification**, recorded in
+§8 as items 1, 2 and 3.
 
 ## 7. Segregation rationale
 
@@ -236,6 +269,8 @@ true.
 |---|---|---|
 | 1 | Software architectural design (62304 §5.3) is required for Class B and does not exist. A document must be added to the set, or an existing one extended to carry it. | Milestone 3 |
 | 2 | Integration testing (62304 §5.6) is required for Class B and is not planned in `docs/07` as currently scoped. | `docs/07` |
-| 3 | Software problem resolution (62304 §9) has no process recorded. | — |
-| 4 | HS-1..HS-7 are local identifiers. `docs/05` allocates HAZ-nnn and may merge or split them; the RC identifiers that follow supersede the interim `DMP-C` entries in `docs/09`. | `docs/05` |
-| 5 | Any widening of `docs/01` intended use voids this classification (§5.2). No mechanism yet enforces that a change to `docs/01` triggers re-classification beyond the change control log. | `docs/13` |
+| 3 | Software unit verification process and unit acceptance criteria (62304 §5.5.2 and §5.5.3) are required for Class B and are not recorded anywhere. `docs/07` as scoped is a **system-level** V&V protocol; it owes unit-level acceptance criteria and a statement of what unit verification (§5.5.5) must cover. A passing `pytest` suite is evidence of verification having been run, not the process or the criteria that govern it. | `docs/07` |
+| 4 | Software problem resolution (62304 §9) has no process recorded. | — |
+| 5 | HS-1..HS-7 and ERC-1..ERC-6 are local identifiers. `docs/05` allocates HAZ-nnn and RC-nnn and may merge or split them; the RC identifiers that follow supersede the interim `DMP-C` entries in `docs/09`. | `docs/05` |
+| 6 | Any widening of `docs/01` intended use voids this classification (§5.2), and nothing yet enforces re-classification beyond the change control log. **Intended resolution:** a test case in `docs/07` that records a hash of `docs/01` §2 (indications for use) and fails when that hash changes unless `docs/03` was modified in the same commit. `docs/07` allocates the TC number and settles the mechanism — in particular how "the same commit" is established under a CI checkout. Not implemented; specified here so it is owned rather than remembered. | `docs/07` |
+| 7 | The clause numbers and class applicability in §6 are unverified against the normative text of IEC 62304 (§1.2). They must be checked against a licensed copy before this document is relied on. The §4.3 reasoning in §3 to §5 does not depend on them; the process scope in §6 does. | — |
