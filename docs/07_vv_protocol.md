@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-17
 Change history: docs/13_change_control_log.md
 
-Allocates TC-000..TC-113 (76 cases) across unit, integration and system levels. Carries the
+Allocates TC-000..TC-120 (77 cases) across unit, integration and system levels. Carries the
 IEC 62304 §5.5.2 unit verification process and §5.5.3 unit acceptance criteria that
 docs/03 open item 3 records as owed, and the §5.6 integration testing that open item
 2 records. Clause references carry the docs/03 §1.2 caveat.
@@ -31,7 +31,7 @@ a real reading workflow. `docs/08` records that gap; nothing in this document cl
 
 ### 1.2 Status
 
-**22 of 76 test cases are implemented** as of 2026-09-17 — TC-000..TC-002, TC-004,
+**24 of 77 test cases are implemented** as of 2026-09-17 — TC-000..TC-002, TC-004,
 TC-014, TC-015, TC-030..TC-035, TC-040..TC-042, TC-060..TC-062, TC-068, TC-072,
 TC-105 and TC-106, covering `eval/metrics.py`, `data/splits.py`, `io/deident.py`, the spacing guard in
 `io/retouch_reader.py`, and the two document-integrity gates. The
@@ -320,6 +320,28 @@ otherwise would overstate what automation buys.
 | TC-112 | Inference → SEG/SR → PACS → retrieve | SRS-043, SRS-044 | I | End-to-end chain produces a retrievable object matching the inference result | yes (`slow`, `requires_pacs`) |
 | TC-113 | Two runs from one config agree | NFR-002 | I | Identical seeds and config produce identical splits, metrics and intervals | yes (`slow`) |
 
+## 9a. Independent cross-verification register
+
+A block of its own, because these tests verify nothing about a requirement directly.
+They check that an implementation agrees with a second, independently written one.
+
+Two implementations agreeing is stronger evidence than either alone, and it is the
+standard answer to the risk a reimplemented metric carries: that it is self-consistent,
+passes every fixture written by the same person who wrote the code, and is wrong.
+
+| ID | Title | Verifies | Method | Acceptance criterion | Auto |
+|---|---|---|---|---|---|
+| TC-120 | Dice and HD95 agree with MONAI back to back | SRS-032, RC-006 | U | Over randomly generated mask pairs, `ocuval.eval.metrics` and the corresponding MONAI metric agree within tolerance for both Dice and HD95 | yes (`slow`) |
+
+TC-120 is marked `slow` because it imports the torch stack, which the rest of the metric
+suite deliberately does not need (CLAUDE.md §4). It does **not** need `requires_data`: the
+masks are generated, not read.
+
+A disagreement is not automatically a defect in this project's implementation — the two
+may define an edge case differently, and this project's definitions are fixed in `docs/13`
+under rule 6. A disagreement is a finding to be explained, and the explanation belongs in
+`docs/13` whichever way it resolves.
+
 ## 10. Traceability summary
 
 Coverage is computed from the documents, not asserted here — TC-104 exists to keep this
@@ -327,6 +349,7 @@ section honest, and `docs/09` carries the authoritative counts.
 
 | Level | Allocated |
 |---|---|
+| Independent cross-verification (§9a) | TC-120 |
 | Unit (§5.5) | TC-000..TC-005, TC-010..TC-016, TC-020..TC-025, TC-030..TC-035, TC-040..TC-042, TC-050..TC-058, TC-060..TC-068, TC-070..TC-077, TC-083 |
 | Integration (§5.6) | TC-110..TC-113 |
 | System (§5.7) | TC-069, TC-080..TC-082, TC-090..TC-094 |
@@ -349,7 +372,7 @@ run differently, or an acceptance criterion changed.
 
 | # | Item | Blocks |
 |---|---|---|
-| 1 | 54 of the 76 allocated test cases are unimplemented (§1.2). This protocol is a specification, not a result. | Milestones 3–7 |
+| 1 | 53 of the 77 allocated test cases are unimplemented (§1.2). This protocol is a specification, not a result. | Milestones 3–7 |
 | 2 | TC-107 cannot verify that a change control entry is *correct*, only that one exists (§8). No automation closes that; it is a review activity. | — |
 | 3 | TC-105's gate forces review rather than proving re-classification (§7.3). If a stronger guarantee is wanted it needs a commit-level check outside pytest. | — |
 | 4 | Validation, as distinct from verification, is not performed and cannot be (§1.1). `docs/08` must state this rather than letting a full verification table imply it. | `docs/08` |

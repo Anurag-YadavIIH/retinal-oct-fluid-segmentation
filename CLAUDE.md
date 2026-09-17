@@ -74,7 +74,11 @@ requirement to at least one test case. Test functions carry the ID in the name:
 
 - **Python 3.11**, dependencies managed in `pyproject.toml`. Pin exact versions;
   every pinned version also appears in the SOUP list.
-- **MONAI** for transforms, datasets, networks, and metrics. Not raw torchvision.
+- **MONAI** for transforms, datasets, networks, and losses. Not raw torchvision.
+  **Metrics are the exception and are numpy/scipy** (`src/ocuval/eval/metrics.py`):
+  `docs/10`'s credibility rests on the metrics being independently computable, and pure
+  array functions are verifiable without a torch runtime. MONAI's implementations are
+  used as an independent cross-check, not as the source — see the back-to-back test.
 - **2D / 2.5D segmentation.** Full 3D UNet is explicitly out of scope — the dataset is
   small and the vendor-shift question does not need it.
 - **pydicom** for reading and de-identification; **highdicom** for writing SEG and SR

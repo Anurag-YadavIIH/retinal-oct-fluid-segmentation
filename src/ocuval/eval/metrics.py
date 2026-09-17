@@ -11,10 +11,21 @@ Accuracy is deliberately absent. The classes are severely imbalanced — foregro
 0.55-1.26% of voxels (docs/06 section 3.2) — so a null predictor scores above 98.7%.
 Do not add an accuracy function; TC-002 asserts there is none.
 
-These are pure functions over numpy arrays. MONAI supplies transforms, networks and
-losses elsewhere in the project (CLAUDE.md section 4); metrics are kept array-level so
-they can be verified without a torch runtime, and SOUP-007 already allocates the HD95
-distance transforms to SciPy.
+These are pure functions over numpy arrays, not MONAI metrics, and that is deliberate
+(CLAUDE.md section 4 records the exception). Two reasons:
+
+1. **docs/10's credibility rests on these being independently computable.** A reported
+   Dice that can only be reproduced by running this project's own training stack is a
+   weaker claim than one any reader can recompute from a mask and a spacing tuple.
+2. **Pure array functions are verifiable without a torch runtime**, so the metrics that
+   every result depends on are tested in a fast suite with no GPU, no model and no
+   framework version in the way.
+
+MONAI supplies transforms, networks and losses elsewhere. Its metric implementations are
+used as an *independent cross-check* rather than as the source: TC-120 runs ours and
+MONAI's back to back over random masks and requires agreement. Two independent
+implementations agreeing is stronger evidence than either alone, and it is the standard
+answer to the risk that reimplementing a metric reimplements it wrongly.
 """
 
 from __future__ import annotations
@@ -116,9 +127,18 @@ def hd95(pred: np.ndarray, target: np.ndarray, spacing: tuple[float, ...]) -> fl
     to the nearest point on the other. That makes it a one-voxel metric: a single
     spurious voxel far from the lesion sets the whole score, and in speckly OCT with
     small multi-focal fluid that is the expected failure, not an exception. Taking the
-    95th percentile of the pooled directed distances discards the worst 5% as outliers
-    while keeping what makes the measure useful — sensitivity to where the boundary is,
-    which Dice cannot see at all.
+    95th percentile discards the worst 5% as outliers while keeping what makes the
+    measure useful — sensitivity to where the boundary is, which Dice cannot see at all.
+
+    **Symmetry is the max of the two directed percentiles**, not a percentile of the two
+    directions pooled. The distinction is not cosmetic: pooling lets a well-matched
+    direction dilute a badly-matched one, so a prediction that follows the reference
+    closely everywhere except one under-segmented region scores better than it should.
+    max-of-directed is also the definition MONAI, medpy and the segmentation literature
+    use, which is what makes a number here comparable to a published RETOUCH result.
+
+    An earlier version of this function pooled the directions. TC-120 caught it by
+    disagreeing with MONAI; the change is recorded in docs/13 under rule 6.
 
     Distances are physical, not in voxels: the transform is spacing-aware, because OCT
     voxels are strongly anisotropic and "two voxels away" means different distances
@@ -144,8 +164,9 @@ def hd95(pred: np.ndarray, target: np.ndarray, spacing: tuple[float, ...]) -> fl
     to_target = ndimage.distance_transform_edt(~t_surface, sampling=sampling)
     to_pred = ndimage.distance_transform_edt(~p_surface, sampling=sampling)
 
-    distances = np.concatenate([to_target[p_surface], to_pred[t_surface]])
-    return float(np.percentile(distances, 95))
+    forward = float(np.percentile(to_target[p_surface], 95))
+    backward = float(np.percentile(to_pred[t_surface], 95))
+    return max(forward, backward)
 
 
 def sensitivity_specificity(pred: np.ndarray, target: np.ndarray) -> tuple[float, float]:

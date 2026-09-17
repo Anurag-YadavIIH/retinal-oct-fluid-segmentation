@@ -264,3 +264,49 @@ def test_TC_062_the_seed_is_actually_used():
     second = metrics.bootstrap_ci(values, seed=2)
     assert first.value == pytest.approx(second.value)  # the point estimate is not resampled
     assert (first.ci_low, first.ci_high) != (second.ci_low, second.ci_high)
+
+
+# --- coverage of the error and edge paths -----------------------------------------
+# Added 2026-09-17 after a coverage review. All four were reachable, none dead. The
+# int-array path below is the important one: it is not an obscure branch but the
+# production path, since label arrays arrive from MetaImage as integers while every
+# fixture above uses dtype=bool.
+
+
+def test_TC_060_integer_label_arrays_are_accepted():
+    """The production path: MetaImage reference arrays are ints, not bools."""
+    pred = np.array([[0, 1, 1], [0, 0, 1]], dtype=np.uint8)
+    target = np.array([[0, 1, 0], [0, 0, 1]], dtype=np.int32)
+    assert metrics.dice(pred, target) == pytest.approx(2 * 2 / (3 + 2))
+
+
+def test_TC_060_integer_and_boolean_masks_agree():
+    rng = np.random.default_rng(7)
+    as_int = rng.integers(0, 2, size=(8, 8)).astype(np.uint8)
+    other = rng.integers(0, 2, size=(8, 8)).astype(np.uint8)
+    assert metrics.dice(as_int, other) == metrics.dice(as_int.astype(bool), other.astype(bool))
+
+
+@pytest.mark.parametrize("bad", [np.array([0, 2, 1]), np.array([0.0, 0.5, 1.0])])
+def test_TC_060_masks_with_values_other_than_zero_and_one_are_rejected(bad):
+    """A soft-max probability map passed as a mask must fail, not be truncated."""
+    with pytest.raises(ValueError, match="only 0 and 1"):
+        metrics.dice(bad, np.zeros(3, dtype=bool))
+
+
+def test_TC_060_surface_of_an_empty_mask_is_empty():
+    """Defensive guard in a private helper: hd95 early-returns before reaching it."""
+    empty = np.zeros((4, 4), dtype=bool)
+    assert not metrics._surface(empty).any()
+
+
+def test_TC_061_negative_sample_size_is_rejected():
+    with pytest.raises(ValueError, match="non-negative"):
+        metrics.Estimate(value=0.5, ci_low=0.4, ci_high=0.6, n=-1)
+
+
+def test_TC_061_single_usable_value_yields_a_degenerate_interval():
+    """A fold with one evaluable sample: the interval is the point, and n says so."""
+    est = metrics.bootstrap_ci(np.array([0.73, float("nan")]), seed=1)
+    assert est.n == 1
+    assert est.value == est.ci_low == est.ci_high == pytest.approx(0.73)
