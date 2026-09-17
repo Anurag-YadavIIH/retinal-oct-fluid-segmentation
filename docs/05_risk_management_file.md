@@ -215,7 +215,7 @@ acceptable residual on the strength of RC-017 alone.**
 | HAZ-005 | **ALARP — the highest residual in this file** | RC-006 is the only control that can surface it, and RC-006 is *inside the software whose failure is assumed*. There is no external control for this hazard: §2.4 escalates it for invisibility, ERC-5 aggregation is ineffective against systematic bias, and RC-017 cannot see it case by case. See §5.2 |
 | HAZ-006 | ALARP | RC-010 is the control; its criteria are unresolved until milestone 3 (`docs/02` §6 item 2), so the residual is currently larger than the table implies |
 | HAZ-007 | ALARP | RC-009 is single-point: if the confidence path fails, nothing else detects it. No independent check exists |
-| HAZ-008 | ALARP | The strongest control set in this file — RC-001 through RC-004, with RC-002 and RC-003 verified by a CI-gating test that exists today. Residual is low but non-zero until `splits.py` is implemented and the xfail is removed |
+| HAZ-008 | ALARP, **lowest residual in this file** | The strongest control set here — RC-001 through RC-005, four of five now verified by passing tests including the CI gate. `splits.py` is implemented and assigns patients rather than slices, so slice-level leakage is prevented by construction rather than detected. Residual is that RC-001, the prohibition on other modules partitioning data, is still unverified: TC-003 is a static check and is not written |
 | HAZ-009 | Acceptable | Harm is nil in this project: the data contains no PHI. The control is implemented and verified to demonstrate the capability, not because this dataset needs it |
 | HAZ-010 | ALARP | RC-013 addresses it; nothing verifies reviewability end to end, which would need a round-trip through a real viewer rather than a round-trip through Orthanc |
 | HAZ-011 | ALARP | RC-014 is Information-type and its mechanism is unresolved (`docs/11` §10 item 2). Until that is settled the control is specified but not realised |
@@ -283,9 +283,13 @@ does not, and §5.3 applies.
 
 ### 5.3 Controls not yet real
 
-Every one of the 28 controls in §4.2 now carries a test case from `docs/07`. **Four are
-verified by a test that exists today** — RC-002, RC-003 and RC-005 by TC-004, RC-020 by
-TC-001. The other 24 name a test case that has been specified and not yet written. The rest carry `TBD` and are specified
+Every one of the 28 controls in §4.2 carries a test case from `docs/07`. **Nine are
+verified by a passing test as of 2026-09-17** — RC-002, RC-003, RC-004 and RC-005
+(splitting), RC-006 and RC-007 (metrics), RC-020 (frozen contract), RC-024 and RC-026
+(volume derivation). The other 19 name a test case specified and not yet written.
+
+HAZ-008's control set is now real rather than planned: `data/splits.py` is implemented
+and TC-004 passes for the first time, having been a strict xfail until 2026-09-17. The rest carry `TBD` and are specified
 but unverified, because `src/` is stubs and `docs/07` is not drafted.
 
 This file therefore describes a control set that is, as of 2026-09-17, mostly a plan.

@@ -31,7 +31,9 @@ a real reading workflow. `docs/08` records that gap; nothing in this document cl
 
 ### 1.2 Status
 
-**No test case in this protocol is implemented except TC-000, TC-001 and TC-004.** The
+**12 of 76 test cases are implemented** as of 2026-09-17 — TC-000..TC-002, TC-004,
+TC-040..TC-042, TC-060..TC-062, TC-068 and TC-072, covering `eval/metrics.py` and
+`data/splits.py`. The
 rest specify what will be written when the corresponding module exists. A protocol
 written ahead of the code is the right order — it is what CLAUDE.md rule 1 asks for —
 but it means §10's coverage figures describe a plan, not a result.
@@ -81,7 +83,7 @@ A unit is accepted when **all** of the following hold:
 |---|---|
 | A1 | Every requirement allocated to the unit in `docs/02` §3.10 has at least one passing test case in §6 |
 | A2 | Every error path the requirement names is exercised — specifically, each requirement using "shall abort", "shall reject" or "shall raise" has a test asserting that behaviour, not only the success path |
-| A3 | No test is skipped or `xfail`ed. The single permitted exception is TC-004 before `splits.py` exists, and it is `strict=True` so it fails if it starts passing accidentally |
+| A3 | No test is skipped or `xfail`ed. **No exception remains:** the one permitted `xfail` was TC-004 before `splits.py` existed, and it was removed on 2026-09-17 when the module landed. It was `strict=True`, so it would have failed the moment it started passing by accident |
 | A4 | `ruff check` and `ruff format --check` pass over the unit |
 | A5 | Any risk control in `docs/05` implemented by the unit has a test that exercises the control, not merely the feature it protects |
 | A6 | The unit's docstring names the SRS identifiers it implements, and those identifiers exist in `docs/02` (TC-102 enforces this) |
@@ -346,7 +348,7 @@ run differently, or an acceptance criterion changed.
 
 | # | Item | Blocks |
 |---|---|---|
-| 1 | 73 of the 76 allocated test cases are unimplemented (§1.2). This protocol is a specification, not a result. | Milestones 3–7 |
+| 1 | 64 of the 76 allocated test cases are unimplemented (§1.2). This protocol is a specification, not a result. | Milestones 3–7 |
 | 2 | TC-107 cannot verify that a change control entry is *correct*, only that one exists (§8). No automation closes that; it is a review activity. | — |
 | 3 | TC-105's gate forces review rather than proving re-classification (§7.3). If a stronger guarantee is wanted it needs a commit-level check outside pytest. | — |
 | 4 | Validation, as distinct from verification, is not performed and cannot be (§1.1). `docs/08` must state this rather than letting a full verification table imply it. | `docs/08` |

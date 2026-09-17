@@ -8,6 +8,7 @@ split:
   strategy: leave_one_vendor_out
   level: patient          # splits are patient-level. Never relax this (CLAUDE.md rule 2).
   val_fraction: 0.15      # carved from the training vendors, patient-level
+  ref_fraction: 0.15      # in-domain reference, also patient-level (SRS-022)
   seed: 20260916
 
 report:
