@@ -58,10 +58,11 @@ those RCs controls it.
 - User requirements with at least one software requirement: **11 of 11**. Every URS in
   `docs/01` derives at least one SRS or NFR in `docs/02`.
 - Software requirements with at least one test case: **61 of 61** — `docs/07` allocates
-  TC-000..TC-113 and every SRS, NFR and RC now names a verifying test case. **20 of those
+  TC-000..TC-113 and every SRS, NFR and RC now names a verifying test case. **22 of those
   76 test cases are implemented** (TC-000..TC-002, TC-004, TC-014, TC-015,
-  TC-030..TC-035, TC-040..TC-042, TC-060..TC-062, TC-068, TC-072 — `eval/metrics.py`,
-  `data/splits.py`, `io/deident.py` and the spacing guard, 2026-09-17); the rest are specified and
+  TC-030..TC-035, TC-040..TC-042, TC-060..TC-062, TC-068, TC-072, TC-105,
+  TC-106 — `eval/metrics.py`, `data/splits.py`, `io/deident.py`, the spacing guard and
+  the document-integrity gates, 2026-09-17); the rest are specified and
   unwritten, so this line measures allocation, not evidence.
 - Hazards with at least one risk control: **14 of 14** — HAZ-001..HAZ-014 in `docs/05`
   §3.2 each carry at least one RC.
