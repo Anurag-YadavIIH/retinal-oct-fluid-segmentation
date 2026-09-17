@@ -144,11 +144,32 @@ Next milestones, in order:
    `git init` and the initial commit followed on 2026-09-16 (see
    `docs/13_change_control_log.md`); the result above was re-confirmed from inside the
    repo at that point.
-2. `docs/01`, `docs/02`, `docs/03` drafted — intended use, SRS, safety classification.
-3. RETOUCH reader + DICOM conversion + de-identification, with tests.
-4. Splits and leakage gate.
+2. ~~`docs/01`, `docs/02`, `docs/03` drafted — intended use, SRS, safety classification.~~
+   **done** — 2026-09-17. Also `docs/04` (SOUP + anomaly review), `docs/05` (risk file),
+   `docs/06` (data plan) and `docs/07` (V&V protocol). **The document set is paused here
+   by decision:** `docs/08`, `docs/10`, `docs/11` and `docs/12` report on execution,
+   results, DICOM output and a model, none of which exist yet. See `docs/13`.
+3. RETOUCH reader + DICOM conversion + de-identification, with tests. **In progress** —
+   de-identification and the voxel spacing guard are implemented and tested against
+   pydicom-generated instances; the reader and DICOM conversion need the data.
+4. ~~Splits and leakage gate.~~ **done** — 2026-09-17. `data/splits.py` implemented, the
+   TC-004 xfail removed, the gate passing for real.
 5. Training on Kaggle; evaluation and subgroup reporting local.
 6. SEG/SR output and Orthanc round-trip.
 7. FastAPI service, Docker, full document set, GitHub Pages.
+
+### Where the project actually stands — 2026-09-17
+
+Identifiers allocated: URS-001..011, SRS-001..061, NFR-001..008, HAZ-001..014,
+RC-001..028, SOUP-001..022, TC-000..TC-113 (76 cases).
+
+**22 of 76 test cases are implemented**, covering `eval/metrics.py`, `data/splits.py`,
+`io/deident.py`, the spacing guard in `io/retouch_reader.py` and two
+document-integrity gates. Everything else in `src/` is still a stub. `docs/09` keeps
+allocation and implementation as separate numbers deliberately — they are very
+different claims.
+
+Blocked on the RETOUCH download: the reader, DICOM conversion, per-vendor spacing
+ranges (`docs/07` open item 6), and every metric that needs a real volume.
 
 Update this section at the end of each working session.
