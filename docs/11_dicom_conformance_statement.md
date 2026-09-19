@@ -125,7 +125,11 @@ the local Orthanc instance.
    this object declares for itself, where the row and column directions and the frame
    positions are exact by definition rather than estimates. Frame positions step by the
    recorded B-scan separation, so the spacing governing the volume computation appears
-   twice in the object and a disagreement between the two is detectable (HAZ-012).
+   twice in the object — once in Pixel Measures as `SliceThickness`, once as the step
+   between consecutive `ImagePositionPatient` values. **That redundancy is the point.** A
+   declared geometry can be cross-checked against itself; a fabricated value can be
+   cross-checked against nothing. TC-024 asserts the two agree, so a defect in either is
+   detectable rather than silent (HAZ-012).
 
 5. **Coded concepts: verified, caller-supplied, or declared local — never invented.**
    Checked against the concept dictionary pydicom ships, which carries the standard's
@@ -137,15 +141,45 @@ the local Orthanc instance.
    | Anatomic region | `SCT 5665001 Retina` — verified, used |
    | Measurement name, volume | `SCT 118565006 Volume` — verified, used |
    | Units `mm3`, `{counts}`, `1` | UCUM, all three verified, used |
-   | Segmented property type for IRF, SRF, PED | **no verified code found for any of the three** — caller-supplied, no default |
+   | Segmented property type for IRF, SRF, PED | **no verified code found for any of the three** — declared private scheme, caller may override |
    | Measurement names for voxel count and confidence | **no verified generic concept found** — caller-supplied, no default |
 
-   Unlike laterality, omission is not available for the segment type: the Segmentation
-   IOD requires it. The honest options are therefore a verified standard code or a code
-   under a **private coding scheme designator**, which DICOM permits and which declares
-   itself local rather than impersonating SNOMED. This project's test fixtures use
-   `99OCUVAL` codes for exactly that reason. **Choosing the production coding remains
-   open** and is not resolved by the fixtures.
+   **What was searched.** The concept dictionary pydicom ships, which carries the
+   standard's own tables across SCT, DCM, UCUM, LN, FMA and ten other schemes — 10,751
+   SCT keywords among them. Searched for "retinal fluid", "subretinal", "pigment
+   epithelial", "detachment" and "macular edema". **Nothing verifiable was found for any
+   of the three fluid classes.** The same search did verify the segment category, the
+   retinal anatomic region, the volume measurement name and all three units, so the
+   absence is a finding about the vocabulary rather than a failure to look.
+
+   **Decision: a declared private coding scheme**, `99OCUVAL`, implemented in
+   `ocuval.report.coding` (SRS-065). Omission is not available — the Segmentation IOD
+   requires the segment type — so the alternatives were a private scheme or a borrowed
+   standard code that approximately fits.
+
+   **The borrowed code was rejected.** It is the `AnatomicRegionSequence` decision in
+   item 3 inverted: rather than declining to write a code that could not be verified, it
+   writes one that *looks* interoperable while meaning something slightly different to
+   every reader, with nothing in the object marking the approximation. A private scheme
+   is honest and unambiguously non-interoperable, which is the true state of this
+   vocabulary.
+
+   **The scheme is declared inside the object.** PS3.3 C.12.1 makes `CodingSchemeUID`
+   Type 1C, "Required if Coding Scheme is identified by an ISO 8824 object identifier",
+   so the scheme is identified by an OID under this project's root and carries its name
+   and responsible organisation. `CodingSchemeRegistry` and `CodingSchemeExternalID` do
+   not apply: the scheme is not registered, and the object says so by their absence. A
+   bare `99OCUVAL` designator with no identification sequence would be a local string
+   telling a reader nothing.
+
+   **Interoperability consequence, stated plainly.** No other system will interpret
+   these codes. A consumer can determine that they are local, who issued them and what
+   they mean in prose, and can map them deliberately — but no automatic interpretation
+   is possible and none should be attempted. That is a real cost, accepted because the
+   alternative is a silent misinterpretation rather than an obvious gap.
+
+   Callers with verified codes from a scheme they trust pass them instead; the private
+   scheme is then neither used nor declared (SRS-065, TC-076).
 
 6. **Out-of-scope input criteria unresolved.** SRS-048 requires rejection of
    out-of-scope acquisitions; which attributes establish that is not known until the
