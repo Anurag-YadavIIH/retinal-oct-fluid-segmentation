@@ -308,11 +308,19 @@ about each other and about the code, and nothing else checks them.
 | TC-104 | Traceability matrix is current | NFR-008 | D | `docs/09` coverage counts recomputed from `docs/01`, `docs/02`, `docs/05` match what it states | yes |
 | TC-105 | Intended use change gate | — (`docs/03` open item 6) | D | See §7.3 | yes |
 | TC-106 | Image digests match the SOUP list | — (`docs/04` open item 9) | D | Digests in `docker/Dockerfile.api` and `docker/docker-compose.yml` equal SOUP-017 and SOUP-014 | yes |
-| TC-107 | Change control log touched | NFR-007 | D | A change touching a requirement, hazard or test identifier also touches `docs/13` | partial |
+| TC-107 | Change control log touched | NFR-007 | D | A commit introducing a new `URS`/`SRS`/`NFR`/`HAZ`/`RC`/`TC`/`SOUP` identifier in `docs/` also stages `docs/13`. Implemented as a `commit-msg` hook, `scripts/check_change_control.py` | partial — implemented 2026-09-19 |
 
-TC-107 is marked partial deliberately: it can check that `docs/13` changed, not that what
-was written there is true. That is a review activity, not a test, and pretending
-otherwise would overstate what automation buys.
+TC-107 is marked partial deliberately: it can check that a change control entry exists,
+not that what was written there is true. That is a review activity, not a test, and
+pretending otherwise would overstate what automation buys.
+
+**It was implemented on 2026-09-19 in response to a real incident.** Commit `104342b`
+added SRS-065 to `docs/02` and did not touch `docs/13`; its message described an entry
+its patch script had failed to write, and the commit proceeded anyway. Measured against
+all 37 commits then in the repository, this rule fires exactly once — on that commit —
+and the more obvious rule, failing a message that names an untouched `docs/` file, fires
+zero times and would **not** have caught it, because `104342b` did touch `docs/11`.
+Both hooks are installed; only one of them earns its place on the evidence.
 
 ## 9. Integration test register — §5.6
 

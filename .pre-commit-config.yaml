@@ -17,3 +17,23 @@ repos:
       - id: check-merge-conflict
       - id: no-commit-to-branch
         args: [--branch, main]
+
+  # Local guards. Both exist because of a real incident: commit 104342b described a
+  # change control entry its patch script had failed to write, and the commit proceeded
+  # anyway. See each script's docstring for what it does and does not catch.
+  - repo: local
+    hooks:
+      - id: change-control-entry
+        name: new identifier requires a docs/13 entry (NFR-007, TC-107)
+        entry: python scripts/check_change_control.py
+        language: system
+        stages: [commit-msg]
+        always_run: true
+        pass_filenames: false
+      - id: commit-message-claims
+        name: commit message must not claim untouched documents
+        entry: python scripts/check_commit_message_docs.py
+        language: system
+        stages: [commit-msg]
+        always_run: true
+        pass_filenames: false
