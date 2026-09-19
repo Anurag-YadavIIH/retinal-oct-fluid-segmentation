@@ -218,10 +218,21 @@ lists SRS, NFR and RC identifiers.
 
 | ID | Title | Verifies | Method | Acceptance criterion | Auto |
 |---|---|---|---|---|---|
-| TC-080 | STOW-RS store and WADO-RS retrieve | SRS-043 | S | Object stored and retrieved against the pinned Orthanc | yes (`requires_pacs`) |
-| TC-081 | Round-trip fidelity | SRS-044, RC-014 | S | Retrieved object matches sent in pixel data, fluid volumes, confidence and designation | yes (`requires_pacs`) |
-| TC-082 | No action beyond store and retrieve | SRS-045, RC-017 | S | No delete, modify or reconcile; no endpoint marks anything verified or signed off | yes (`requires_pacs`) |
+| TC-080 | STOW-RS store and WADO-RS retrieve | SRS-043 | S | Object stored and retrieved against the pinned Orthanc | written, **never executed** (`requires_pacs`) |
+| TC-081 | Round-trip fidelity | SRS-044, RC-014 | S | Retrieved object matches sent in pixel data, spacing, vendor and source references | written, **never executed** (`requires_pacs`) |
+| TC-082 | No action beyond store and retrieve | SRS-045, RC-017 | S | No delete, modify or reconcile; retrieving twice yields the same object | written, **never executed** (`requires_pacs`) |
 | TC-083 | Client ignores ambient environment | SRS-060, RC-027 | U | With `.netrc`, proxy and certificate variables set in the environment, the client uses none of them | yes |
+
+**TC-080, TC-081 and TC-082 have never been run.** They were written on 2026-09-19 in
+an environment with no Docker, so no Orthanc existed to execute them against. They are
+written against the DICOMweb specification rather than against observed server
+behaviour, which is the better order — a test written against a live server encodes what
+that server happens to accept — but it means their first execution may fail for either
+of two reasons: the client is wrong, or the specification requires something Orthanc does
+not implement. The second is a `docs/11` finding, not a defect.
+
+Until someone reports a run, these three carry no evidence and must not be counted as
+verification.
 
 ### 6.10 Inference API
 
