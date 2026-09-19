@@ -17,6 +17,7 @@ from pydicom.dataset import Dataset
 
 from ocuval.io import dicom_writer as dw
 from ocuval.io.retouch_reader import OCTVolume
+from ocuval.report import coding
 from ocuval.report import seg_object as seg
 from ocuval.report import sr_object as sr
 
@@ -118,10 +119,16 @@ def test_TC_070_category_is_the_verified_standard_code(source_images, segments):
     assert category.CodingSchemeDesignator == "SCT"
 
 
-def test_TC_070_coded_type_has_no_default(source_images):
-    """No verified code exists for the fluid classes, so one must be supplied."""
-    with pytest.raises(seg.SegmentCodingError, match="will not substitute"):
-        seg.FluidSegment(label="IRF", mask=np.zeros((2, 2, 2), dtype=np.uint8), coded_type=None)
+def test_TC_070_known_class_resolves_to_the_declared_local_code():
+    """No verified standard code exists, so the declared private scheme supplies one.
+
+    Superseded the earlier behaviour, which refused outright. The refusal was correct
+    while the project had no decision; once docs/11 §10 item 5 chose a declared private
+    scheme, using this project's own vocabulary is not a substituted value.
+    """
+    segment = seg.FluidSegment(label="IRF", mask=np.zeros((2, 2, 2), dtype=np.uint8))
+    assert segment.coded_type.value == "IRF"
+    assert segment.coded_type.scheme_designator == coding.OCUVAL_SCHEME_DESIGNATOR
 
 
 def test_TC_070_segmentation_requires_a_source_image(segments):
@@ -311,3 +318,157 @@ def test_TC_075_report_requires_a_source_image(names):
             series_instance_uid=dw.generate_uid(UID_ROOT),
             sop_instance_uid=dw.generate_uid(UID_ROOT),
         )
+
+
+# --- TC-076: the private scheme is declared, not a bare local string ---------------
+
+
+def test_TC_076_declared_scheme_used_when_no_code_supplied(source_images):
+    """The three RETOUCH classes fall back to the project's own declared vocabulary."""
+    segments = [
+        seg.FluidSegment(label=name, mask=np.zeros((FRAMES, ROWS, COLUMNS), dtype=np.uint8))
+        for name in ("IRF", "SRF", "PED")
+    ]
+    obj = seg.build_segmentation(
+        source_images,
+        segments,
+        series_instance_uid=dw.generate_uid(UID_ROOT),
+        sop_instance_uid=dw.generate_uid(UID_ROOT),
+    )
+    for item in obj.SegmentSequence:
+        code = item.SegmentedPropertyTypeCodeSequence[0]
+        assert code.CodingSchemeDesignator == coding.OCUVAL_SCHEME_DESIGNATOR
+
+
+def test_TC_076_scheme_is_identified_in_the_object(source_images):
+    segments = [
+        seg.FluidSegment(label="IRF", mask=np.zeros((FRAMES, ROWS, COLUMNS), dtype=np.uint8))
+    ]
+    obj = seg.build_segmentation(
+        source_images,
+        segments,
+        series_instance_uid=dw.generate_uid(UID_ROOT),
+        sop_instance_uid=dw.generate_uid(UID_ROOT),
+    )
+    ours = [
+        d
+        for d in obj.CodingSchemeIdentificationSequence
+        if d.CodingSchemeDesignator == coding.OCUVAL_SCHEME_DESIGNATOR
+    ]
+    assert len(ours) == 1
+    assert ours[0].CodingSchemeUID == coding.DEFAULT_SCHEME_UID
+    assert ours[0].CodingSchemeName
+
+
+def test_TC_076_unknown_label_still_refuses():
+    with pytest.raises(seg.SegmentCodingError, match="will not substitute"):
+        seg.FluidSegment(label="CNV", mask=np.zeros((2, 2, 2), dtype=np.uint8))
+
+
+def test_TC_076_caller_supplied_code_takes_precedence(source_images):
+    supplied = CodedConcept(value="12345", scheme_designator="SCT", meaning="Something verified")
+    segments = [
+        seg.FluidSegment(
+            label="IRF",
+            mask=np.zeros((FRAMES, ROWS, COLUMNS), dtype=np.uint8),
+            coded_type=supplied,
+        )
+    ]
+    obj = seg.build_segmentation(
+        source_images,
+        segments,
+        series_instance_uid=dw.generate_uid(UID_ROOT),
+        sop_instance_uid=dw.generate_uid(UID_ROOT),
+    )
+    assert (
+        obj.SegmentSequence[0].SegmentedPropertyTypeCodeSequence[0].CodingSchemeDesignator == "SCT"
+    )
+    declared = [
+        d.CodingSchemeDesignator for d in getattr(obj, "CodingSchemeIdentificationSequence", [])
+    ]
+    assert coding.OCUVAL_SCHEME_DESIGNATOR not in declared
+
+
+def test_TC_076_scheme_declaration_is_idempotent():
+    ds = Dataset()
+    coding.declare_scheme(ds)
+    coding.declare_scheme(ds)
+    ours = [
+        d
+        for d in ds.CodingSchemeIdentificationSequence
+        if d.CodingSchemeDesignator == coding.OCUVAL_SCHEME_DESIGNATOR
+    ]
+    assert len(ours) == 1
+
+
+def test_TC_076_declaration_preserves_a_callers_own():
+    ds = Dataset()
+    other = Dataset()
+    other.CodingSchemeDesignator = "99OTHER"
+    ds.CodingSchemeIdentificationSequence = [other]
+    coding.declare_scheme(ds)
+    assert {d.CodingSchemeDesignator for d in ds.CodingSchemeIdentificationSequence} == {
+        "99OTHER",
+        coding.OCUVAL_SCHEME_DESIGNATOR,
+    }
+
+
+def test_TC_076_fluid_code_rejects_an_undeclared_class():
+    with pytest.raises(KeyError, match="declares exactly those three"):
+        coding.fluid_code("CNV")
+
+
+def test_TC_076_sr_declares_the_scheme_when_its_codes_are_used(source_images, names):
+    voxel_volume = SPACING_MM[0] * SPACING_MM[1] * SPACING_MM[2]
+    doc = sr.build_measurement_report(
+        source_images,
+        [
+            sr.FluidMeasurement(
+                label="IRF",
+                coded_type=coding.fluid_code("IRF"),
+                volume_mm3=5 * voxel_volume,
+                voxel_count=5,
+                voxel_volume_mm3=voxel_volume,
+            )
+        ],
+        names,
+        confidence=0.5,
+        procedure_reported=local_code("OCTSEG", "OCT fluid segmentation (local)"),
+        device_uid=dw.generate_uid(UID_ROOT),
+        series_instance_uid=dw.generate_uid(UID_ROOT),
+        sop_instance_uid=dw.generate_uid(UID_ROOT),
+    )
+    assert coding.OCUVAL_SCHEME_DESIGNATOR in {
+        d.CodingSchemeDesignator for d in doc.CodingSchemeIdentificationSequence
+    }
+
+
+# --- TC-024 extension: the cross-check that a fabricated value could not survive ---
+
+
+def test_TC_024_frame_step_agrees_with_pixel_measures(source_images):
+    """Spacing appears twice in the object; a disagreement must be detectable.
+
+    PixelMeasures carries SliceThickness and the per-frame Plane Position steps by the
+    same B-scan separation. That redundancy is what distinguishes a declared geometry
+    from a fabricated one: a fabricated value can be cross-checked against nothing.
+    """
+    ds = source_images[0]
+    separation = float(ds.SharedFunctionalGroupsSequence[0].PixelMeasuresSequence[0].SliceThickness)
+    positions = [
+        float(frame.PlanePositionSequence[0].ImagePositionPatient[2])
+        for frame in ds.PerFrameFunctionalGroupsSequence
+    ]
+    steps = [b - a for a, b in zip(positions, positions[1:], strict=False)]
+    assert steps, "a multi-frame object must have at least two frames to cross-check"
+    for step in steps:
+        assert step == pytest.approx(separation, rel=1e-9)
+
+
+def test_TC_024_frame_positions_are_monotonic_and_start_at_zero(source_images):
+    positions = [
+        float(frame.PlanePositionSequence[0].ImagePositionPatient[2])
+        for frame in source_images[0].PerFrameFunctionalGroupsSequence
+    ]
+    assert positions[0] == pytest.approx(0.0)
+    assert positions == sorted(positions)

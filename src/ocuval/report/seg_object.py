@@ -20,10 +20,15 @@ pydicom ships:
   `dicom_writer` and `AnatomicRegionSequence` there: a code that has not been verified
   against its scheme is an invented code with extra steps.
 
-Unlike laterality, omission is not available — `SegmentDescription` requires the code —
-so the only honest options are a verified standard code or an explicitly declared local
-one. Callers who have neither should use a private coding scheme designator, which DICOM
-permits and which *says* it is local rather than impersonating SNOMED.
+Unlike laterality, omission is not available — `SegmentDescription` requires the code.
+The project's decision, recorded in `docs/11` §10 item 5, is a **declared private coding
+scheme** (`ocuval.report.coding`) rather than a borrowed standard code that approximately
+fits. A borrowed code looks interoperable and means something slightly different to every
+reader; a private scheme is honest and unambiguously non-interoperable, which is the true
+state. The scheme is declared inside the object via `CodingSchemeIdentificationSequence`,
+so the designator is not a bare local string.
+
+Callers with verified codes from a scheme they trust pass them instead.
 """
 
 from __future__ import annotations
@@ -36,6 +41,8 @@ from highdicom.seg import SegmentAlgorithmTypeValues, Segmentation, SegmentDescr
 from highdicom.sr import CodedConcept
 from pydicom import Dataset
 from pydicom.sr.codedict import codes
+
+from ocuval.report.coding import FLUID_CODE_VALUES, declare_scheme, fluid_code
 
 # Verified against pydicom's shipped concept dictionary, which carries the standard's
 # own tables. Changing either is a coded-concept change and belongs in docs/13.
@@ -51,25 +58,27 @@ class SegmentCodingError(ValueError):
 class FluidSegment:
     """One fluid class to be written as a segment.
 
-    `coded_type` has no default. There is no verified standard code for intraretinal
-    fluid, subretinal fluid or pigment epithelial detachment in the concept dictionary
-    this project can check against, and supplying an unverified one would be the
-    fabrication RC-029 forbids.
+    `coded_type` may be left unset for the three declared RETOUCH classes, in which case
+    the project's private scheme supplies it (`ocuval.report.coding`). That is not a
+    substituted value: it is this project's own declared vocabulary, carried in the
+    object with its scheme identification. For any other label there is nothing to fall
+    back on and a coded concept must be supplied.
     """
 
     label: str
     mask: np.ndarray
-    coded_type: CodedConcept | Dataset
+    coded_type: CodedConcept | Dataset | None = None
 
     def __post_init__(self) -> None:
         if self.coded_type is None:
-            raise SegmentCodingError(
-                f"fluid class {self.label!r} has no coded segmented property type. No "
-                f"verified standard code exists for the RETOUCH fluid classes, so one "
-                f"must be supplied — a verified code from a standard scheme, or an "
-                f"explicitly declared local code under a private coding scheme "
-                f"designator. The writer will not substitute one (docs/05 RC-029)."
-            )
+            if self.label not in FLUID_CODE_VALUES:
+                raise SegmentCodingError(
+                    f"{self.label!r} is not one of the declared fluid classes "
+                    f"{sorted(FLUID_CODE_VALUES)}, and no coded segmented property type "
+                    f"was supplied. No verified standard code exists to fall back on, and "
+                    f"the writer will not substitute one (docs/05 RC-029)."
+                )
+            object.__setattr__(self, "coded_type", fluid_code(self.label))
 
 
 def build_segmentation(
@@ -127,7 +136,7 @@ def build_segmentation(
     # multi-segment label array.
     stacked = np.stack([np.asarray(s.mask).astype(np.uint8) for s in segments], axis=-1)
 
-    return Segmentation(
+    segmentation = Segmentation(
         source_images=source_images,
         pixel_array=stacked,
         segmentation_type="BINARY",
@@ -141,6 +150,17 @@ def build_segmentation(
         software_versions=software_version or __version__,
         device_serial_number=device_serial_number,
     )
+
+    # Declare the private scheme in the object when any of its codes were used, so the
+    # designator is identified rather than left as a bare local string (PS3.3 C.12.1).
+    if any(
+        getattr(s.coded_type, "scheme_designator", None) == "99OCUVAL"
+        or getattr(s.coded_type, "CodingSchemeDesignator", None) == "99OCUVAL"
+        for s in segments
+    ):
+        declare_scheme(segmentation)
+
+    return segmentation
 
 
 def referenced_sop_instance_uids(segmentation: Dataset) -> set[str]:

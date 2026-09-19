@@ -108,12 +108,16 @@ the local Orthanc instance.
    present otherwise.**" Neither trigger applies here, and the module is included under
    that last clause.
 
-   It is included because a multi-frame DICOM Segmentation cannot be built without one:
-   the SEG IOD needs a shared spatial frame to relate its frames to the source. The UID
+   **It is an identifier, not an anatomical claim.** That sentence is why this
+   conditional module is populated while Ocular Region Imaged in item 3 is not. The UID
    is minted by this software and asserts only that the frames of a single volume share
-   a frame of reference, which is true by construction. It is an identifier for a real
-   relationship, in the same category as a Study Instance UID, and claims no
-   registration to patient anatomy.
+   a frame of reference — true by construction, in the same category as a Study Instance
+   UID. `ImageLaterality` asserts a fact about a body, which no declaration by this
+   software can make true. The two are different in kind, and that difference, not
+   convenience, decides which conditional attributes are written.
+
+   It is included because a multi-frame DICOM Segmentation cannot be built without one:
+   the SEG IOD needs a shared spatial frame to relate its frames to the source.
 
    Plane Position and Plane Orientation follow from the same decision. Both are usage C
    in Table A.52.4.3-1 and **required** in our case, since no Ophthalmic Photography

@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-064 and NFR-001..NFR-008. Every requirement here derives
+Allocates SRS-001..SRS-065 and NFR-001..NFR-008. Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -155,6 +155,7 @@ reported for detection either, and the prevalence figures in `docs/06` §3.2 are
 | SRS-059 | The Structured Report shall record, for each fluid class, the predicted voxel count and the voxel volume used, alongside the resulting volume in cubic millimetres, so that the derivation can be recomputed from the object alone. | URS-002, URS-010 | TC-075 |
 | SRS-041 | The Structured Report shall record the scan-level confidence and the review-recommended indication of SRS-030. These shall not appear only in run logs. | URS-005 | TC-076 |
 | SRS-042 | Every emitted Segmentation and Structured Report object shall carry, within the object, a designation readable both by software and by a person that the result is research-use-only, not clinically validated, and produced by an automated method requiring human review. The means of expressing this is specified in `docs/11` and is unresolved at the time of this draft (§6, item 1). | URS-011 | TC-077 |
+| SRS-065 | Where a coded concept has no verified code in a standard scheme, the software shall use a coded value from a declared private coding scheme and shall identify that scheme within the emitted object. It shall not borrow an approximately-fitting standard code. A caller-supplied coded concept shall always take precedence. | URS-001, URS-011 | TC-076 |
 
 ### 3.8 PACS communication
 
@@ -194,7 +195,8 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `eval/metrics.py` | SRS-032, SRS-033, SRS-034, SRS-035, SRS-040, SRS-050, SRS-051, SRS-052, SRS-053, SRS-059 |
 | `eval/subgroup.py` | SRS-036, SRS-053 |
 | `eval/report.py` | SRS-037 |
-| `report/seg_object.py` | SRS-038, SRS-039, SRS-042 |
+| `report/seg_object.py` | SRS-038, SRS-039, SRS-042, SRS-065 |
+| `report/coding.py` | SRS-065 |
 | `report/sr_object.py` | SRS-040, SRS-041, SRS-042, SRS-054, SRS-057, SRS-058, SRS-059 |
 
 SRS-040 and SRS-059 appear against two modules deliberately: `eval/metrics.py` performs

@@ -43,6 +43,8 @@ from highdicom.sr import (
 from pydicom import Dataset
 from pydicom.sr.codedict import codes
 
+from ocuval.report.coding import OCUVAL_SCHEME_DESIGNATOR, declare_scheme
+
 # Verified UCUM concepts. RC-025 is satisfied by these being coded, not by their values.
 UNIT_CUBIC_MM = codes.UCUM.CubicMillimeter
 UNIT_COUNTS = codes.UCUM.Counts
@@ -176,7 +178,7 @@ def build_measurement_report(
         imaging_measurements=groups,
     )
 
-    return Comprehensive3DSR(
+    document = Comprehensive3DSR(
         evidence=source_images,
         content=report[0],
         series_instance_uid=series_instance_uid,
@@ -186,6 +188,17 @@ def build_measurement_report(
         manufacturer="OcuVal",
         software_versions=software_version or __version__,
     )
+
+    coded = [names.volume, names.voxel_count, names.voxel_volume, names.confidence]
+    coded += [m.coded_type for m in measurements]
+    if any(
+        getattr(c, "scheme_designator", None) == OCUVAL_SCHEME_DESIGNATOR
+        or getattr(c, "CodingSchemeDesignator", None) == OCUVAL_SCHEME_DESIGNATOR
+        for c in coded
+    ):
+        declare_scheme(document)
+
+    return document
 
 
 def numeric_measurements(dataset: Dataset) -> list[tuple[str, float, str]]:
