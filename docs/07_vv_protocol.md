@@ -222,6 +222,9 @@ lists SRS, NFR and RC identifiers.
 | TC-081 | Round-trip fidelity | SRS-044, RC-014 | S | Retrieved object matches sent in pixel data, spacing, vendor and source references | written, **never executed** (`requires_pacs`) |
 | TC-082 | No action beyond store and retrieve | SRS-045, RC-017 | S | No delete, modify or reconcile; retrieving twice yields the same object | written, **never executed** (`requires_pacs`) |
 | TC-083 | Client ignores ambient environment | SRS-060, RC-027 | U | With `.netrc`, proxy and certificate variables set in the environment, the client uses none of them | yes |
+| TC-084 | DICOMweb URL construction and multipart wire format | SRS-043, SRS-044 | U | Instance URLs built from all three UIDs with an empty segment refused; multipart/related assembled with CRLF delimiters, per-part media type and length, and a closing boundary; parsing round-trips binary payloads exactly and **raises on a truncated body** rather than returning the parts received so far | yes |
+| TC-085 | STOW-RS response parsing | SRS-043 | U | Referenced and failed instance UIDs both read; a response reporting failures is not treated as success | yes |
+| TC-086 | Client exposes no mutating operation | SRS-045, RC-017 | U | Static check: no delete, modify, reconcile or sign-off method, and the source issues only GET and POST | yes |
 
 **TC-080, TC-081 and TC-082 have never been run.** They were written on 2026-09-19 in
 an environment with no Docker, so no Orthanc existed to execute them against. They are
