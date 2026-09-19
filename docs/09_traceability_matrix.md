@@ -2,7 +2,7 @@
 Document: Traceability Matrix
 Status: LIVING — updated per commit
 Owner: Anurag Yadav
-Last reviewed: 2026-09-16
+Last reviewed: 2026-09-19
 Change history: docs/13_change_control_log.md
 -->
 
@@ -28,43 +28,51 @@ A stale matrix is worse than no matrix (CLAUDE.md rule 5).
 | URS-001 | SRS-002 | HAZ-003 | RC-020 | TC-001 | `configs/data.yaml` |
 | URS-007 | SRS-019, SRS-020, SRS-021 | HAZ-008 | RC-002, RC-003, RC-005 | TC-004 | `src/ocuval/data/splits.py` |
 
-The eleven `URS` rows now carry their software requirements from `docs/02` §3.
-Hazard and risk-control columns remain TBD: `docs/05` does not exist, so there is
-nothing to allocate to. Test allocation is held in `docs/02` and `docs/05` per row,
-from `docs/07`, and is summarised under Coverage below.
+The eleven `URS` rows carry their software requirements from `docs/02` §3, and their
+hazard and risk-control columns are **derived, not authored**: an RC appears against a
+URS when it implements a requirement that URS derives, and a HAZ appears when one of
+those RCs controls it. Test allocation is held per row in `docs/02` and `docs/05`, from
+`docs/07`, and is summarised under Coverage.
 
-The `TC` rows are the three existing tests. TC-000 is a smoke test allocated to no
-requirement by design — it asserts only that the package exposes a version
-identifier, which is a precondition of SRS-031 and SRS-049 rather than a
-verification of either.
+The `TC` rows below the URS block are the test cases that predate the requirement set.
+TC-000 is a smoke test allocated to no requirement by design — it asserts only that the
+package exposes a version identifier, which is a precondition of SRS-031 and SRS-049
+rather than a verification of either.
 
 `docs/03` assigns the system **software safety class B**. `docs/05` allocates
-HAZ-001..HAZ-011 and RC-001..RC-020, and the interim identifiers used before it existed
-are now superseded: HS-1..HS-7 in `docs/03` §3 map to HAZ-001..HAZ-007, and DMP-C1..C10
-in `docs/06` map to RC-019, RC-001, RC-002, RC-003 and RC-004. HAZ-012..HAZ-014 and
-RC-021..RC-028 are new in `docs/05` and supersede nothing. `docs/05` §3.1 and §4.1
-carry both mappings; the source documents keep their own labels.
+HAZ-001..HAZ-015 and RC-001..RC-029. The interim identifiers used before it existed are
+superseded: HS-1..HS-7 in `docs/03` §3 map to HAZ-001..HAZ-007, and DMP-C1..C10 in
+`docs/06` map to RC-019, RC-001, RC-002, RC-003 and RC-004. HAZ-012..HAZ-015 and
+RC-021..RC-029 are new in `docs/05` and supersede nothing. `docs/05` §3.1 and §4.1 carry
+both mappings; the source documents keep their own labels.
 
 URS-002 previously had no risk control at all. `docs/05` HAZ-012 and RC-021..RC-026 now
 cover the volume derivation path — the metadata half of it, which is where the invisible
-failure lives (`docs/05` §5.4).
-
-The HAZ and RC columns on the URS rows are derived, not authored: an RC appears against
-a URS when it implements a requirement that URS derives, and a HAZ appears when one of
-those RCs controls it.
+failure lives (`docs/05` §5.4). HAZ-015 and RC-029 cover the related case of acquisition
+context the source never recorded being fabricated to satisfy a mandatory attribute.
 
 ## Coverage
 
+Regenerated from `docs/01`, `docs/02`, `docs/05` and `docs/07`, and from the test suite
+itself — implemented counts are read from the `test_TC_nnn_` function names, not from a
+memory of what was written. TC-104 is allocated to keep this section honest once
+implemented.
+
 - User requirements with at least one software requirement: **11 of 11**. Every URS in
   `docs/01` derives at least one SRS or NFR in `docs/02`.
-- Software requirements with at least one test case: **61 of 61** — `docs/07` allocates
-  TC-000..TC-113 and every SRS, NFR and RC now names a verifying test case. **31 of those
-  77 test cases are implemented** (TC-000..TC-002, TC-004, TC-014, TC-015,
-  TC-030..TC-035, TC-040..TC-042, TC-060..TC-062, TC-068, TC-072, TC-105,
-  TC-106, TC-120, TC-020..TC-024, TC-026..TC-028 — `eval/metrics.py`, `data/splits.py`, `io/deident.py`, the spacing guard and
-  the document-integrity gates, 2026-09-17); the rest are specified and
-  unwritten, so this line measures allocation, not evidence.
-- Hazards with at least one risk control: **14 of 14** — HAZ-001..HAZ-014 in `docs/05`
-  §3.2 each carry at least one RC.
-- Risk controls with a verifying test allocated: **29 of 29**; implemented: **18 of 29** — RC-002, RC-003 and RC-005
-  by TC-004, RC-020 by TC-001. (`docs/05` §5.3, `docs/07` §1.2).
+- Software requirements with a verifying test case **allocated**: **64 of 64**
+  SRS and **8 of 8** NFR. `docs/07` allocates 80 test cases
+  and every SRS, NFR and RC names one.
+- Test cases **implemented**: **31 of 80**, covering
+  `eval/metrics.py`, `data/splits.py`, `io/deident.py`, `io/dicom_writer.py`, the spacing
+  guard in `io/retouch_reader.py`, the two document-integrity gates and the MONAI
+  cross-check. The remaining 49 are specified and
+  unwritten.
+- Hazards with at least one risk control: **15 of 15** — every HAZ in `docs/05`
+  §3.2 carries at least one RC.
+- Risk controls with a verifying test **allocated**: **29 of 29**;
+  **implemented: 17 of 29** (RC-002, RC-003, RC-004, RC-005, RC-006, RC-007, RC-008, RC-011, RC-012, RC-015, RC-016, RC-020, RC-022, RC-023, RC-024, RC-026, RC-029). The rest name an
+  allocated but unwritten test case (`docs/05` §5.3, `docs/07` §1.2).
+
+**Allocation and implementation are kept as separate numbers throughout.** They are very
+different claims, and a single figure covering both would flatter the project.

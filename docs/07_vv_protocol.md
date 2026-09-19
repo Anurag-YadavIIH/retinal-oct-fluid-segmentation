@@ -2,10 +2,10 @@
 Document: Verification and Validation Protocol
 Status: DRAFT v0.1
 Owner: Anurag Yadav
-Last reviewed: 2026-09-17
+Last reviewed: 2026-09-19
 Change history: docs/13_change_control_log.md
 
-Allocates TC-000..TC-120 (77 cases) across unit, integration and system levels. Carries the
+Allocates TC-000..TC-120 (80 cases) across unit, integration and system levels. Carries the
 IEC 62304 §5.5.2 unit verification process and §5.5.3 unit acceptance criteria that
 docs/03 open item 3 records as owed, and the §5.6 integration testing that open item
 2 records. Clause references carry the docs/03 §1.2 caveat.
@@ -31,7 +31,7 @@ a real reading workflow. `docs/08` records that gap; nothing in this document cl
 
 ### 1.2 Status
 
-**31 of 77 test cases are implemented** as of 2026-09-17 — TC-000..TC-002, TC-004,
+**31 of 80 test cases are implemented** as of 2026-09-17 — TC-000..TC-002, TC-004,
 TC-014, TC-015, TC-030..TC-035, TC-040..TC-042, TC-060..TC-062, TC-068, TC-072,
 TC-105 and TC-106, covering `eval/metrics.py`, `data/splits.py`, `io/deident.py`, the spacing guard in
 `io/retouch_reader.py`, and the two document-integrity gates. The
@@ -375,7 +375,7 @@ run differently, or an acceptance criterion changed.
 
 | # | Item | Blocks |
 |---|---|---|
-| 1 | 46 of the 77 allocated test cases are unimplemented (§1.2). This protocol is a specification, not a result. | Milestones 3–7 |
+| 1 | 49 of the 80 allocated test cases are unimplemented (§1.2). This protocol is a specification, not a result. | Milestones 3–7 |
 | 2 | TC-107 cannot verify that a change control entry is *correct*, only that one exists (§8). No automation closes that; it is a review activity. | — |
 | 3 | TC-105's gate forces review rather than proving re-classification (§7.3). If a stronger guarantee is wanted it needs a commit-level check outside pytest. | — |
 | 4 | Validation, as distinct from verification, is not performed and cannot be (§1.1). `docs/08` must state this rather than letting a full verification table imply it. | `docs/08` |
