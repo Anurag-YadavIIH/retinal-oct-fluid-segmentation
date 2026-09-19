@@ -138,42 +138,62 @@ Accuracy alone is never reported. The classes are imbalanced and it is misleadin
 
 ## 7. Current status
 
-**Phase: 0 — scaffolding.**
+**Phase: 1 — pipeline and DICOM layer. No results yet, and none are possible until the
+dataset arrives.**
 
-Next milestones, in order:
-1. ~~Repo skeleton, tooling, CI green on an empty test suite.~~ **done** — 2026-09-16.
-   Package imports, ruff clean, 5 passed / 1 xfailed (the leakage gate placeholder).
-   That run was local and pre-dates version control: the working tree was not a git
-   repository at the time, so no commit carries it and the CI workflow had never run.
-   `git init` and the initial commit followed on 2026-09-16 (see
-   `docs/13_change_control_log.md`); the result above was re-confirmed from inside the
-   repo at that point.
-2. ~~`docs/01`, `docs/02`, `docs/03` drafted — intended use, SRS, safety classification.~~
-   **done** — 2026-09-17. Also `docs/04` (SOUP + anomaly review), `docs/05` (risk file),
-   `docs/06` (data plan) and `docs/07` (V&V protocol). **The document set is paused here
-   by decision:** `docs/08`, `docs/10`, `docs/11` and `docs/12` report on execution,
-   results, DICOM output and a model, none of which exist yet. See `docs/13`.
-3. RETOUCH reader + DICOM conversion + de-identification, with tests. **In progress** —
-   de-identification and the voxel spacing guard are implemented and tested against
-   pydicom-generated instances; the reader and DICOM conversion need the data.
-4. ~~Splits and leakage gate.~~ **done** — 2026-09-17. `data/splits.py` implemented, the
-   TC-004 xfail removed, the gate passing for real.
-5. Training on Kaggle; evaluation and subgroup reporting local.
-6. SEG/SR output and Orthanc round-trip.
-7. FastAPI service, Docker, full document set, GitHub Pages.
+### Milestones
 
-### Where the project actually stands — 2026-09-17
+1. ~~Repo skeleton, tooling, CI green.~~ **done** — 2026-09-16. That first run pre-dated
+   version control; `git init` and the initial commit followed the same day and the
+   result was re-confirmed from inside the repo.
+2. ~~`docs/01`, `docs/02`, `docs/03`.~~ **done** — 2026-09-17, plus `docs/04` (SOUP and
+   anomaly review), `docs/05` (risk file), `docs/06` (data plan) and `docs/07` (V&V
+   protocol). **The document set is paused here by decision**, not oversight: `docs/08`,
+   `docs/10`, `docs/11` and `docs/12` report on execution, results, DICOM output and a
+   model. `docs/11` is partially populated where decisions have actually been taken.
+3. RETOUCH reader + DICOM conversion + de-identification. **Mostly done, 2026-09-19.**
+   De-identification, the spacing guard, the Ophthalmic Tomography writer, SEG, SR and
+   the DICOMweb client internals are implemented and tested on synthetic data. **Only
+   `retouch_reader.read_volume` and `iter_volumes` remain, and they need the data.**
+4. ~~Splits and leakage gate.~~ **done** — 2026-09-17. TC-004 passes for real; its
+   `strict` xfail was removed when `splits.py` landed.
+5. Training on Kaggle; evaluation and subgroup reporting. **Blocked on the dataset.**
+6. SEG/SR output and Orthanc round-trip. **Objects done; round-trip blocked on Docker.**
+7. FastAPI service, Docker, full document set, GitHub Pages. **Not started.**
 
-Identifiers allocated: URS-001..011, SRS-001..061, NFR-001..008, HAZ-001..014,
-RC-001..028, SOUP-001..022, TC-000..TC-113 (76 cases).
+### What is actually blocked, and on what
 
-**22 of 76 test cases are implemented**, covering `eval/metrics.py`, `data/splits.py`,
-`io/deident.py`, the spacing guard in `io/retouch_reader.py` and two
-document-integrity gates. Everything else in `src/` is still a stub. `docs/09` keeps
-allocation and implementation as separate numbers deliberately — they are very
-different claims.
+| Blocked on | What it blocks |
+|---|---|
+| **RETOUCH download** (`docs/06` §10 item 1 — registration not yet submitted as of 2026-09-19) | `retouch_reader.read_volume` and `iter_volumes`; per-vendor spacing plausibility ranges (`docs/07` open item 6); training; every metric on real data; `docs/08`, `docs/10`, `docs/12` |
+| **Docker not installed** | TC-080, TC-081, TC-082 — written and **never executed**. The Orthanc round-trip is unverified |
+| **Neither** — these are simply next | `service/api.py` (step 4, not started), `models/`, `data/datamodule.py`, `data/transforms.py`, `eval/subgroup.py`, `eval/report.py` |
 
-Blocked on the RETOUCH download: the reader, DICOM conversion, per-vendor spacing
-ranges (`docs/07` open item 6), and every metric that needs a real volume.
+### Numbers, as of 2026-09-19
+
+Identifiers: URS-001..011, SRS-001..065, NFR-001..008, HAZ-001..015, RC-001..029,
+SOUP-001..022, TC-000..TC-120 (83 allocated).
+
+**83 test cases allocated, 43 written, 40 executed, 3 written but never run.** Those
+three states are kept separate deliberately and `docs/09` regenerates them from the
+documents and from pytest's own marker resolution — a hand-maintained figure drifted in
+both directions at once and was replaced. A written test nobody has executed is not
+verification.
+
+Risk controls: 29 allocated a test, **21 verified by a test that has actually run**.
+
+### Standing decisions a future session should not relitigate
+
+- **Refuse, or omit — never fill** (RC-029). Acquisition context RETOUCH does not record
+  is caller-supplied or omitted, never substituted. A detectable non-conformance is safer
+  than an undetectable fabrication.
+- **Fluid classes use a declared private coding scheme** `99OCUVAL`, identified in the
+  object. No verified standard code exists for IRF, SRF or PED; a borrowed code would look
+  interoperable and mean something different to every reader (`docs/11` §10 item 5).
+- **The UID root stays an unregistered placeholder**, declared. Objects must not leave the
+  local Orthanc instance.
+- **HD95 is max-of-directed**, not pooled — found by the MONAI cross-check, TC-120.
+- **URS-011's research-use designation mechanism is still open.** Do not resolve it by
+  picking a mechanism; it is a `docs/11` decision.
 
 Update this section at the end of each working session.
