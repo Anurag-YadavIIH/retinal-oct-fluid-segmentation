@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-061 and NFR-001..NFR-008. Every requirement here derives
+Allocates SRS-001..SRS-064 and NFR-001..NFR-008. Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -81,6 +81,9 @@ measurement, and that gap is HAZ-012.
 | SRS-009 | The scanner vendor shall be written into the converted object and shall be recoverable from it without reference to the source directory layout. | URS-006 | TC-023, TC-110 |
 | SRS-010 | Conversion shall preserve the acquisition's native slice count and voxel spacing. It shall not resample, pad, crop or interpolate the volume to a common geometry. | URS-008 | TC-024 |
 | SRS-011 | Where a required tag, UID or IOD constraint is not established, conversion shall fail with that uncertainty stated, rather than writing a plausible value. The behaviour implemented shall match `docs/11_dicom_conformance_statement.md`. | URS-001 | TC-025 |
+| SRS-062 | Ocular acquisition context that the source data does not supply — at minimum image laterality — shall be provided explicitly by the caller. The writer shall not default, infer or derive any such value, and shall abort naming the missing attribute and the module requiring it. | URS-002, URS-009 | TC-026 |
+| SRS-063 | A research exception, disabled by default and settable only in configuration, shall permit conversion to proceed by **omitting** any module or functional group macro that cannot be populated from available data, rather than populating it with invented values. When enabled it shall be permitted only where the designation of SRS-042 is applied, shall emit a warning naming every omitted module, and shall record the omissions in the run output. | URS-009, URS-010, URS-011 | TC-027 |
+| SRS-064 | Every emitted object shall be checked against the module and attribute requirements of its IOD as published in the DICOM standard, and conversion shall abort if a mandatory module is incomplete other than by a recorded SRS-063 omission. | URS-001 | TC-028 |
 
 ### 3.3 De-identification
 
@@ -180,7 +183,7 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | Module | Implements |
 |---|---|
 | `io/retouch_reader.py` | SRS-001, SRS-003, SRS-004, SRS-005, SRS-054, SRS-055, SRS-056 |
-| `io/dicom_writer.py` | SRS-006..SRS-011, SRS-054 |
+| `io/dicom_writer.py` | SRS-006..SRS-011, SRS-054, SRS-062, SRS-063, SRS-064 |
 | `io/deident.py` | SRS-012..SRS-017, SRS-054 |
 | `io/dicomweb.py` | SRS-043, SRS-044, SRS-045, SRS-060 |
 | `data/splits.py` | SRS-018..SRS-023 |

@@ -105,6 +105,7 @@ be claimed. Each is carried into `docs/10` and `docs/12`.
 | L5 | **Reference-standard variability is unquantified.** The released annotations were not double-graded and no per-case inter-rater agreement is published (`docs/06` §1.2). Every reported metric contains an unmeasured component of grader disagreement. |
 | L6 | **Image quality is a confounder.** Cirrus volumes are reported as lower quality than the other two platforms (`docs/06` §3.3); a poor held-out-Cirrus result has at least two candidate explanations. |
 | L7 | **One acquisition, one eye.** The software has no notion of a patient across studies, of fellow-eye comparison, or of prior imaging. |
+| L8 | **The ocular acquisition context is absent from the dataset.** RETOUCH records no image laterality and no fundus reference image, so DICOM objects derived from it cannot populate the Ocular Region Imaged module or the plane position and orientation macros that the Ophthalmic Tomography Image IOD requires (`docs/11`). Two consequences: objects derived from RETOUCH are non-conformant in named respects rather than being given invented values, and **per-eye behaviour is unexercised by this dataset** — URS-002 remains correct as a statement about the software, and is simply not demonstrated by the data available. |
 
 ### 6.2 Contraindications — out of scope, must not be processed
 

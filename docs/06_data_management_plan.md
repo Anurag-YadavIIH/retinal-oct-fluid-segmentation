@@ -160,7 +160,25 @@ class (IRF: 0.15% Spectralis vs 0.03% Topcon). Cross-vendor performance
 differences will therefore conflate **appearance shift** with **prevalence shift**.
 `docs/10` must state this; the two are not separable with this dataset.
 
-### 3.3 Image quality
+### 3.3 Absent acquisition context
+
+RETOUCH ships pixel data, a reference segmentation and voxel spacing. It does **not**
+ship the ocular acquisition context a native DICOM OCT object would carry:
+
+| Absent | Consequence |
+|---|---|
+| Image laterality (which eye) | No conformant `ImageLaterality` can be written; per-eye behaviour is untestable on this data (`docs/01` L8) |
+| Fundus / reference photography image | Plane Position and Plane Orientation become required rather than optional, and neither can be populated (`docs/11` §10 item 3) |
+| Patient coordinate frame | No meaningful `ImagePositionPatient` or `ImageOrientationPatient` |
+| Acquisition date and time | `AcquisitionDateTime` is Type 1 and unconditional in the OPT IOD, so its absence is a conformance break, not a convenience |
+| Scanner model and serial number | Type 1 in Enhanced General Equipment. Only the vendor is recorded, which is what `Manufacturer` carries |
+| Operator identity | Not needed, and its absence is a de-identification benefit rather than a loss |
+
+This is a property of a converted archive, not a defect in the dataset. It is recorded
+here because the absence is a dataset characteristic, and its consequences are recorded
+in `docs/11` (conformance) and `docs/01` L8 (limitation).
+
+### 3.4 Image quality
 
 Cirrus volumes are reported in the literature as lower in image quality than the
 other two vendors. If held-out-Cirrus performance is the worst of the three folds,

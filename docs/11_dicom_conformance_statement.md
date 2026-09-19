@@ -61,6 +61,47 @@ the local Orthanc instance.
    and automated. The conformant means of expressing this in a SEG and an SR is not yet
    decided; candidates and their trade-offs are listed in `docs/01` §8 item 1. To be
    settled here before milestone 6.
-3. **Out-of-scope input criteria unresolved.** SRS-048 requires rejection of
+3. **Objects derived from RETOUCH are non-conformant to the Ophthalmic Tomography
+   Image IOD in named respects.** The IOD assumes a real acquisition on a real device
+   with a fundus reference image; RETOUCH is a converted archive with that context
+   stripped. Specifically, the following cannot be populated from available data:
+
+   | Not populated | Requirement | Why it cannot be supplied |
+   |---|---|---|
+   | `ImageLaterality` (Ocular Region Imaged, module usage **M**) | Type 1, enumerated `R`/`L`/`B` — no empty and no unknown value exists | RETOUCH records no laterality |
+   | `AnatomicRegionSequence` (same module) | Type 1, coded from CID 4209 | Recorded region is macular OCT, but the module is omitted whole rather than partly filled |
+   | `AcquisitionDateTime` (Ophthalmic Tomography Image, module usage **M**) | Type 1, unconditional | RETOUCH records no acquisition date or time; the conversion time is a different fact wearing the same name |
+| `ManufacturerModelName`, `DeviceSerialNumber` (Enhanced General Equipment, **M**) | Type 1 | Describe the scanner, which RETOUCH identifies only by vendor. `DeviceSerialNumber` is additionally removed by the confidentiality profile |
+| Plane Position (Patient) macro | **C** — required when no Ophthalmic Photography Reference Image is available, which is our case (Table A.52.4.3-1) | No patient coordinate frame is recorded |
+   | Plane Orientation (Patient) macro | **C** — same condition | The B-scan plane's orientation in patient coordinates is unrecorded |
+
+   **The alternative considered and rejected was fabricating values.** A detectable
+   non-conformance is safer than an undetectable fabrication: a missing Type 1 attribute
+   is flagged by any validator, whereas an invented laterality is read downstream as a
+   true anatomical fact, and DICOM provides no way to mark a value as provisional. The
+   writer therefore refuses by default (SRS-062) and, under an explicit research
+   exception, omits rather than fills (SRS-063).
+
+   `AcquisitionDateTime`, `ManufacturerModelName` and `DeviceSerialNumber` were not
+   anticipated when this item was first drafted. They were found by the SRS-064
+   check running against highdicom's PS3.3-derived tables, which is the difference
+   between a conformance claim that has been verified and one that has been
+   remembered.
+
+   `AnatomicRegionSequence` is omitted for a different reason: the value is known —
+   RETOUCH is macular OCT — but the module requires a code from CID 4209 and that
+   binding has not been verified against the standard. An unverified code is an
+   invented code with extra steps, so the caller supplies it or it is omitted.
+
+   Established from the normative text: Ocular Region Imaged usage from Table A.52.3-1;
+   `ImageLaterality` type and values from PS3.3 C.8.17.5; macro usages from
+   Table A.52.4.3-1. Ophthalmic Frame Location is usage **U** and is omitted with no
+   conformance consequence.
+
+   **This sits alongside the unregistered UID root in item 1.** Both are reasons the
+   objects this project creates must not be transmitted beyond the local Orthanc
+   instance.
+
+4. **Out-of-scope input criteria unresolved.** SRS-048 requires rejection of
    out-of-scope acquisitions; which attributes establish that is not known until the
    conversion in milestone 3 exists (`docs/02` §6 item 2).

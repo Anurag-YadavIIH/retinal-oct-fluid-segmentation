@@ -113,6 +113,7 @@ failure mode is the one review is least able to catch.
 |---|---|
 | HAZ-001..HAZ-007 | HS-1..HS-7 in `docs/03` §3, in order |
 | HAZ-008..HAZ-011 | New here — not identified in `docs/03`, which scoped itself to the output path |
+| HAZ-015 | New here. **Distinct from HAZ-004 and HAZ-012.** HAZ-004 is a real value attached to the wrong subject; HAZ-012 is a real value corrupted in transit; HAZ-015 is a value that never existed being created to satisfy a format requirement. The first two corrupt data, the third manufactures it |
 | HAZ-012 | New here. **Not a segmentation failure.** `docs/03` HS-1..HS-3 all concern the mask being wrong; HAZ-012 is the mask being right and the measurement being wrong anyway, which no HS covers and which none of the mask-directed controls reach |
 | HAZ-013, HAZ-014 | New here, from the SOUP anomaly findings in `docs/04` §2.2 |
 
@@ -139,6 +140,7 @@ P1 is 1 in every row (§1.2). The Prob column is P2.
 | HAZ-012 | **Acquisition metadata corruption — voxel spacing wrong, absent, or altered in transit** | Axial resolution conventionally quoted in micrometres arrives unconverted (0.0039 mm read as 3.9 → a 1000× volume error) → or spacing is absent and silently defaulted → or anisotropic spacing is collapsed to isotropic → or a transform alters spacing between ingestion and volume computation → mm³ computed from a **correct** mask is wrong by a constant factor | A confidently wrong volume is recorded from a segmentation that is right | Data integrity; the recorded measurement is wrong by orders of magnitude while every visible artefact looks correct | S2 | P-B → **escalated to P-C under §2.4** | **ALARP — second-highest residual in this file** | RC-021, RC-022, RC-023, RC-024, RC-025, RC-026 |
 | HAZ-013 | Checkpoint of unknown provenance or altered content is loaded | A checkpoint not produced by this project, or altered since it was written, is loaded → either the wrong model computes every result, or a crafted checkpoint executes code during deserialisation (`docs/04` §2.2, PyTorch and MONAI) | The system runs weights it did not produce | Data integrity; every output from that run is unattributable. In the deserialisation case, arbitrary code execution | S2 | P-A | ALARP | RC-028, RC-018 |
 | HAZ-014 | DICOMweb client picks up ambient environment configuration | `.netrc`, proxy or certificate settings present in the environment are used by the HTTP client → credentials leaked to a third party on a crafted URL (`docs/04` §2.2, requests), or traffic silently redirected | Client behaviour depends on state outside the run configuration | Confidentiality of local PACS credentials; loss of reproducibility. No PHI is involved | S1 | P-B | Acceptable | RC-027, RC-018 |
+| HAZ-015 | **Acquisition metadata that the source does not supply is fabricated to satisfy a mandatory DICOM attribute** | A required Type 1 attribute has no value in the source — laterality being the concrete case → a plausible value is written to make the object conformant → downstream the value is indistinguishable from a recorded fact, because DICOM has no way to mark a value provisional → a result is read as pertaining to an eye, position or orientation that was never recorded | An invented anatomical fact travels with the object, carrying the authority of the format | Data integrity; in the laterality case it is a measurement attributed to the wrong eye, which is HAZ-004's harm arriving by a different route | S2 | P-B | ALARP | RC-029, RC-014 |
 
 ## 4. Risk control measures
 
@@ -191,6 +193,7 @@ order of preference — information for safety is the weakest.
 | RC-026 | Voxel count and voxel volume recorded alongside mm³ so the derivation is auditable from the object alone | Protective | SRS-059 | `report/sr_object.py` | TC-072, TC-075 |
 | RC-027 | DICOMweb client takes configuration only from the run configuration; `trust_env=False`, no ambient `.netrc`, proxy or certificate settings | Design | SRS-060 | `io/dicomweb.py` | TC-083 |
 | RC-028 | Checkpoints loaded only from the project's own `artifacts/` directory, hash recorded at write time and verified before load; mismatch or missing hash aborts | Protective | SRS-061 | `models/seg_unet.py`, `service/api.py` | TC-058 |
+| RC-029 | **Refuse, or omit — never fill.** Acquisition context absent from the source must be supplied explicitly by the caller or the conversion aborts; under an explicitly enabled research exception the affected module is omitted entire and the omission logged and recorded, never populated with a substituted value | Design | SRS-062, SRS-063, SRS-064 | `io/dicom_writer.py` | TC-026, TC-027, TC-028 |
 
 ### 4.3 RC-017 is deliberately typed as Information
 
@@ -222,6 +225,7 @@ acceptable residual on the strength of RC-017 alone.**
 | HAZ-012 | **ALARP — second-highest residual** | RC-022 and RC-023 remove the two silent paths: nothing defaults, and an implausible value is rejected rather than logged. RC-024 closes the in-transit case. RC-026 makes the derivation auditable after the fact. But **every one of these controls is inside the software whose failure is assumed**, and RC-017 reaches none of them — a grader reviewing a correct mask has no way to see that the millimetres are wrong. See §5.4 |
 | HAZ-013 | ALARP | RC-028 is the control on which `docs/04` accepts the PyTorch and MONAI deserialisation findings (§5.5). Residual is the case where the recorded hash itself is wrong, which nothing independently checks |
 | HAZ-014 | Acceptable | RC-027 removes the mechanism entirely rather than mitigating it. No PHI is involved and the only credentials are to a local Orthanc instance. **The control is over-broad** — it also disables proxy and CA-bundle environment settings, which would break the client in the reading-centre environment `docs/01` §4 describes (`docs/04` §2.6). Correct here, wrong there, and stated rather than fixed |
+| HAZ-015 | ALARP | RC-029 removes the fabrication path by construction: there is no code path that supplies a value the source did not. The residual is that omission produces a **non-conformant** object (`docs/11` §10 item 3), which is a real cost accepted deliberately — a missing Type 1 attribute is flagged by any validator, an invented one is not, and DICOM offers no way to mark a value provisional |
 
 ### 5.2 HAZ-005 — stated plainly
 

@@ -31,7 +31,7 @@ a real reading workflow. `docs/08` records that gap; nothing in this document cl
 
 ### 1.2 Status
 
-**24 of 77 test cases are implemented** as of 2026-09-17 — TC-000..TC-002, TC-004,
+**31 of 77 test cases are implemented** as of 2026-09-17 — TC-000..TC-002, TC-004,
 TC-014, TC-015, TC-030..TC-035, TC-040..TC-042, TC-060..TC-062, TC-068, TC-072,
 TC-105 and TC-106, covering `eval/metrics.py`, `data/splits.py`, `io/deident.py`, the spacing guard in
 `io/retouch_reader.py`, and the two document-integrity gates. The
@@ -149,6 +149,9 @@ lists SRS, NFR and RC identifiers.
 | TC-023 | Vendor recoverable from the object | SRS-009, RC-008 | U | Vendor readable from the converted object without reference to directory layout | yes |
 | TC-024 | Native geometry preserved | SRS-010, RC-016 | U | Slice count and spacing identical to source; no resample, pad, crop or interpolate | yes |
 | TC-025 | Unestablished DICOM detail fails loudly | SRS-011 | U | With a required tag unresolved, conversion raises stating the uncertainty; no value invented | yes |
+| TC-026 | Absent acquisition context aborts conversion | SRS-062, RC-029 | U | Conversion without caller-supplied context raises, naming every missing attribute and its module; no value substituted. Covers laterality, acquisition date-time, scanner model and serial | yes |
+| TC-027 | Research exception omits rather than invents | SRS-063, RC-029 | U | With the exception enabled, the object is written with the affected module **absent**, not present-and-invented; a warning names every omission and the omissions appear in the run output | yes |
+| TC-028 | Emitted object checked against the published IOD module table | SRS-064, RC-029 | U | Every mandatory module of the Ophthalmic Tomography Image IOD is complete, or absent by a recorded SRS-063 omission; checked against highdicom's standard-derived tables rather than against this project's own expectations | yes |
 
 ### 6.4 De-identification
 
@@ -372,7 +375,7 @@ run differently, or an acceptance criterion changed.
 
 | # | Item | Blocks |
 |---|---|---|
-| 1 | 53 of the 77 allocated test cases are unimplemented (§1.2). This protocol is a specification, not a result. | Milestones 3–7 |
+| 1 | 46 of the 77 allocated test cases are unimplemented (§1.2). This protocol is a specification, not a result. | Milestones 3–7 |
 | 2 | TC-107 cannot verify that a change control entry is *correct*, only that one exists (§8). No automation closes that; it is a review activity. | — |
 | 3 | TC-105's gate forces review rather than proving re-classification (§7.3). If a stronger guarantee is wanted it needs a commit-level check outside pytest. | — |
 | 4 | Validation, as distinct from verification, is not performed and cannot be (§1.1). `docs/08` must state this rather than letting a full verification table imply it. | `docs/08` |
