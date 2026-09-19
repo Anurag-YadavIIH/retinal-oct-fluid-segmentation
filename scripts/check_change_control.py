@@ -62,7 +62,17 @@ def newly_introduced_identifiers() -> set[str]:
     if not added:
         return set()
     existing = set(
-        _run(["git", "grep", "-hoE", r"\b(URS|SRS|NFR|HAZ|RC|TC|SOUP)-[0-9]{3}\b", "HEAD", "--", "docs"]).split()
+        _run(
+            [
+                "git",
+                "grep",
+                "-hoE",
+                r"\b(URS|SRS|NFR|HAZ|RC|TC|SOUP)-[0-9]{3}\b",
+                "HEAD",
+                "--",
+                "docs",
+            ]
+        ).split()
     )
     return added - existing
 

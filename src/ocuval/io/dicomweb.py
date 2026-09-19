@@ -178,7 +178,9 @@ class DicomWebClient:
             self.studies_url(),
             data=body,
             headers={
-                "Content-Type": f'multipart/related; type="{DICOM_MEDIA_TYPE}"; boundary={boundary}',
+                "Content-Type": (
+                    f'multipart/related; type="{DICOM_MEDIA_TYPE}"; boundary={boundary}'
+                ),
                 "Accept": "application/dicom+json",
             },
             timeout=self.timeout_s,
