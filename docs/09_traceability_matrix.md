@@ -63,15 +63,15 @@ implemented.
 - Software requirements with a verifying test case **allocated**: **64 of 64**
   SRS and **8 of 8** NFR. `docs/07` allocates 80 test cases
   and every SRS, NFR and RC names one.
-- Test cases **implemented**: **31 of 80**, covering
+- Test cases **implemented**: **35 of 80**, covering
   `eval/metrics.py`, `data/splits.py`, `io/deident.py`, `io/dicom_writer.py`, the spacing
   guard in `io/retouch_reader.py`, the two document-integrity gates and the MONAI
-  cross-check. The remaining 49 are specified and
+  cross-check. The remaining 45 are specified and
   unwritten.
 - Hazards with at least one risk control: **15 of 15** — every HAZ in `docs/05`
   §3.2 carries at least one RC.
 - Risk controls with a verifying test **allocated**: **29 of 29**;
-  **implemented: 17 of 29** (RC-002, RC-003, RC-004, RC-005, RC-006, RC-007, RC-008, RC-011, RC-012, RC-015, RC-016, RC-020, RC-022, RC-023, RC-024, RC-026, RC-029). The rest name an
+  **implemented: 19 of 29** (RC-002, RC-003, RC-004, RC-005, RC-006, RC-007, RC-008, RC-011, RC-012, RC-013, RC-015, RC-016, RC-020, RC-022, RC-023, RC-024, RC-025, RC-026, RC-029). The rest name an
   allocated but unwritten test case (`docs/05` §5.3, `docs/07` §1.2).
 
 **Allocation and implementation are kept as separate numbers throughout.** They are very

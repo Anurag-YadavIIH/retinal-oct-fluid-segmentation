@@ -31,7 +31,7 @@ a real reading workflow. `docs/08` records that gap; nothing in this document cl
 
 ### 1.2 Status
 
-**31 of 80 test cases are implemented** as of 2026-09-17 — TC-000..TC-002, TC-004,
+**35 of 80 test cases are implemented** as of 2026-09-17 — TC-000..TC-002, TC-004,
 TC-014, TC-015, TC-030..TC-035, TC-040..TC-042, TC-060..TC-062, TC-068, TC-072,
 TC-105 and TC-106, covering `eval/metrics.py`, `data/splits.py`, `io/deident.py`, the spacing guard in
 `io/retouch_reader.py`, and the two document-integrity gates. The
@@ -375,7 +375,7 @@ run differently, or an acceptance criterion changed.
 
 | # | Item | Blocks |
 |---|---|---|
-| 1 | 49 of the 80 allocated test cases are unimplemented (§1.2). This protocol is a specification, not a result. | Milestones 3–7 |
+| 1 | 45 of the 80 allocated test cases are unimplemented (§1.2). This protocol is a specification, not a result. | Milestones 3–7 |
 | 2 | TC-107 cannot verify that a change control entry is *correct*, only that one exists (§8). No automation closes that; it is a review activity. | — |
 | 3 | TC-105's gate forces review rather than proving re-classification (§7.3). If a stronger guarantee is wanted it needs a commit-level check outside pytest. | — |
 | 4 | Validation, as distinct from verification, is not performed and cannot be (§1.1). `docs/08` must state this rather than letting a full verification table imply it. | `docs/08` |

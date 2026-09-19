@@ -102,6 +102,47 @@ the local Orthanc instance.
    objects this project creates must not be transmitted beyond the local Orthanc
    instance.
 
-4. **Out-of-scope input criteria unresolved.** SRS-048 requires rejection of
+4. **Frame of Reference is present although its condition is not met.** Table A.52.3-1
+   makes the module conditional — "Required if Ophthalmic Photography Reference Image
+   available or if Ophthalmic Volumetric Properties Flag (0022,1622) is YES. **May be
+   present otherwise.**" Neither trigger applies here, and the module is included under
+   that last clause.
+
+   It is included because a multi-frame DICOM Segmentation cannot be built without one:
+   the SEG IOD needs a shared spatial frame to relate its frames to the source. The UID
+   is minted by this software and asserts only that the frames of a single volume share
+   a frame of reference, which is true by construction. It is an identifier for a real
+   relationship, in the same category as a Study Instance UID, and claims no
+   registration to patient anatomy.
+
+   Plane Position and Plane Orientation follow from the same decision. Both are usage C
+   in Table A.52.4.3-1 and **required** in our case, since no Ophthalmic Photography
+   Reference Image is available. Their values are expressed in the frame of reference
+   this object declares for itself, where the row and column directions and the frame
+   positions are exact by definition rather than estimates. Frame positions step by the
+   recorded B-scan separation, so the spacing governing the volume computation appears
+   twice in the object and a disagreement between the two is detectable (HAZ-012).
+
+5. **Coded concepts: verified, caller-supplied, or declared local — never invented.**
+   Checked against the concept dictionary pydicom ships, which carries the standard's
+   tables:
+
+   | Concept | Status |
+   |---|---|
+   | Segmented property category | `SCT 49755003 Morphologically Abnormal Structure` — verified, used |
+   | Anatomic region | `SCT 5665001 Retina` — verified, used |
+   | Measurement name, volume | `SCT 118565006 Volume` — verified, used |
+   | Units `mm3`, `{counts}`, `1` | UCUM, all three verified, used |
+   | Segmented property type for IRF, SRF, PED | **no verified code found for any of the three** — caller-supplied, no default |
+   | Measurement names for voxel count and confidence | **no verified generic concept found** — caller-supplied, no default |
+
+   Unlike laterality, omission is not available for the segment type: the Segmentation
+   IOD requires it. The honest options are therefore a verified standard code or a code
+   under a **private coding scheme designator**, which DICOM permits and which declares
+   itself local rather than impersonating SNOMED. This project's test fixtures use
+   `99OCUVAL` codes for exactly that reason. **Choosing the production coding remains
+   open** and is not resolved by the fixtures.
+
+6. **Out-of-scope input criteria unresolved.** SRS-048 requires rejection of
    out-of-scope acquisitions; which attributes establish that is not known until the
    conversion in milestone 3 exists (`docs/02` §6 item 2).

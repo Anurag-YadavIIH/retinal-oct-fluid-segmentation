@@ -121,6 +121,7 @@ class WriteResult:
     sop_instance_uids: list[str]
     study_instance_uid: str
     series_instance_uid: str
+    frame_of_reference_uid: str = ""
     omissions: list[str] = field(default_factory=list)
 
 
@@ -240,13 +241,40 @@ def _pixel_measures(volume: OCTVolume) -> Dataset:
 
 
 def _shared_functional_groups(volume: OCTVolume) -> Dataset:
+    """Shared groups: Pixel Measures (usage M) and Plane Orientation (usage C, required).
+
+    Plane Orientation and Plane Position are usage C in Table A.52.4.3-1, "Required if
+    **no** Ophthalmic Photography Reference Image is available" — which is our case, so
+    both are required rather than optional.
+
+    **Why these are populated while laterality is not.** The values are expressed in the
+    frame of reference this object declares for itself (`FrameOfReferenceUID`, minted
+    above). Within that frame the row and column directions and the frame positions are
+    not estimates of anything — they are the definition of the frame, and they are exact.
+    Laterality is different in kind: it asserts a fact about the patient that the source
+    never recorded, and no declaration by this software can make it true.
+
+    What is *not* claimed: any registration to patient anatomy. The frame is local and
+    the UID says so by being ours. A consumer that needs anatomical orientation will not
+    find it here, which is the correct outcome, because it is not known.
+    """
+    orientation = Dataset()
+    orientation.ImageOrientationPatient = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+
     shared = Dataset()
     shared.PixelMeasuresSequence = [_pixel_measures(volume)]
+    shared.PlaneOrientationSequence = [orientation]
     return shared
 
 
-def _per_frame_functional_groups(n_frames: int) -> list[Dataset]:
-    """Frame Content is usage M and may not be Shared (Table A.52.4.3-1)."""
+def _per_frame_functional_groups(n_frames: int, bscan_separation_mm: float) -> list[Dataset]:
+    """Frame Content (usage M, may not be Shared) and Plane Position (usage C, required).
+
+    Frame positions step by the real B-scan separation, so the spacing that governs the
+    volume computation is expressed twice in the object and the two must agree. That
+    redundancy is deliberate: a disagreement between PixelMeasures and the frame step is
+    detectable, where a single unchecked value is not (HAZ-012).
+    """
     groups = []
     for index in range(n_frames):
         content = Dataset()
@@ -255,8 +283,12 @@ def _per_frame_functional_groups(n_frames: int) -> list[Dataset]:
         content.InStackPositionNumber = index + 1
         content.DimensionIndexValues = [index + 1]
 
+        position = Dataset()
+        position.ImagePositionPatient = [0.0, 0.0, float(index * bscan_separation_mm)]
+
         frame = Dataset()
         frame.FrameContentSequence = [content]
+        frame.PlanePositionSequence = [position]
         groups.append(frame)
     return groups
 
@@ -268,6 +300,7 @@ def _build_dataset(
     omissions: list[str],
     study_uid: str,
     series_uid: str,
+    frame_of_reference_uid: str,
     software_version: str,
 ) -> Dataset:
     pixels = np.asarray(volume.pixel_array)
@@ -353,6 +386,19 @@ def _build_dataset(
     # Acquisition Context (M) — Type 2 sequence; empty is conformant.
     ds.AcquisitionContextSequence = []
 
+    # Frame of Reference — usage C, and its condition is not met here: there is no
+    # Ophthalmic Photography Reference Image and the volumetric properties flag is not
+    # set. The condition ends "May be present otherwise", so including it is conformant.
+    #
+    # It is included because a downstream multi-frame Segmentation cannot be built
+    # without one: the SEG IOD needs a shared spatial frame to relate its frames to the
+    # source. The UID asserts only that the frames of this one volume share a frame of
+    # reference, which is true by construction — it is an identifier minted for a real
+    # relationship, in the same category as StudyInstanceUID, not an anatomical fact
+    # invented to satisfy a validator.
+    ds.FrameOfReferenceUID = frame_of_reference_uid
+    ds.PositionReferenceIndicator = ""
+
     # Multi-frame Dimension (M)
     dimension_uid = generate_uid(uid_root)
     organization = Dataset()
@@ -365,7 +411,9 @@ def _build_dataset(
     ds.InstanceNumber = 1
     ds.NumberOfFrames = int(n_frames)
     ds.SharedFunctionalGroupsSequence = [_shared_functional_groups(volume)]
-    ds.PerFrameFunctionalGroupsSequence = _per_frame_functional_groups(n_frames)
+    ds.PerFrameFunctionalGroupsSequence = _per_frame_functional_groups(
+        n_frames, volume.spacing_mm[2]
+    )
 
     # Ocular Region Imaged (M) — written only from caller-supplied values.
     #
@@ -391,6 +439,7 @@ def write_volume(
     software_version: str | None = None,
     study_instance_uid: str | None = None,
     series_instance_uid: str | None = None,
+    frame_of_reference_uid: str | None = None,
 ) -> WriteResult:
     """Write one OCTVolume as a multi-frame DICOM instance. Returns what was produced.
 
@@ -405,6 +454,7 @@ def write_volume(
 
     study_uid = study_instance_uid or generate_uid(uid_root)
     series_uid = series_instance_uid or generate_uid(uid_root)
+    frame_of_reference_uid = frame_of_reference_uid or generate_uid(uid_root)
 
     ds = _build_dataset(
         volume,
@@ -413,6 +463,7 @@ def write_volume(
         omissions,
         study_uid,
         series_uid,
+        frame_of_reference_uid or generate_uid(uid_root),
         software_version or __version__,
     )
 
@@ -441,6 +492,7 @@ def write_volume(
         sop_instance_uids=[ds.SOPInstanceUID],
         study_instance_uid=study_uid,
         series_instance_uid=series_uid,
+        frame_of_reference_uid=frame_of_reference_uid,
         omissions=omissions,
     )
 

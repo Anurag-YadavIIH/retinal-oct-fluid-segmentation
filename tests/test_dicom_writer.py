@@ -109,6 +109,7 @@ def test_TC_022_two_conversions_differ_only_in_uids(volume, context, tmp_path):
         "DimensionOrganizationSequence",
         "ContentTime",
         "ContentDate",
+        "FrameOfReferenceUID",
     }
     for elem in first:
         if elem.keyword in uid_keywords or elem.keyword == "PixelData":
