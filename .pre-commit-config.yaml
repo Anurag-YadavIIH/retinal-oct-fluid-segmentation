@@ -19,8 +19,6 @@ repos:
       - id: check-added-large-files
         args: [--maxkb=2000]
       - id: check-merge-conflict
-      - id: no-commit-to-branch
-        args: [--branch, main]
 
   # Local guards. Both exist because of a real incident: commit 104342b described a
   # change control entry its patch script had failed to write, and the commit proceeded

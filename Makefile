@@ -13,11 +13,19 @@ format:
 	ruff format src tests scripts
 	ruff check --fix src tests scripts
 
+# Excludes the tests that cannot run without a PACS or the RETOUCH data. A target that
+# fails by design teaches people to ignore failures, so `test` means "everything that
+# can run here" and matches what CI runs.
 test:
-	pytest
+	pytest -m "not requires_data and not requires_pacs"
 
 test-fast:
 	pytest -m "not slow and not requires_data and not requires_pacs"
+
+# Needs a running Orthanc: `make pacs-up` first. As of 2026-09-20 these tests
+# (TC-080..TC-082) have never been executed — see docs/07 section 6.9.
+test-pacs:
+	pytest -m "requires_pacs"
 
 pacs-up:
 	docker compose -f docker/docker-compose.yml up -d orthanc
