@@ -162,43 +162,167 @@ than weeks.
 
 ### 3.1 Per-vendor composition
 
+**Measured from the archive on 2026-09-23, replacing literature-derived figures.**
+The subject counts and slice totals were correct. The Topcon per-volume figures were
+not, and the reason they were wrong is instructive — see the note below the table.
+
 | Vendor | Subjects | B-scan size (px) | B-scans/volume | Total slices |
 |---|---|---|---|---|
 | Cirrus | 24 | 512 × 1024 | 128 | 3,072 |
 | Spectralis | 24 | 512 × 496 | 49 | 1,176 |
-| Topcon | 22 | 512 × 885 | ~122 | 2,688 |
+| Topcon | 22 | **512 × 650** (10 vols) and **512 × 885** (12 vols) | **128** (20 vols), **64** (2 vols) | 2,688 |
 | **Total** | **70** | — | — | **6,936** |
 
-Vendors differ in both axial resolution and slice count. Spectralis volumes carry
-fewer than half the B-scans of the other two. This geometric heterogeneity is not
-noise to be normalised away — it is a component of the domain shift the project
-exists to measure. Preprocessing must not resample all vendors into a single
-common geometry, as doing so would remove part of the effect under study.
+Topcon in detail, because no single row describes it:
+
+| Geometry | Volumes | Subjects |
+|---|---|---|
+| 512 × 650 × 128 | 10 | — |
+| 512 × 885 × 128 | 10 | — |
+| 512 × 885 × 64 | 2 | — |
+
+**Why the old figure was wrong, and why that matters.** §3.1 previously recorded Topcon
+as "512 × 885, ~122 B-scans". No Topcon volume has 122 B-scans; they have 128 or 64. The
+figure was the total slice count divided by the subject count — 2,688 / 22 = 122.2 — an
+average presented as though it described a volume. The total was right, which is exactly
+why the error survived: every aggregate derived from it checked out. A mean over a
+bimodal distribution names a value that nothing in the dataset has.
+
+**Heterogeneity is intra-vendor, not only cross-vendor.** Topcon alone spans three
+geometries, including a two-fold difference in slice count. The previous text argued
+that geometric heterogeneity across vendors is part of the domain shift and must not be
+normalised away; that argument now applies *within* Topcon as well, and SRS-010 and
+SRS-026 are correspondingly more load-bearing than when they were written.
+
+### 3.1.1 Pixel element types
+
+Not previously recorded, and the reader must honour it:
+
+| Vendor | `oct.raw` | `reference.raw` |
+|---|---|---|
+| Cirrus | `MET_UCHAR` (8-bit) | `MET_UCHAR` |
+| Spectralis | **`MET_USHORT` (16-bit)** | `MET_UCHAR` |
+| Topcon | `MET_UCHAR` (8-bit) | `MET_UCHAR` |
+
+Reading a Spectralis volume as 8-bit, or a Cirrus volume as 16-bit, produces an array of
+the wrong length and wrong values. The type must be taken from the header rather than
+assumed, on exactly the grounds SRS-003 gives for voxel spacing.
+
+In all 70 volumes the `oct` and `reference` headers agree on `DimSize` and
+`ElementSpacing`, so no volume has a reference standard misaligned with its image.
+
+### 3.1.2 Voxel spacing, measured per vendor
+
+`ElementSpacing` is ordered (x, y, z) = (lateral within a B-scan, axial, B-scan
+separation), all in millimetres.
+
+| Vendor | Lateral (x) | Axial (y) | B-scan separation (z) |
+|---|---|---|---|
+| Cirrus | 0.011742 (constant) | 0.001955 (constant) | 0.046878 – 0.047244 |
+| Spectralis | 0.010856 – 0.011950 | 0.003872 (constant) | 0.116380 – 0.128624 |
+| Topcon | 0.011720 (constant) | 0.002600 **or** 0.003500 | 0.046880 (constant) |
+
+Three observations that bear on requirements:
+
+- **Every volume is strongly anisotropic**, so the isotropy rejection in
+  `retouch_reader.validate_spacing` cannot fire on valid data.
+- **Every component is far below the 0.5 mm physical bound** that guard uses — the
+  largest is Spectralis B-scan separation at 0.129 mm. The bound is loose by roughly
+  four-fold against real data, which is what it was designed to be.
+- **Spectralis spacing varies per subject** in two of three axes, so per-vendor ranges
+  must be ranges rather than constants. These figures are what `docs/07` open item 6
+  needs to tighten the bound.
 
 ### 3.2 Class prevalence (voxel-wise, % of all voxels)
 
+**Measured from all 70 reference volumes on 2026-09-23. The previous figures were
+literature-derived and every fluid-class value was wrong**, several by large factors.
+Both the pooled voxel count and the mean of per-volume percentages were computed; they
+agree, so the discrepancy is not a difference of statistic.
+
 | Vendor | Background | IRF | SRF | PED |
 |---|---|---|---|---|
-| Cirrus | 98.95 | 0.04 | 0.18 | 0.83 |
-| Spectralis | 98.74 | 0.15 | 0.39 | 0.72 |
-| Topcon | 99.45 | 0.03 | 0.06 | 0.46 |
+| Cirrus | 98.8437 | 0.4019 | 0.3515 | 0.4029 |
+| Spectralis | 98.5173 | 0.5821 | 0.5777 | 0.3229 |
+| Topcon | 99.4011 | 0.2043 | 0.0963 | 0.2983 |
 
-**Foreground occupies between 0.55% and 1.26% of voxels.** This is the governing
+Superseded figures, retained so the size of the correction is visible:
+
+| Vendor | Background | IRF | SRF | PED |
+|---|---|---|---|---|
+| Cirrus | 98.95 | 0.04 (**10.0×** low) | 0.18 (2.0× low) | 0.83 (2.1× high) |
+| Spectralis | 98.74 | 0.15 (3.9× low) | 0.39 (1.5× low) | 0.72 (2.2× high) |
+| Topcon | 99.45 | 0.03 (**6.8×** low) | 0.06 (1.6× low) | 0.46 (1.5× high) |
+
+The errors are not random: **IRF and SRF were understated in every vendor and PED was
+overstated in every vendor.** That is a systematic pattern, which suggests the source
+figures described something other than voxel-wise prevalence across the training
+partition — a different partition, a per-lesion count, or a different definition — rather
+than being noisy transcription. The source has not been re-identified and the measured
+values govern.
+
+**Foreground occupies between 0.60% and 1.48% of voxels.** This is the governing
 constraint on evaluation design and drives three decisions recorded elsewhere:
 
-1. **Accuracy is never reported.** A trivial all-background predictor scores above
-   98.7% on every vendor. `src/ocuval/eval/metrics.py` deliberately provides no
-   accuracy function and none is to be added.
+1. **Accuracy is never reported.** A trivial all-background predictor scores
+   **98.52% to 99.40%** on the measured data. The correction moved this figure by
+   fractions of a percent and changed nothing about the conclusion: the prohibition was
+   never close to marginal, and `src/ocuval/eval/metrics.py` still provides no accuracy
+   function.
 2. **Dice excludes background** (`loss.include_background: false` in
    `configs/train_seg.yaml`), otherwise the background term dominates the gradient.
-3. **Per-class reporting is mandatory.** IRF on Topcon is 0.03% of voxels — an
-   aggregate foreground Dice would let near-total failure on the rarest class hide
-   behind performance on PED.
+3. **Per-class reporting is mandatory.** The rarest class is now **SRF on Topcon at
+   0.0963%** rather than IRF on Topcon; an aggregate foreground Dice would let
+   near-total failure on it hide behind the others. The conclusion is unchanged and the
+   class it protects is different, which is a good illustration of why a requirement
+   should be written against a property rather than against a number.
 
-Note also that prevalence varies by a factor of five across vendors for the same
-class (IRF: 0.15% Spectralis vs 0.03% Topcon). Cross-vendor performance
-differences will therefore conflate **appearance shift** with **prevalence shift**.
-`docs/10` must state this; the two are not separable with this dataset.
+**Prevalence shift, remeasured.** The claim that prevalence varies "by a factor of
+five across vendors for the same class" was based on the superseded IRF figures. Measured
+cross-vendor ratios are:
+
+| Class | Lowest vendor | Highest vendor | Ratio |
+|---|---|---|---|
+| IRF | Topcon 0.2043% | Spectralis 0.5821% | 2.8× |
+| SRF | Topcon 0.0963% | Spectralis 0.5777% | **6.0×** |
+| PED | Spectralis 0.3229% | Cirrus 0.4029% | 1.2× |
+
+So the qualitative claim survives and its subject changes: the five-fold spread is real
+but belongs to **SRF**, not IRF, and PED is nearly uniform across vendors. Cross-vendor
+performance differences still conflate **appearance shift** with **prevalence shift**,
+and `docs/10` must still say so — but the statement should now name SRF, where the
+confound is strongest, and note that a PED difference across vendors cannot be explained
+by prevalence at all.
+
+### 3.2.1 Most volumes do not contain all three classes
+
+Not previously recorded, and it governs how every metric behaves in practice:
+
+| | Volumes containing the class |
+|---|---|
+| IRF | 55 of 70 |
+| SRF | 37 of 70 |
+| PED | 33 of 70 |
+| **All three** | **12 of 70** |
+| None at all | 0 of 70 |
+
+**58 of 70 volumes lack at least one fluid class.** The empty-reference case is therefore
+the common case, not an edge case, and the metric conventions fixed in `docs/13` are
+exercised on most of the dataset rather than occasionally:
+
+- Dice returns 1.0 when prediction and reference are both empty — correct agreement that
+  a class is absent, and it will be the honest outcome for a large share of per-class
+  evaluations.
+- HD95 returns NaN when exactly one of the two is empty. For PED that arises whenever
+  the model predicts anything in the 37 volumes with no PED, so **a substantial fraction
+  of per-class HD95 values will be NaN by construction**.
+- `bootstrap_ci` excludes NaN and reports the n actually used, which is why the sample
+  size is carried alongside every figure. Without it a PED HD95 could be quoted over a
+  handful of volumes and read as though it covered 70.
+
+This is the strongest vindication available of the decision to return NaN rather than
+inf: on this dataset, inf would have destroyed the majority of per-class HD95 aggregates
+rather than a rare one.
 
 ### 3.3 Absent acquisition context
 
@@ -446,7 +570,7 @@ challenge dataset, and the mapping decisions are themselves documentable work.
 | # | Item | Blocks |
 |---|---|---|
 | 1 | ~~Complete grand-challenge registration; record acceptance date.~~ **Closed 2026-09-23.** Registration submitted 2026-09-20 17:35, accepted 2026-09-21. Signed Agreement of Data Confidentiality emailed to the organisers 2026-09-20. Training partition downloaded 2026-09-21; test partition deliberately not taken (§2.1). | — closed |
-| 2 | Confirm actual Topcon B-scan count per volume against downloaded data; table in §3.1 uses a literature-derived figure | `docs/10` |
+| 2 | ~~Confirm actual Topcon B-scan count per volume.~~ **Closed 2026-09-23: the figure was wrong.** No Topcon volume has ~122 B-scans; 20 have 128 and 2 have 64, across three distinct geometries. §3.1 corrected, along with §3.1.1 element types, §3.1.2 measured spacing and the whole of §3.2 prevalence. | — closed |
 | 3 | ~~Confirm whether subject identifiers are recoverable from directory names alone.~~ **Closed 2026-09-23: yes, directory names suffice.** Subject numbering is continuous and unique across vendors (TRAIN001–024 Cirrus, TRAIN025–048 Spectralis, TRAIN049–070 Topcon), so no manifest is needed to disambiguate. See §4. | — closed |
 | 4 | ~~Decide whether a registration acceptance date belongs in `docs/13`.~~ **Closed 2026-09-23: yes, and it is recorded there.** The dates establish when the agreement's obligations began, and §8 makes retention contingent on an authorisation that has a start date — an obligation whose commencement is undated cannot be audited. | — closed |
 | 5 | ~~Populate the SRS and RC trace columns once `docs/02` and `docs/05` exist~~ **Resolved 2026-09-17:** both drafted; `docs/09` carries SRS and RC columns. DMP-C1..C5 are superseded by RC-019, C6 by RC-001, C7 and C9 by RC-002, C8 by RC-003, C10 by RC-004 (`docs/05` §4.1). | — closed |

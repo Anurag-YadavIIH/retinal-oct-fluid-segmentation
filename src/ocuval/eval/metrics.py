@@ -8,8 +8,16 @@ A bare point estimate is not a result anywhere in this repository. Every aggrega
 function here returns an estimate together with its interval and the sample size.
 
 Accuracy is deliberately absent. The classes are severely imbalanced — foreground is
-0.55-1.26% of voxels (docs/06 section 3.2) — so a null predictor scores above 98.7%.
-Do not add an accuracy function; TC-002 asserts there is none.
+0.60-1.48% of voxels, measured across all 70 volumes (docs/06 section 3.2) — so a null
+predictor scores 98.52-99.40%. Do not add an accuracy function; TC-002 asserts there is
+none.
+
+The empty-mask conventions below are not edge cases on this dataset. 58 of 70 volumes
+lack at least one fluid class and only 12 contain all three (docs/06 section 3.2.1), so
+both-empty Dice and one-empty HD95 are exercised on the majority of per-class
+evaluations. That is the strongest available vindication of returning NaN rather than
+inf from hd95: on this data, inf would have destroyed most per-class HD95 aggregates
+rather than a rare one.
 
 These are pure functions over numpy arrays, not MONAI metrics, and that is deliberate
 (CLAUDE.md section 4 records the exception). Two reasons:
