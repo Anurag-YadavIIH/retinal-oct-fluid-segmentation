@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-066 and NFR-001..NFR-008. Every requirement here derives
+Allocates SRS-001..SRS-069 and NFR-001..NFR-008. Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -32,6 +32,8 @@ and any user interface beyond the HTTP API.
 | Term | Meaning in this document |
 |---|---|
 | **Sample** | One B-scan presented to the network, carrying patient, vendor and source-volume identity |
+| **Volume-level record** | One acquisition, which is what a manifest row and a DICOM instance correspond to. Splitting operates here; a resolved split lists volumes, not B-scans |
+| **Expansion** | Deriving the frame-level samples of a split from its volume-level records (SRS-067..SRS-069). It happens after splitting and never before |
 | **Volume** | One OCT acquisition — an ordered stack of B-scans from one eye, one visit |
 | **Manifest** | The record of all available samples with their patient, vendor and provenance fields |
 | **Split** | A resolved assignment of samples to train / validation / test for one fold |
@@ -107,6 +109,9 @@ measurement, and that gap is HAZ-012.
 | SRS-021 | Each fold shall hold out exactly one vendor. The test split shall contain no sample whose vendor differs from the fold's held-out vendor. | URS-007 | TC-004 |
 | SRS-022 | Each fold shall additionally resolve an in-domain reference set of held-out patients drawn from the training vendors, disjoint from train and validation on the same terms as SRS-019. | URS-007 | TC-040 |
 | SRS-023 | Split construction shall be seeded, and the resolved split shall be persisted such that it can be reconstructed from the committed configuration alone. | URS-010 | TC-041 |
+| SRS-067 | Expansion from volume to frame shall occur **strictly after** splitting. No frame shall be presented to training, validation or evaluation before the volume it belongs to has been assigned to a split. | URS-007 | TC-043 |
+| SRS-068 | Every frame shall inherit the split assignment of the volume it came from. No other mechanism shall assign a frame to a split, and `ocuval.data.splits` shall remain the only module that performs the expansion. | URS-007 | TC-043 |
+| SRS-069 | Expansion shall be deterministic: the same split and the same frame counts shall produce the same frames in the same order on every execution. | URS-010 | TC-043 |
 
 ### 3.5 Training
 
@@ -189,7 +194,7 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `io/dicom_writer.py` | SRS-006..SRS-011, SRS-054, SRS-062, SRS-063, SRS-064, SRS-066 |
 | `io/deident.py` | SRS-012..SRS-017, SRS-054 |
 | `io/dicomweb.py` | SRS-043, SRS-044, SRS-045, SRS-060 |
-| `data/splits.py` | SRS-018..SRS-023 |
+| `data/splits.py` | SRS-018..SRS-023, SRS-067, SRS-068, SRS-069 |
 | `data/datamodule.py` | SRS-024 |
 | `data/transforms.py` | SRS-025, SRS-026 |
 | `models/seg_unet.py` | SRS-027, SRS-028, SRS-061 |

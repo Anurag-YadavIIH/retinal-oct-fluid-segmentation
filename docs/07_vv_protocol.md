@@ -195,6 +195,7 @@ lists SRS, NFR and RC identifiers.
 | TC-040 | In-domain reference set disjoint | SRS-022 | U | Reference patients drawn from training vendors, disjoint from train and val | yes |
 | TC-041 | Splits seeded, persisted, reproducible | SRS-023, RC-004 | U | Same config and seed reproduce the split exactly; save/load round-trips | yes |
 | TC-042 | Split construction is patient-level from the manifest | SRS-019, RC-002 | U | No B-scan assigned independently of its patient | yes |
+| TC-043 | **Disjointness survives volume-to-frame expansion** | SRS-067, SRS-068, SRS-069, RC-031 | U | After expansion, no patient's frames appear in more than one split; every frame traces to a volume in the same bucket; every frame of every assigned volume is present exactly once; expansion is deterministic across executions; and expanding a deliberately overlapping split is refused | yes |
 
 ### 6.6 Training, uncertainty and checkpoints
 

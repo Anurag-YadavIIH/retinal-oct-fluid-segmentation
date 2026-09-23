@@ -227,3 +227,144 @@ def load(path: Path) -> Split:
     if set(data) != expected:
         raise ValueError(f"split file has fields {sorted(data)}, expected {sorted(expected)}")
     return Split(**data)
+
+
+@dataclass(frozen=True)
+class FrameSplit:
+    """A split expanded from volumes to individual B-scans.
+
+    Produced only by `expand_to_frames`, only from an already-resolved `Split`, and
+    never assembled by hand. `volume_of` is carried so that any downstream check can
+    recover which acquisition a frame came from without re-deriving it from the
+    identifier string.
+    """
+
+    fold_id: str
+    train: list[str]
+    val: list[str]
+    test: list[str]
+    in_domain_ref: list[str]
+    held_out_vendor: str
+    seed: int
+    volume_of: dict[str, str]
+
+
+def frame_id(sample_id: str, index: int) -> str:
+    """Identifier for one frame of one volume.
+
+    The volume's identifier is the prefix, so a frame is traceable to its acquisition
+    by construction. `volume_of` on `FrameSplit` is the authoritative mapping; this
+    format exists so that a frame identifier appearing in a log is legible.
+    """
+    if index < 0:
+        raise ValueError(f"frame index must be non-negative, got {index}")
+    return f"{sample_id}#{index:04d}"
+
+
+def expand_to_frames(split: Split, frame_counts: dict[str, int]) -> FrameSplit:
+    """Expand a resolved volume-level split into frames (SRS-067, SRS-068, SRS-069).
+
+    **Expansion happens after splitting and never before.** This function takes a
+    `Split` that already exists, so there is no ordering in which frames are assigned
+    first; the type signature is the enforcement. Every frame inherits the bucket of its
+    volume and no frame acquires one by any other route.
+
+    This matters because the DICOM layer produces one multi-frame instance per volume
+    while training consumes 2-D B-scans, so an expansion step exists that did not when
+    `leave_one_vendor_out` was written. A correct volume-level split followed by a wrong
+    expansion reaches HAZ-008 by a second path: adjacent B-scans from one retina, microns
+    apart, on both sides of the split.
+
+    Deterministic: volumes are taken in the order the split records them and frames in
+    ascending index, so the same split and counts always produce the same lists in the
+    same order (SRS-069). No randomness is involved, which is why no seed is taken —
+    `split.seed` is carried through for provenance only.
+
+    Raises if any assigned volume has no frame count, rather than silently dropping it:
+    a volume missing from the expansion is a volume missing from training or evaluation,
+    and its absence would be invisible in the resulting lengths.
+    """
+    buckets = {
+        "train": split.train,
+        "val": split.val,
+        "test": split.test,
+        "in_domain_ref": split.in_domain_ref,
+    }
+
+    missing = sorted({sid for ids in buckets.values() for sid in ids if sid not in frame_counts})
+    if missing:
+        raise ValueError(
+            f"no frame count for {len(missing)} assigned volume(s): {missing[:5]}. "
+            f"Dropping them would remove data from training or evaluation without "
+            f"changing anything observable about the split."
+        )
+
+    expanded: dict[str, list[str]] = {}
+    volume_of: dict[str, str] = {}
+    for name, ids in buckets.items():
+        frames: list[str] = []
+        for sample_id in ids:
+            count = frame_counts[sample_id]
+            if count <= 0:
+                raise ValueError(f"volume {sample_id!r} reports {count} frames")
+            for index in range(count):
+                fid = frame_id(sample_id, index)
+                frames.append(fid)
+                volume_of[fid] = sample_id
+        expanded[name] = frames
+
+    return FrameSplit(
+        fold_id=split.fold_id,
+        train=expanded["train"],
+        val=expanded["val"],
+        test=expanded["test"],
+        in_domain_ref=expanded["in_domain_ref"],
+        held_out_vendor=split.held_out_vendor,
+        seed=split.seed,
+        volume_of=volume_of,
+    )
+
+
+def assert_no_patient_overlap_after_expansion(
+    frame_split: FrameSplit, manifest: Sequence[Sample]
+) -> None:
+    """Re-assert disjointness at patient level on the expanded frames (RC-031).
+
+    Inheritance is checked rather than assumed. The volume-level assertion having passed
+    says nothing about whether the expansion preserved it, and the two failures look
+    identical downstream — a Dice score that reflects memorisation.
+    """
+    patient_of = {s.sample_id: s.patient_id for s in manifest}
+
+    buckets = {
+        "train": frame_split.train,
+        "val": frame_split.val,
+        "test": frame_split.test,
+        "in_domain_ref": frame_split.in_domain_ref,
+    }
+
+    unknown = {
+        fid
+        for ids in buckets.values()
+        for fid in ids
+        if frame_split.volume_of.get(fid) not in patient_of
+    }
+    if unknown:
+        raise ValueError(
+            f"expanded frames reference volumes absent from the manifest: {sorted(unknown)[:5]}"
+        )
+
+    patients = {
+        name: {patient_of[frame_split.volume_of[fid]] for fid in ids}
+        for name, ids in buckets.items()
+    }
+    names = sorted(buckets)
+    for i, left in enumerate(names):
+        for right in names[i + 1 :]:
+            shared = patients[left] & patients[right]
+            if shared:
+                raise ValueError(
+                    f"patient overlap after expansion between {left} and {right}: "
+                    f"{sorted(shared)}. The volume-level split may have been correct; the "
+                    f"expansion was not. Fix the expansion, never this assertion."
+                )

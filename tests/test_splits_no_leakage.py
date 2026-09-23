@@ -26,6 +26,9 @@ from ocuval.data.splits import (
     Sample,
     Split,
     assert_no_patient_overlap,
+    assert_no_patient_overlap_after_expansion,
+    expand_to_frames,
+    frame_id,
     leave_one_vendor_out,
     load,
     save,
@@ -278,3 +281,97 @@ def test_TC_042_training_set_survives_a_small_manifest():
     manifest = build_manifest(patients_per_vendor=2, slices_per_patient=2)
     split = leave_one_vendor_out(manifest, "cirrus", val_fraction=0.15, seed=SEED)
     assert split.train
+
+
+# --- TC-043: disjointness must survive volume-to-frame expansion -------------------
+#
+# The DICOM layer produces one multi-frame instance per volume while training consumes
+# 2-D B-scans, so an expansion step exists that did not when leave_one_vendor_out was
+# written. A correct volume-level split followed by a wrong expansion reaches HAZ-008 by
+# a second path, and the two failures are indistinguishable downstream.
+
+
+def frame_counts_for(manifest, per_volume=7):
+    return {s.sample_id: per_volume for s in manifest}
+
+
+@pytest.mark.parametrize("held_out", VENDORS)
+def test_TC_043_patients_stay_disjoint_after_expansion(held_out):
+    manifest = build_manifest(patients_per_vendor=5, slices_per_patient=1)
+    split = leave_one_vendor_out(manifest, held_out, val_fraction=0.2, seed=SEED)
+    frames = expand_to_frames(split, frame_counts_for(manifest))
+    assert_no_patient_overlap_after_expansion(frames, manifest)
+
+
+def test_TC_043_every_frame_traces_to_a_volume_in_the_same_bucket():
+    manifest = build_manifest(patients_per_vendor=5, slices_per_patient=1)
+    split = leave_one_vendor_out(manifest, "topcon", val_fraction=0.2, seed=SEED)
+    frames = expand_to_frames(split, frame_counts_for(manifest))
+    for name, volume_ids, frame_ids in (
+        ("train", split.train, frames.train),
+        ("val", split.val, frames.val),
+        ("test", split.test, frames.test),
+        ("in_domain_ref", split.in_domain_ref, frames.in_domain_ref),
+    ):
+        assert {frames.volume_of[f] for f in frame_ids} == set(volume_ids), name
+
+
+def test_TC_043_every_frame_of_every_volume_appears_exactly_once():
+    manifest = build_manifest(patients_per_vendor=4, slices_per_patient=1)
+    split = leave_one_vendor_out(manifest, "cirrus", val_fraction=0.25, seed=SEED)
+    counts = frame_counts_for(manifest, per_volume=5)
+    frames = expand_to_frames(split, counts)
+    everything = frames.train + frames.val + frames.test + frames.in_domain_ref
+    assert len(everything) == len(set(everything))
+    assigned = set(split.train + split.val + split.test + split.in_domain_ref)
+    assert len(everything) == sum(counts[v] for v in assigned)
+
+
+def test_TC_043_expansion_is_deterministic():
+    manifest = build_manifest(patients_per_vendor=4, slices_per_patient=1)
+    split = leave_one_vendor_out(manifest, "spectralis", val_fraction=0.25, seed=SEED)
+    counts = frame_counts_for(manifest)
+    assert expand_to_frames(split, counts) == expand_to_frames(split, counts)
+
+
+def test_TC_043_expansion_of_a_leaking_split_is_caught():
+    """The assertion must fire on a split whose expansion is wrong, not merely exist."""
+    manifest = build_manifest(patients_per_vendor=4, slices_per_patient=1)
+    split = leave_one_vendor_out(manifest, "topcon", val_fraction=0.25, seed=SEED)
+    leaked = Split(
+        fold_id=split.fold_id,
+        train=split.train,
+        val=split.val,
+        test=split.test + split.train[:1],
+        in_domain_ref=split.in_domain_ref,
+        held_out_vendor=split.held_out_vendor,
+        seed=split.seed,
+    )
+    frames = expand_to_frames(leaked, frame_counts_for(manifest))
+    with pytest.raises(ValueError, match="patient overlap after expansion"):
+        assert_no_patient_overlap_after_expansion(frames, manifest)
+
+
+def test_TC_043_missing_frame_count_is_refused_rather_than_dropped():
+    """A silently dropped volume is data missing from training with nothing to show it."""
+    manifest = build_manifest(patients_per_vendor=4, slices_per_patient=1)
+    split = leave_one_vendor_out(manifest, "cirrus", val_fraction=0.25, seed=SEED)
+    counts = frame_counts_for(manifest)
+    del counts[split.train[0]]
+    with pytest.raises(ValueError, match="no frame count for"):
+        expand_to_frames(split, counts)
+
+
+def test_TC_043_zero_frame_volume_is_refused():
+    manifest = build_manifest(patients_per_vendor=4, slices_per_patient=1)
+    split = leave_one_vendor_out(manifest, "cirrus", val_fraction=0.25, seed=SEED)
+    counts = frame_counts_for(manifest)
+    counts[split.train[0]] = 0
+    with pytest.raises(ValueError, match="reports 0 frames"):
+        expand_to_frames(split, counts)
+
+
+def test_TC_043_frame_identifier_carries_its_volume():
+    assert frame_id("uid-123", 7).startswith("uid-123")
+    with pytest.raises(ValueError, match="non-negative"):
+        frame_id("uid-123", -1)
