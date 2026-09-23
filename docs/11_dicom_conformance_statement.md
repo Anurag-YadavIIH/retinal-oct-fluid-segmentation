@@ -98,6 +98,22 @@ the local Orthanc instance.
    Table A.52.4.3-1. Ophthalmic Frame Location is usage **U** and is omitted with no
    conformance consequence.
 
+   **The omissions are universal, not occasional.** On the first end-to-end conversion
+   of the RETOUCH training partition (2026-09-23), the SRS-063 research exception fired
+   on **70 of 70 volumes**, omitting all five attributes above in every single one. Not
+   one volume in the dataset carries any of them.
+
+   This is worth stating next to the list because the list alone reads as though the
+   omissions were exceptional. They are not: **for RETOUCH-derived data the strict path
+   of SRS-062 is unreachable**. It is implemented and tested (TC-026), and it will never
+   execute on this dataset, because the caller has nothing to supply. A reader assessing
+   conformance should assume every object this project produces from RETOUCH is missing
+   all five, rather than treating it as a per-volume question.
+
+   The strict path remains the default and remains correct. It is what makes the
+   exception an exception — the writer refuses by default and must be told, per run, to
+   omit rather than fill. But nothing about this dataset can satisfy it.
+
    **This sits alongside the unregistered UID root in item 1.** Both are reasons the
    objects this project creates must not be transmitted beyond the local Orthanc
    instance.

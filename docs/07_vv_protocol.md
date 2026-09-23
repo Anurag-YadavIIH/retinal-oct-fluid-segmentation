@@ -75,6 +75,28 @@ Required for Class B. This section is the process; §4 is the criteria.
 6. **Coverage is reported but is not an acceptance criterion.** `pytest-cov` runs in CI
    (SOUP-019). Line coverage measures what executed, not what was verified; §4 states
    what acceptance actually requires.
+7. **A fixture written in the consuming code's convention cannot test a conversion.**
+   Where a unit converts between two representations — units, axis order, coordinate
+   frame, encoding — the fixture must be expressed in the *source* convention and the
+   assertion in the *target* one. A fixture already in the target convention makes the
+   conversion a no-op that passes whatever the implementation does, including nothing.
+
+   Two consequences for how such a test is written:
+
+   - **Make the conversion non-identity in the fixture.** If every component of the
+     input happens to be symmetric under the transformation, a broken implementation
+     passes. Assert explicitly that the output differs from the input.
+   - **Assert a property the target convention implies**, not only the literal expected
+     value. `spacing_from_header` asserts that the axial component ends up the finest of
+     the three, which is true of any real OCT acquisition and false under a wrong
+     permutation, so the test survives a change of fixture values.
+
+   This rule exists because of a real defect class found on 2026-09-23 and recorded in
+   `docs/13`: the synthetic fixtures for the DICOM writer were written in this project's
+   `(axial, lateral, separation)` order, so they exercised every downstream use of
+   spacing and never the MetaImage `(x, y, z)` conversion that real ingestion performs.
+   The conversion was written correctly, but nothing in the suite would have caught it
+   had it not been.
 
 ## 4. Unit acceptance criteria — IEC 62304 §5.5.3
 
