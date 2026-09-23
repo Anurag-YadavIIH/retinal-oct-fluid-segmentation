@@ -134,7 +134,7 @@ P1 is 1 in every row (§1.2). The Prob column is P2.
 | HAZ-006 | Out-of-scope acquisition processed | DME, OCTA, en-face, non-macular or unlisted platform submitted → no rejection → confident-looking result returned outside any validated domain | A measurement is produced where no performance claim exists | Data integrity; unwarranted confidence | S2 | P-B | ALARP | RC-010, RC-014 |
 | HAZ-007 | Low-confidence result not flagged | MC-dropout confidence wrong, absent, or not carried into the SR → the one signal designed to counteract over-acceptance is missing | Grader reviews a low-confidence result as if routine | Compounds HAZ-001, HAZ-002 | S2 | P-B | ALARP | RC-009 |
 | HAZ-008 | Patient overlap between splits inflates the reported performance | B-scans from one patient land in train and test → Dice reflects memorisation → published figure is optimistic → graders and readers trust the output more than the evidence supports | Every downstream use rests on an overstated claim | Data integrity; **weakens RC-017, so it degrades the control on every other hazard** | S2 | P-B | ALARP | RC-001, RC-002, RC-003, RC-004 |
-| HAZ-009 | De-identification failure leaves an identifier in an output object | Profile not applied, or applied and not verified → object carrying an identifier is stored or shared | An identifier persists where it must not | Privacy. No PHI exists in this project's data, so realised harm is nil here — the control is demonstrated, not relied on | S1 | P-A | Acceptable | RC-011, RC-012 |
+| HAZ-009 | De-identification failure leaves an identifier in an output object | Profile not applied, or applied and not verified → object carrying an identifier is stored or shared | An identifier persists where it must not | Privacy. No PHI exists in this project's data, so realised harm is nil here — the control is demonstrated, not relied on | S1 | P-A | Acceptable | RC-011, RC-012, RC-030 |
 | HAZ-010 | SEG or SR fails to reference its source instances correctly | Referencing wrong or absent → grader cannot open the result against the images it came from, or it attaches to the wrong study | The result is unreviewable, or reviewable against the wrong images | Defeats the precondition of RC-017 | S2 | P-B | ALARP | RC-013, RC-015 |
 | HAZ-011 | Output object leaves its context without its research-use designation | SEG or SR copied out of the repository or the local PACS → nothing in the object says it is research-use-only and automated → treated as a validated clinical result | An unvalidated measurement is read as a clinical one | The one hazard whose harm is *increased* by the artefact being well-formed | S2 | P-B | ALARP | RC-014, RC-019 |
 | HAZ-012 | **Acquisition metadata corruption — voxel spacing wrong, absent, or altered in transit** | Axial resolution conventionally quoted in micrometres arrives unconverted (0.0039 mm read as 3.9 → a 1000× volume error) → or spacing is absent and silently defaulted → or anisotropic spacing is collapsed to isotropic → or a transform alters spacing between ingestion and volume computation → mm³ computed from a **correct** mask is wrong by a constant factor | A confidently wrong volume is recorded from a segmentation that is right | Data integrity; the recorded measurement is wrong by orders of magnitude while every visible artefact looks correct | S2 | P-B → **escalated to P-C under §2.4** | **ALARP — second-highest residual in this file** | RC-021, RC-022, RC-023, RC-024, RC-025, RC-026 |
@@ -193,6 +193,7 @@ order of preference — information for safety is the weakest.
 | RC-026 | Voxel count and voxel volume recorded alongside mm³ so the derivation is auditable from the object alone | Protective | SRS-059 | `report/sr_object.py` | TC-072, TC-075 |
 | RC-027 | DICOMweb client takes configuration only from the run configuration; `trust_env=False`, no ambient `.netrc`, proxy or certificate settings | Design | SRS-060 | `io/dicomweb.py` | TC-083 |
 | RC-028 | Checkpoints loaded only from the project's own `artifacts/` directory, hash recorded at write time and verified before load; mismatch or missing hash aborts | Protective | SRS-061 | `models/seg_unet.py`, `service/api.py` | TC-058 |
+| RC-030 | **No reidentification, and no attempt at it.** No linkage of this data to any external dataset, no demographic inference, no attempt to recover subject identity from image content or metadata. Technically supported by the one-way salted-hash pseudonyms of SRS-013 whose salt is never committed, so the project's own outputs cannot be relinked by a reader of the repository | Information + Design | SRS-013, SRS-014 | `io/deident.py` | TC-031 (technical half only — see §4.4) |
 | RC-029 | **Refuse, or omit — never fill.** Acquisition context absent from the source must be supplied explicitly by the caller or the conversion aborts; under an explicitly enabled research exception the affected module is omitted entire and the omission logged and recorded, never populated with a substituted value | Design | SRS-062, SRS-063, SRS-064 | `io/dicom_writer.py` | TC-026, TC-027, TC-028 |
 
 ### 4.3 RC-017 is deliberately typed as Information
@@ -205,6 +206,27 @@ systematic errors that are most likely and most damaging.
 
 Typing it honestly has a consequence visible in §5: **no hazard in this file reaches an
 acceptable residual on the strength of RC-017 alone.**
+
+### 4.4 RC-030 is half technical and half undertaking
+
+RC-030 comes from the signed Agreement of Data Confidentiality, which obliges the
+recipient not to reidentify the data or attempt to (`docs/06` §2.1). It has two halves
+and only one of them is testable.
+
+The **technical half** is real and verified: pseudonyms are one-way salted hashes and the
+salt is never written to a committed file or run output (SRS-013), so nothing this
+project publishes can be relinked to a source identifier by a reader. TC-031 exercises
+it.
+
+The **procedural half** — not attempting reidentification by other means, such as
+linkage to an external dataset or inference from image content — is an undertaking by
+the recipient. No test can verify that someone did not try something. Recording it as a
+control with a test would overstate what is assured, so it is recorded as an undertaking
+and the test allocation covers the technical half only.
+
+This is the same distinction `docs/03` §4.1 draws about human review: a control that
+depends on a person behaving as intended is real, weaker than a mechanism, and must not
+be written up as though it were one.
 
 ## 5. Residual risk evaluation
 

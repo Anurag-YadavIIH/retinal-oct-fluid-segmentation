@@ -68,36 +68,75 @@ indicate a bug, not a good model.
 
 ### 2.1 Terms as stated by the organisers
 
-The RETOUCH challenge rules state that the OCT data and associated reference
-standard:
+**Superseded source.** This section previously quoted the challenge rules page. The
+governing document is the **signed Agreement of Data Confidentiality**, emailed to the
+organisers on 2026-09-20; registration was submitted 2026-09-20 17:35 and accepted
+2026-09-21. Where the two differ, the signed agreement governs, and it is narrower.
 
-- may not be given or distributed to persons outside the registered team;
-- are strictly limited to research purposes, with commercial use prohibited;
-- may be used only for evaluating fluid segmentation methods and participating in
-  the challenge, and **may not be used to train or develop other algorithms**,
-  including algorithms used in commercial products.
+The agreement's purpose clause:
 
-Access requires registration on grand-challenge.org and acceptance of these terms.
-As of 2026-09-16 the challenge remains open for submissions and registration is
-available.
+> the dataset is to be used solely for evaluating fluid detection and segmentation
+> methods through the RETOUCH Challenge and for no other purpose.
 
-### 2.2 Analysis
+The agreement further obliges the recipient:
 
-The third clause is the restrictive one and warrants an explicit position rather
-than silent assumption.
+- not to give or distribute the data to any person outside the single named recipient;
+- **not to reidentify, or attempt to reidentify, the data or any individual within it**;
+- to delete the data if the organisers withdraw authorisation, which they may do at any
+  time (see §8).
 
-**Interpretation adopted by this project:** the clause is read as prohibiting
-repurposing of the data toward unrelated or commercial models, not as prohibiting
-the training of a fluid segmentation model. Training a fluid segmentation model
-and reporting its performance is the activity the challenge exists to solicit, is
-what the published RETOUCH benchmark paper describes participants doing, and is
-what the substantial downstream literature using this dataset does.
+For comparison, the rules page wording this section previously relied on was: data "may
+be used only for evaluating fluid segmentation methods and participating in the
+challenge, and may not be used to train or develop other algorithms". The difference
+that matters is analysed in §2.2.
 
-**Residual uncertainty:** whether publication of a method and its results in a
-public code repository, rather than as a challenge submission, falls within
-"participation in the challenge." This project's position is that it does — the
-repository publishes a method description and results and redistributes no data —
-but the position is recorded here as a judgment rather than a certainty.
+Only the **training** partition was downloaded, on 2026-09-21. The test partition was
+deliberately not taken: it carries no public reference annotations and §1.3 already
+scopes all evaluation to the 70 training volumes. Declining data that cannot be used is
+the narrowest reading of "for no other purpose" available at the point of download.
+
+### 2.2 Analysis — reassessed against the signed agreement, 2026-09-23
+
+The interpretation below was written against the rules page. It has been re-examined
+against the agreement wording and **it does not survive intact.** The qualification is
+recorded rather than the conclusion quietly adjusted.
+
+**What still holds.** Training a fluid segmentation model on these volumes and measuring
+its performance is *evaluating a fluid detection and segmentation method*. That is the
+literal activity the purpose clause permits, it is what the RETOUCH benchmark paper
+describes participants doing, and it is what the downstream literature does. Nothing in
+the agreement prohibits the technical work this project performs. DMP-C4 keeps the scope
+to fluid segmentation and detection and nothing else.
+
+**What no longer holds.** The previous position was that publishing a method and its
+results in a public repository "falls within participation in the challenge". Two
+phrases in the agreement make that materially harder to sustain:
+
+- **"through the RETOUCH Challenge"** binds the permitted evaluation to the challenge
+  *mechanism*, not merely to the challenge's subject matter. This project has made no
+  submission, so its evaluation is not conducted through the challenge in any ordinary
+  reading.
+- **"and for no other purpose"** closes the interpretive gap the rules page left open.
+  A portfolio artefact demonstrating the author's capability is a second purpose,
+  running alongside the evaluation, even though the technical activity is identical.
+
+The honest summary is that **the activity conforms and the publication may not.** The
+earlier text treated a genuine ambiguity as settled in the project's favour, which is the
+error this document exists to avoid.
+
+**Status: open, and it is a gate, not a caveat.** The options, none of which is yet
+chosen:
+
+| Option | Effect |
+|---|---|
+| Make an actual RETOUCH Challenge submission | Places the evaluation squarely "through the Challenge". The strongest resolution and the only one that removes the question rather than managing it |
+| Seek written clarification from the organisers | Converts a judgment into a permission. Cheap, slow, and the answer binds |
+| Publish method, code and documents; withhold dataset-derived quantitative results | Keeps the repository's demonstrative value while removing the disputed output. Costs the headline cross-vendor numbers, which are the project's contribution |
+| Invoke the §2.4 decision gate and migrate to the §9 alternative sources | Preserves the cross-vendor question at the cost of harmonisation work |
+
+**Consequence if unresolved:** `docs/10` and `docs/12` report results derived from this
+data. Neither should be published until this is settled. `docs/08` is unaffected — it
+reports test execution, not dataset-derived findings.
 
 ### 2.3 Controls adopted as a consequence
 
@@ -107,7 +146,8 @@ but the position is recorded here as a judgment rather than a certainty.
 | DMP-C2 | No redistribution of derived imagery at volume scale | Only illustrative single B-scans appear in figures, in the quantity conventional for a publication |
 | DMP-C3 | No commercial use | Repository licensed MIT for **code only**; README states the dataset carries separate terms |
 | DMP-C4 | Scope limited to fluid segmentation and detection | No secondary task, no pretraining for unrelated models, no derivative dataset published |
-| DMP-C5 | Single registered user | Data accessed under one registration; not shared with any third party |
+| DMP-C5 | Single registered user | Data accessed under one registration by a single named recipient; not shared with any third party (§7) |
+| DMP-C11 | **No reidentification, and no attempt at it** | No linkage to any external dataset, no demographic inference, no attempt to recover subject identity from image content or metadata. Technically, the salted-hash pseudonyms of SRS-013 are one-way and the salt is never committed, so this project's own outputs cannot be relinked to source identifiers by anyone reading the repository. Carried as RC-030 in `docs/05` |
 
 ### 2.4 Decision gate
 
@@ -192,22 +232,54 @@ should say so rather than attributing the gap to domain shift alone.
 Stages are one-directional; each is produced by a numbered script and is
 reproducible from the one before it.
 
+**Corrected 2026-09-23 against the extracted archive.** The layout below previously
+showed a vendor directory holding subjects directly. The archive nests one level deeper
+and uses the organisers' own directory names, which are not the lowercase vendor keys
+`configs/data.yaml` uses.
+
 ```
 data/
-├── raw/retouch/              # 00 — manual download, immutable after extraction
-│   ├── cirrus/TRAIN0xx/{oct.mhd,oct.raw,reference.mhd,reference.raw}
-│   ├── spectralis/TRAIN0xx/...
-│   └── topcon/TRAIN0xx/...
-├── dicom/                    # 01 — Ophthalmic Tomography Image objects
-├── dicom_deident/            # 02 — after confidentiality profile applied
-└── splits/                   # 03 — resolved Split records, one per fold
+├── raw/retouch/                          # 00 — manual download, immutable
+│   ├── TrainingCirrus/RETOUCH-TrainingSet-Cirrus/TRAIN001..TRAIN024/
+│   ├── TrainingSpectralis/RETOUCH-TrainingSet-Spectralis/TRAIN025..TRAIN048/
+│   └── TrainingTopcon/RETOUCH-TrainingSet-Topcon/TRAIN049..TRAIN070/
+│       └── each subject: oct.mhd, oct.raw, reference.mhd, reference.raw
+├── dicom/                                # 01 — Ophthalmic Tomography Image objects
+├── dicom_deident/                        # 02 — after confidentiality profile applied
+└── splits/                               # 03 — resolved Split records, one per fold
 ```
+
+**Subject identifiers are globally unique across vendors** — Cirrus holds TRAIN001–024,
+Spectralis TRAIN025–048, Topcon TRAIN049–070, with no repetition. The directory name
+alone therefore identifies a subject and no manifest is required to disambiguate it.
+This closes open item 3 and matters to `splits.py`, which raises when one patient appears
+under two vendors: had the organisers restarted numbering per vendor, every subject would
+have tripped that assertion.
+
+### 4.1 Local storage arrangement
+
+`data/raw/retouch` is **not a directory in this repository**. It is a Windows directory
+junction pointing at `D:\RETOUCH_DATA\retouch_traning_data_extracted`, where the
+extracted archive actually lives. The indirection exists because the archive is large
+and sits on a separate volume.
+
+Every tool in this project treats it as an ordinary path and none needs to know it is a
+link. Two properties make that safe: git does not follow it and `.gitignore` excludes
+`data/` regardless (DMP-C1), and `data/raw/` is read-only once extracted, so nothing
+here writes through the junction to the archive.
+
+The junction is a local convenience and is **not reproducible from the repository**. A
+fresh clone on another machine has an empty `data/raw/`, which is the correct outcome:
+the data is not ours to distribute, and `scripts/00_fetch_data.py` documents the manual
+steps to obtain it.
 
 `data/raw/` is treated as read-only once extracted. Any transformation writes to a
 new stage directory. Re-running a stage overwrites only its own output, so a
 corrupted stage is recoverable without re-downloading.
 
-All of `data/` and `artifacts/` are excluded from version control (DMP-C1).
+All of `data/` and `artifacts/` are excluded from version control (DMP-C1), which was
+re-confirmed on 2026-09-23: the only tracked paths under `data/` and `artifacts/` are
+their two `.gitkeep` files.
 
 ---
 
@@ -265,9 +337,17 @@ is the project's headline result.
 
 ## 7. Access control and storage
 
-Data resides on a single local workstation and, for training, in a **private**
-Kaggle Dataset attached to the training notebook. The Kaggle dataset must be
-private; a public one would breach DMP-C1.
+**Access is single-recipient.** The signed agreement names one recipient, and that is
+the fact DMP-C5 rests on: the constraint is not "few people" or "the project team" but
+one named individual. There is no team, no collaborator, and no mechanism by which a
+second person could obtain the data through this project. Any future collaborator would
+need their own registration and their own signed agreement; the data cannot be passed
+along with the repository.
+
+Data resides on a single local workstation — see §4.1 for the on-disk arrangement — and,
+for training, in a **private** Kaggle Dataset attached to the training notebook. The
+Kaggle dataset must be private; a public one would breach DMP-C1 and the distribution
+clause of the agreement simultaneously.
 
 No cloud object storage, no shared drives, no third-party annotation services.
 
@@ -295,10 +375,46 @@ Carried into `docs/11` §7 and §10. Resolves `docs/02` §6 item 3.
 
 ## 8. Retention and disposal
 
-Retained for the active life of the project. On completion or abandonment,
-`data/raw/`, `data/dicom*/` and the private Kaggle dataset are deleted. Trained
-checkpoints derived from the data are not published (they are excluded by
-`.gitignore`); only metrics, resolved configs, and split records — none of which
+**Retention is conditional, not fixed.** The signed agreement permits the organisers to
+withdraw authorisation **at any time** and to require deletion. The project therefore
+holds the data at the organisers' discretion rather than for a term of its own choosing,
+and no plan here may assume continued access.
+
+Two consequences follow, and both are design constraints rather than paperwork:
+
+- **The project must remain able to delete on request at any point**, including
+  mid-training. That is why every derived stage is reproducible from the one before it
+  (§4) and why nothing downstream embeds source image data.
+- **No result may depend on data the project might have to destroy before the result is
+  reproduced.** Metrics, resolved configurations and split records are committed;
+  because subject identifiers are pseudonymised (§5) and no image data is committed, they
+  survive deletion of the source without carrying any of it.
+
+### 8.1 Deletion on request
+
+On notice from the organisers withdrawing authorisation, and without waiting for any
+milestone to complete:
+
+1. Delete `data/raw/` — in this deployment that means the archive at the junction target
+   in §4.1, not merely the link, which would leave the data in place while appearing to
+   remove it.
+2. Delete `data/dicom/` and `data/dicom_deident/`, which contain image data derived from
+   the source and are equally covered.
+3. Delete the private Kaggle Dataset and any training artefacts containing image data.
+4. Delete trained checkpoints. They are derived from the data and are not published in
+   any case (excluded by `.gitignore`).
+5. Record the deletion, its date and the request that prompted it in
+   `docs/13_change_control_log.md`.
+
+Retained after such a deletion: metrics, resolved configurations, split records and the
+document set. None contains image data or a source identifier. If the organisers require
+those too, they go as well — the agreement governs, not this list.
+
+### 8.2 Ordinary disposal
+
+Absent a withdrawal, the data is retained for the active life of the project. On
+completion or abandonment the same five steps run. Trained checkpoints derived from the
+data are not published; only metrics, resolved configs and split records — none of which
 contain image data — are committed.
 
 Disposal is recorded in `docs/13_change_control_log.md`.
@@ -329,8 +445,8 @@ challenge dataset, and the mapping decisions are themselves documentable work.
 
 | # | Item | Blocks |
 |---|---|---|
-| 1 | Complete grand-challenge registration; record acceptance date | Milestone 3 |
+| 1 | ~~Complete grand-challenge registration; record acceptance date.~~ **Closed 2026-09-23.** Registration submitted 2026-09-20 17:35, accepted 2026-09-21. Signed Agreement of Data Confidentiality emailed to the organisers 2026-09-20. Training partition downloaded 2026-09-21; test partition deliberately not taken (§2.1). | — closed |
 | 2 | Confirm actual Topcon B-scan count per volume against downloaded data; table in §3.1 uses a literature-derived figure | `docs/10` |
-| 3 | Confirm whether subject identifiers are recoverable from directory names alone, or require a manifest | `splits.py` |
-| 4 | Decide and record whether a registration acceptance date belongs in `docs/13` | — |
+| 3 | ~~Confirm whether subject identifiers are recoverable from directory names alone.~~ **Closed 2026-09-23: yes, directory names suffice.** Subject numbering is continuous and unique across vendors (TRAIN001–024 Cirrus, TRAIN025–048 Spectralis, TRAIN049–070 Topcon), so no manifest is needed to disambiguate. See §4. | — closed |
+| 4 | ~~Decide whether a registration acceptance date belongs in `docs/13`.~~ **Closed 2026-09-23: yes, and it is recorded there.** The dates establish when the agreement's obligations began, and §8 makes retention contingent on an authorisation that has a start date — an obligation whose commencement is undated cannot be audited. | — closed |
 | 5 | ~~Populate the SRS and RC trace columns once `docs/02` and `docs/05` exist~~ **Resolved 2026-09-17:** both drafted; `docs/09` carries SRS and RC columns. DMP-C1..C5 are superseded by RC-019, C6 by RC-001, C7 and C9 by RC-002, C8 by RC-003, C10 by RC-004 (`docs/05` §4.1). | — closed |
