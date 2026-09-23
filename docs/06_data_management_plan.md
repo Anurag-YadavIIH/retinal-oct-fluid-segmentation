@@ -124,19 +124,38 @@ The honest summary is that **the activity conforms and the publication may not.*
 earlier text treated a genuine ambiguity as settled in the project's favour, which is the
 error this document exists to avoid.
 
-**Status: open, and it is a gate, not a caveat.** The options, none of which is yet
-chosen:
+### 2.2.1 Resolved by the organiser, 2026-09-23
 
-| Option | Effect |
-|---|---|
-| Make an actual RETOUCH Challenge submission | Places the evaluation squarely "through the Challenge". The strongest resolution and the only one that removes the question rather than managing it |
-| Seek written clarification from the organisers | Converts a judgment into a permission. Cheap, slow, and the answer binds |
-| Publish method, code and documents; withhold dataset-derived quantitative results | Keeps the repository's demonstrative value while removing the disputed output. Costs the headline cross-vendor numbers, which are the project's contribution |
-| Invoke the §2.4 decision gate and migrate to the §9 alternative sources | Preserves the cross-vendor question at the cost of harmonisation work |
+**Question asked.** On 2026-09-23 the author wrote to **Dr Hrvoje Bogunović**, a RETOUCH
+challenge organiser, asking whether publishing the method and its results in a public
+code repository — with no data redistributed — falls within the Agreement's permitted
+use.
 
-**Consequence if unresolved:** `docs/10` and `docs/12` report results derived from this
-data. Neither should be published until this is settled. `docs/08` is unaffected — it
-reports test execution, not dataset-derived findings.
+**Answer received.** The same day, Dr Bogunović confirmed that **publishing results
+outside the challenge itself is permitted.**
+
+**Scope of what this settles, and what it does not.** The answer covers the publication
+of results derived from the data. It is not a general waiver: everything else in the
+agreement stands unchanged — no redistribution of the data (DMP-C1), single-recipient
+access (DMP-C5, §7), no reidentification (DMP-C11), scope limited to fluid segmentation
+and detection (DMP-C4), and retention at the organisers' discretion (§8). Nothing here
+permits sharing the dataset, and nothing here changes what §8 requires on a withdrawal
+of authorisation.
+
+**This supersedes the reading in §2.2; it does not confirm it.** That distinction
+matters and is recorded rather than smoothed over. §2.2 examined the agreement's wording
+— "through the RETOUCH Challenge and for no other purpose" — and concluded the
+publication **may not be permitted**. The organiser's answer is that it is. The
+project's own interpretation of the binding document was therefore **more restrictive
+than the rights-holder's**, and it is the organiser's reading that governs, because they
+are the party the obligation is owed to. §2.2 is retained above as the reasoning that
+prompted the question, not as a position the project still holds.
+
+**Consequence.** `docs/10` and `docs/12` are **unblocked** and may be published. The
+online challenge submission remains planned, and is no longer a dependency of
+publication — it was previously the only option that removed the question outright.
+`docs/08` was never affected; it reports test execution rather than dataset-derived
+findings.
 
 ### 2.3 Controls adopted as a consequence
 
@@ -149,12 +168,23 @@ reports test execution, not dataset-derived findings.
 | DMP-C5 | Single registered user | Data accessed under one registration by a single named recipient; not shared with any third party (§7) |
 | DMP-C11 | **No reidentification, and no attempt at it** | No linkage to any external dataset, no demographic inference, no attempt to recover subject identity from image content or metadata. Technically, the salted-hash pseudonyms of SRS-013 are one-way and the salt is never committed, so this project's own outputs cannot be relinked to source identifiers by anyone reading the repository. Carried as RC-030 in `docs/05` |
 
-### 2.4 Decision gate
+### 2.4 Decision gate — closed 2026-09-23, not triggered
 
-If at any point the interpretation in §2.2 is judged untenable, the project
-migrates to the alternative sources in §9 rather than proceeding. This gate is
-placed here, before milestone 3, specifically so that reversal costs days rather
-than weeks.
+The gate: if the interpretation in §2.2 were judged untenable, the project would migrate
+to the alternative sources in §9 rather than proceed. It was placed before milestone 3
+so that reversal would cost days rather than weeks.
+
+**It is closed without being triggered.** The condition was an interpretation that could
+not be sustained. The interpretation was indeed not sustainable — §2.2 says so — but the
+question it turned on was answered directly by the rights-holder (§2.2.1) rather than
+resolved by further reasoning, and the answer permits the use. There is nothing left for
+the gate to protect against.
+
+The gate is judged to have worked. Its function was to force the question to be settled
+**before** weeks of work depended on the answer, and that is what happened: the
+uncertainty was identified at the point the binding document was first read, and
+resolved the same week, before any model was trained on the data. §9 remains documented
+as a contingency should authorisation ever be withdrawn under §8.
 
 ---
 
