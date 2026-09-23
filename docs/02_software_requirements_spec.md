@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-065 and NFR-001..NFR-008. Every requirement here derives
+Allocates SRS-001..SRS-066 and NFR-001..NFR-008. Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -65,6 +65,7 @@ measurement, and that gap is HAZ-012.
 | SRS-001 | The reader shall load a RETOUCH MetaImage volume and return the pixel array, the reference label array where one exists, the patient identifier, the vendor, the voxel spacing in millimetres, and the source path, as a single immutable record. | URS-001, URS-006 | TC-010 |
 | SRS-002 | Label indices and vendor keys shall be read from `configs/data.yaml` and shall not be redefined anywhere else in the codebase. Changing either is a requirements change, not an edit. | URS-001 | TC-001 |
 | SRS-003 | Voxel spacing shall be taken from the source volume header. The software shall not assume, default, or hard-code a spacing value. | URS-002, URS-008 | TC-011 |
+| SRS-066 | The pixel element type shall be taken from the source header and carried unchanged through conversion. The software shall not widen, narrow or otherwise cast pixel data to a fixed depth. | URS-001, URS-010 | TC-017, TC-024 |
 | SRS-004 | The reader shall raise on unreadable or malformed input, naming the offending path. It shall not return a partially populated record, and it shall not skip a volume silently. | URS-009 | TC-012 |
 | SRS-005 | Knowledge of the RETOUCH on-disk directory layout shall be confined to the reader module. No other module shall depend on that layout. | URS-001 | TC-013 |
 | SRS-054 | Voxel spacing shall be carried as a first-class field of every sample, on the same terms as vendor, and shall survive ingestion, DICOM conversion, de-identification, inference and volume computation. | URS-002, URS-006 | TC-010, TC-016, TC-110 |
@@ -184,7 +185,8 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | Module | Implements |
 |---|---|
 | `io/retouch_reader.py` | SRS-001, SRS-003, SRS-004, SRS-005, SRS-054, SRS-055, SRS-056 |
-| `io/dicom_writer.py` | SRS-006..SRS-011, SRS-054, SRS-062, SRS-063, SRS-064 |
+| `io/metaimage.py` | SRS-001, SRS-003, SRS-004, SRS-005 |
+| `io/dicom_writer.py` | SRS-006..SRS-011, SRS-054, SRS-062, SRS-063, SRS-064, SRS-066 |
 | `io/deident.py` | SRS-012..SRS-017, SRS-054 |
 | `io/dicomweb.py` | SRS-043, SRS-044, SRS-045, SRS-060 |
 | `data/splits.py` | SRS-018..SRS-023 |

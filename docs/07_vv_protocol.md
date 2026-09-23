@@ -138,6 +138,8 @@ lists SRS, NFR and RC identifiers.
 | TC-014 | Missing spacing aborts | SRS-055, RC-022 | U | Fixture with no spacing aborts the run; no default substituted | yes |
 | TC-015 | **Implausible spacing is rejected, not warned** | SRS-056, RC-023 | U | See §7.2. Includes the micrometre-valued case, which must be **rejected** | yes |
 | TC-016 | Spacing is first-class through ingestion | SRS-054, RC-021 | U | Spacing present and unchanged on the record after each ingestion-stage operation | yes |
+| TC-017 | MetaImage format handling | SRS-001, SRS-004, SRS-066 | U | `DimSize` (x,y,z) reshaped to (z,y,x); element type honoured rather than assumed; unknown type, truncated payload, compressed data, non-3-D and missing files all raise naming the path | yes |
+| TC-018 | The archive matches what `docs/06` §3 records | SRS-001, SRS-003 | D | Subject counts 24/24/22, subject identifiers unique across vendors, per-vendor element types, and every volume's spacing passing the guard — a regression check on the figures measured 2026-09-23 | yes (`requires_data`) |
 
 ### 6.3 DICOM conversion
 

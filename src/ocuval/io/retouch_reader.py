@@ -16,8 +16,13 @@ be checked, not metadata to be trusted.
 from __future__ import annotations
 
 import math
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
+
+import numpy as np
+
+from ocuval.io.metaimage import MetaImageHeader, parse_header, read_volume_array
 
 # Physical plausibility bound for a retinal OCT voxel, in millimetres.
 #
@@ -94,11 +99,139 @@ def validate_spacing(spacing: tuple[float, ...] | None, *, source: str = "<unkno
         )
 
 
+#: The archive nests one level below the vendor directory and uses the organisers' own
+#: names, which are not the lowercase vendor keys in configs/data.yaml. The inner
+#: directory is discovered rather than hard-coded, so a re-release that renames it does
+#: not silently find nothing.
+VENDOR_DIRECTORIES: dict[str, str] = {
+    "cirrus": "TrainingCirrus",
+    "spectralis": "TrainingSpectralis",
+    "topcon": "TrainingTopcon",
+}
+
+#: Label values configs/data.yaml fixes. Anything else in a reference volume is a
+#: defect in the archive or in this reader, never a new class to accommodate.
+EXPECTED_LABELS = frozenset({0, 1, 2, 3})
+
+
+def spacing_from_header(header: MetaImageHeader) -> tuple[float, float, float]:
+    """Reorder MetaImage (x, y, z) spacing into this project's (axial, lateral, sep).
+
+    **This reordering is the single most dangerous line in the ingestion path**, so it
+    is a named function with its own test rather than an inline index permutation.
+
+    MetaImage gives `ElementSpacing` as (x, y, z), which for RETOUCH means
+    (lateral within a B-scan, axial, separation between B-scans). `OCTVolume.spacing_mm`
+    and `dicom_writer._pixel_measures` both expect (axial, lateral, separation), because
+    within a frame the rows run axially and the columns laterally.
+
+    Swapping the first two produces a volume in mm³ that is wrong by the ratio of the
+    two spacings — for Cirrus, a factor of six — from a segmentation that is perfectly
+    correct. Nothing in the mask, the image or the review screen would show it. That is
+    HAZ-012 exactly, and `docs/05` §5.4 explains why no downstream control catches it.
+    """
+    lateral, axial, separation = header.element_spacing
+    return (axial, lateral, separation)
+
+
+def _check_reference_matches(
+    oct_header: MetaImageHeader, ref_header: MetaImageHeader, source: str
+) -> None:
+    """A reference standard that does not describe the same grid as its image is
+    unusable, and the mismatch is invisible once both are arrays of plausible size."""
+    if oct_header.dim_size != ref_header.dim_size:
+        raise ValueError(
+            f"{source}: oct and reference disagree on DimSize "
+            f"({oct_header.dim_size} vs {ref_header.dim_size})"
+        )
+    if oct_header.element_spacing != ref_header.element_spacing:
+        raise ValueError(
+            f"{source}: oct and reference disagree on ElementSpacing "
+            f"({oct_header.element_spacing} vs {ref_header.element_spacing})"
+        )
+
+
 def read_volume(path: Path, vendor: str) -> OCTVolume:
-    """Read a single RETOUCH volume. Raises on unreadable or malformed input."""
-    raise NotImplementedError
+    """Read a single RETOUCH volume. Raises on unreadable or malformed input.
+
+    `path` is a subject directory containing oct.mhd/oct.raw and, where a reference
+    exists, reference.mhd/reference.raw.
+
+    **The element type is taken from the header and carried, not cast.** Spectralis
+    volumes are 16-bit and Cirrus and Topcon are 8-bit (`docs/06` §3.1.1); widening the
+    8-bit ones on the way in would make every downstream object claim a precision its
+    source never had, and narrowing the 16-bit one would lose data outright.
+
+    No value here is defaulted. A missing header, a missing spacing, an unreadable
+    element type or a truncated payload all raise, naming the path (SRS-004).
+    """
+    path = Path(path)
+    source = str(path)
+    if not path.is_dir():
+        raise ValueError(f"{source}: not a directory")
+
+    oct_header_path = path / "oct.mhd"
+    oct_header = parse_header(oct_header_path)
+    pixels = read_volume_array(oct_header_path)
+
+    spacing = spacing_from_header(oct_header)
+    validate_spacing(spacing, source=source)
+
+    labels = None
+    ref_header_path = path / "reference.mhd"
+    if ref_header_path.is_file():
+        ref_header = parse_header(ref_header_path)
+        _check_reference_matches(oct_header, ref_header, source)
+        labels = read_volume_array(ref_header_path)
+        present = set(np.unique(labels).tolist())
+        if not present <= EXPECTED_LABELS:
+            raise ValueError(
+                f"{source}: reference contains label values {sorted(present - EXPECTED_LABELS)} "
+                f"outside the frozen set {sorted(EXPECTED_LABELS)} in configs/data.yaml. "
+                f"A new label value is a changed contract, not a volume to be processed."
+            )
+
+    return OCTVolume(
+        pixel_array=pixels,
+        label_array=labels,
+        patient_id=path.name,
+        vendor=vendor,
+        spacing_mm=spacing,
+        source_path=path,
+    )
 
 
-def iter_volumes(raw_root: Path, vendors: list[str]):
-    """Yield every OCTVolume under raw_root for the given vendors."""
-    raise NotImplementedError
+def subject_directories(raw_root: Path, vendor: str) -> list[Path]:
+    """Every subject directory for one vendor, in sorted order.
+
+    Sorted so that iteration order is stable across filesystems, for the same reason
+    `data.splits` sorts before shuffling: an order that varies between machines makes a
+    seeded run reproducible-looking and not reproducible.
+    """
+    raw_root = Path(raw_root)
+    if vendor not in VENDOR_DIRECTORIES:
+        raise ValueError(
+            f"unknown vendor {vendor!r}; configs/data.yaml fixes {sorted(VENDOR_DIRECTORIES)}"
+        )
+    outer = raw_root / VENDOR_DIRECTORIES[vendor]
+    if not outer.is_dir():
+        raise ValueError(f"{outer}: vendor directory not found under {raw_root}")
+
+    inner = sorted(d for d in outer.iterdir() if d.is_dir())
+    if len(inner) != 1:
+        raise ValueError(
+            f"{outer}: expected exactly one release directory inside, found {len(inner)}: "
+            f"{[d.name for d in inner]}"
+        )
+    return sorted((d for d in inner[0].iterdir() if d.is_dir()), key=lambda d: d.name)
+
+
+def iter_volumes(raw_root: Path, vendors: list[str]) -> Iterator[OCTVolume]:
+    """Yield every OCTVolume under raw_root for the given vendors.
+
+    A generator rather than a list: the 70 volumes total several gigabytes and nothing
+    in this pipeline needs them resident at once.
+    """
+    for vendor in vendors:
+        for subject in subject_directories(raw_root, vendor):
+            yield read_volume(subject, vendor)

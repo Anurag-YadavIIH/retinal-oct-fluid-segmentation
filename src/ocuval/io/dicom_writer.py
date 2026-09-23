@@ -220,6 +220,30 @@ def _resolve_omissions(context: AcquisitionContext | None, research_exception: b
     return unsatisfiable
 
 
+#: Unsigned integer depths this IOD permits, mapped to Bits Allocated. PS3.3 C.8.17.7
+#: enumerates 8 and 16 for Bits Allocated and fixes Pixel Representation at 0, so a
+#: signed or wider array cannot be written without a conversion the caller must choose.
+PERMITTED_PIXEL_DTYPES: dict[str, int] = {"uint8": 8, "uint16": 16}
+
+
+def _bit_depth(pixels: np.ndarray) -> int:
+    """Bits Allocated for a pixel array, from its dtype.
+
+    Refuses anything outside the IOD's enumerated values rather than casting into them.
+    A float or signed array reaching here means an earlier stage changed the data, and
+    silently narrowing it would hide that.
+    """
+    name = str(pixels.dtype)
+    if name not in PERMITTED_PIXEL_DTYPES:
+        raise ValueError(
+            f"pixel dtype {name} cannot be written to this IOD: PS3.3 C.8.17.7 enumerates "
+            f"Bits Allocated as 8 or 16 with Pixel Representation 0, so only "
+            f"{sorted(PERMITTED_PIXEL_DTYPES)} are writable. Convert deliberately upstream "
+            f"if that is intended."
+        )
+    return PERMITTED_PIXEL_DTYPES[name]
+
+
 def _pixel_measures(volume: OCTVolume) -> Dataset:
     """Pixel Measures functional group — where spacing lives for this IOD.
 
@@ -350,11 +374,21 @@ def _build_dataset(
     ds.PhotometricInterpretation = "MONOCHROME2"
     ds.Rows = int(rows)
     ds.Columns = int(columns)
-    ds.BitsAllocated = 16
-    ds.BitsStored = 16
-    ds.HighBit = 15
-    ds.PixelRepresentation = 0
-    ds.PixelData = pixels.astype(np.uint16).tobytes()
+
+    # Bit depth is carried from the source, not cast up. PS3.3 C.8.17.7 enumerates
+    # BitsAllocated as 8 or 16 and BitsStored as 8, 12 or 16, with High Bit one less
+    # than Bits Stored, so both source depths in this dataset are conformant as they
+    # stand (docs/06 §3.1.1: Spectralis is 16-bit, Cirrus and Topcon 8-bit).
+    #
+    # Widening 8-bit data to 16 would be lossless and still wrong: every object would
+    # declare a precision its acquisition never had, and a consumer reading BitsStored
+    # has no way to tell a genuine 16-bit scan from a padded 8-bit one.
+    bits = _bit_depth(pixels)
+    ds.BitsAllocated = bits
+    ds.BitsStored = bits
+    ds.HighBit = bits - 1
+    ds.PixelRepresentation = 0  # Enumerated Value 0 for this IOD
+    ds.PixelData = pixels.tobytes()
 
     # Ophthalmic Tomography Image (M)
     ds.ImageType = ["DERIVED", "SECONDARY"]
