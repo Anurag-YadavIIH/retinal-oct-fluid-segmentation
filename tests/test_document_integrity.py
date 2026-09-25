@@ -1,6 +1,7 @@
 """Document and configuration integrity — docs/07 section 8.
 
-Covers TC-105 (intended use change gate) and TC-106 (image digests match the SOUP list).
+Covers TC-105 (intended use change gate), TC-106 (image digests match the SOUP list)
+and TC-108 (cited commit SHAs resolve).
 
 Not an IEC 62304 verification level. These exist because this project's documents make
 claims about each other and about the code, and nothing else checks them.
@@ -153,3 +154,152 @@ def test_TC_106_the_check_detects_a_drifted_digest(tmp_path):
         encoding="utf-8",
     )
     assert soup_row_digest("SOUP-017") not in digests_in(drifted)
+
+
+# --- TC-108 -----------------------------------------------------------------------
+#
+# Every commit SHA cited in prose must resolve to a commit reachable from main.
+#
+# Why this exists. On 2026-09-23 the history was rewritten to strip co-author trailers
+# from 44 commit messages. Content was untouched, but every SHA from the root commit
+# onward changed, and nine citations across four files silently became references to
+# commits that no longer existed. Nothing caught it; it was found by reading.
+#
+# The citation that mattered was 104342b, the incident that scripts/check_change_control.py
+# was written in response to and cites as its own justification. A guard whose stated
+# evidence does not resolve is a guard a reviewer cannot check.
+#
+# This is deliberately a test rather than a note in docs/07, because a check that is
+# specified and not wired is not a check — the same distinction docs/05 section 5.3
+# draws, and the reason TC-107 sat inert until the hook was installed.
+
+SHA_CITATION = re.compile(r"\b[0-9a-f]{7,40}\b")
+
+# SHAs that no longer resolve and are cited deliberately, because the document's subject
+# IS the superseded identifier. Every entry needs a reason, and every entry is asserted
+# genuinely unreachable below — so this cannot be used to silence a citation that ought
+# to resolve. Adding a live SHA here fails the companion test.
+RETIRED_SHAS = {
+    # docs/13, 2026-09-23: the pre-rewrite SHAs, named so a reader holding an older
+    # clone can map their copy onto the current history. Recording the remap requires
+    # naming both sides of it.
+    "35027a3": "pre-rewrite SHA of the initial commit, now 945705d",
+    "8c2086b": "pre-rewrite SHA of the docs/06 draft, now 56a30b3",
+    "104342b": "pre-rewrite SHA of the change control incident, now 3c16231",
+    "1a9d75b": "pre-rewrite SHA of the DICOMweb client commit, now dde5706",
+}
+
+# .pre-commit-config.yaml is in this list because a scan scoped to docs/ and scripts/
+# missed the citation it carries. The set is the files whose *prose* names commits.
+CITING_FILES = (
+    sorted((REPO_ROOT / "docs").glob("*.md"))
+    + sorted((REPO_ROOT / "scripts").glob("*.py"))
+    + [REPO_ROOT / "CLAUDE.md", REPO_ROOT / ".pre-commit-config.yaml"]
+)
+
+
+def git_output(*args: str) -> str:
+    import subprocess
+
+    result = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), *args],
+        capture_output=True,
+        check=False,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if result.returncode != 0:
+        pytest.skip(f"git unavailable or not a repository: {' '.join(args)}")
+    return result.stdout
+
+
+def cited_shas() -> dict[str, list[str]]:
+    """Map each cited SHA to the files citing it.
+
+    Two things are deliberately NOT recognised, and both are false negatives rather
+    than false positives:
+
+    - An abbreviation that happens to contain no a-f digit. Roughly 4% of seven
+      character abbreviations are all-decimal, and requiring a letter is what keeps
+      DICOM codes (`49755003`, `118565006`) and tags (`00081199`) out of the results.
+      Citing such a SHA is not wrong, it is simply unchecked.
+    - Uppercase hex, because DICOM tags are written uppercase throughout this repo.
+
+    A 64 character sha256 digest is excluded by the 40 character ceiling: the word
+    boundary cannot fall mid-token, so no prefix of it matches.
+    """
+    found: dict[str, list[str]] = {}
+    for path in CITING_FILES:
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        for token in SHA_CITATION.findall(text):
+            if not any(character in "abcdef" for character in token):
+                continue
+            if token in RETIRED_SHAS:
+                continue
+            found.setdefault(token, []).append(path.relative_to(REPO_ROOT).as_posix())
+    return found
+
+
+def reachable_commits() -> set[str]:
+    """Full SHAs reachable from main, falling back to origin/main then HEAD.
+
+    The fallback exists for CI, where the checkout can be detached and `main` may not
+    be a local branch. HEAD last rather than first so that a citation to a commit that
+    exists only on an unmerged branch still fails when main is available.
+    """
+    for ref in ("main", "origin/main", "HEAD"):
+        if git_output("rev-parse", "--verify", "--quiet", ref).strip():
+            return set(git_output("rev-list", ref).split())
+    pytest.skip("no main, origin/main or HEAD to resolve citations against")
+
+
+def test_TC_108_every_cited_sha_resolves_to_a_commit_on_main():
+    reachable = reachable_commits()
+    dangling = {
+        sha: files
+        for sha, files in cited_shas().items()
+        if not any(full.startswith(sha) for full in reachable)
+    }
+    listing = "\n".join(
+        f"  {sha} cited in {', '.join(files)}" for sha, files in sorted(dangling.items())
+    )
+    assert not dangling, (
+        "commit SHAs cited in prose do not resolve to any commit reachable from main:\n"
+        + listing
+        + "\n\nA history rewrite changes every SHA from the rewritten commit onward. "
+        "Remap the citations, or prefer a description plus a date where the identity of "
+        "the commit is not itself the point (docs/13, 2026-09-25). If the superseded SHA "
+        "is itself the subject, add it to RETIRED_SHAS with a reason."
+    )
+
+
+def test_TC_108_retired_shas_are_genuinely_unreachable():
+    """RETIRED_SHAS must not become a way to excuse a citation that should resolve."""
+    reachable = reachable_commits()
+    live = {
+        sha: reason
+        for sha, reason in RETIRED_SHAS.items()
+        if any(full.startswith(sha) for full in reachable)
+    }
+    assert not live, (
+        "these SHAs are exempted as retired but still resolve on main, so the exemption "
+        f"is hiding a citation the guard should be checking: {sorted(live)}"
+    )
+
+
+def test_TC_108_the_check_detects_a_dangling_citation():
+    """The guard must fail on a SHA that cannot resolve, or it proves nothing."""
+    reachable = reachable_commits()
+    impossible = "deadbee"
+    assert not any(full.startswith(impossible) for full in reachable)
+
+
+def test_TC_108_finds_the_citations_that_are_actually_there():
+    """Guards against the regex silently matching nothing, which would pass vacuously."""
+    found = cited_shas()
+    assert found, "no commit SHA citations found at all — the pattern has stopped matching"
+    assert any(
+        "scripts/check_change_control.py" in files for files in found.values()
+    ), "the change control hook's own citation is no longer being scanned"

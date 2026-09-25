@@ -20,7 +20,7 @@ repos:
         args: [--maxkb=2000]
       - id: check-merge-conflict
 
-  # Local guards. Both exist because of a real incident: commit 104342b described a
+  # Local guards. Both exist because of a real incident: commit 3c16231 described a
   # change control entry its patch script had failed to write, and the commit proceeded
   # anyway. See each script's docstring for what it does and does not catch.
   - repo: local

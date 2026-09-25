@@ -4,7 +4,7 @@
 Traces to: NFR-007 (change control), NFR-008 (traceability)
 Verifies: TC-107
 
-**The failure this exists to catch.** Commit `104342b` added SRS-065 to `docs/02` and
+**The failure this exists to catch.** Commit `3c16231` added SRS-065 to `docs/02` and
 did not touch `docs/13`. Its message described a change control entry that was not
 there, because the patch script writing it aborted partway and the commit proceeded
 anyway. It was found by reading the result rather than by any check.
@@ -13,7 +13,7 @@ anyway. It was found by reading the result rather than by any check.
 names a `docs/` file the commit does not touch — would not have caught it. That commit
 *did* touch `docs/11`; the first edit applied before the script died. Measured against
 all 37 commits in the repository's history, the message rule fires zero times and this
-rule fires exactly once: on `104342b`. A guard is worth having when it catches the thing
+rule fires exactly once: on `3c16231`. A guard is worth having when it catches the thing
 that actually happened.
 
 CLAUDE.md rule 6 and NFR-007 both say a new requirement, hazard or control is recorded
@@ -22,6 +22,11 @@ with a date and rationale. This makes that mechanical instead of remembered.
 What it cannot check: whether the entry is *true*. `docs/07` §8 says so of TC-107 and
 that limit is unchanged — an entry can exist and be wrong. This closes the gap where no
 entry exists at all.
+
+Note on the SHA: the incident commit was `104342b` until the history was rewritten on
+2026-09-23 to strip co-author trailers, which changed every SHA from the root onward
+without changing any content. It is `3c16231` now. TC-108 checks that citations like
+this one keep resolving.
 """
 
 from __future__ import annotations
