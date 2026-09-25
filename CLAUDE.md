@@ -151,13 +151,16 @@ dataset arrives.**
    protocol). **The document set is paused here by decision**, not oversight: `docs/08`,
    `docs/10`, `docs/11` and `docs/12` report on execution, results, DICOM output and a
    model. `docs/11` is partially populated where decisions have actually been taken.
-3. RETOUCH reader + DICOM conversion + de-identification. **Mostly done, 2026-09-19.**
-   De-identification, the spacing guard, the Ophthalmic Tomography writer, SEG, SR and
-   the DICOMweb client internals are implemented and tested on synthetic data. **Only
-   `retouch_reader.read_volume` and `iter_volumes` remain, and they need the data.**
+3. ~~RETOUCH reader + DICOM conversion + de-identification.~~ **done** — 2026-09-23.
+   Run end to end on the real training partition: 70 volumes converted, de-identified
+   and verified, three folds written. Per-vendor spacing ranges measured and enforced
+   2026-09-25, closing `docs/07` item 6.
 4. ~~Splits and leakage gate.~~ **done** — 2026-09-17. TC-004 passes for real; its
    `strict` xfail was removed when `splits.py` landed.
-5. Training on Kaggle; evaluation and subgroup reporting. **Blocked on the dataset.**
+5. Training on Kaggle; evaluation and subgroup reporting. **Preprocessing done
+   2026-09-25** — `data/transforms.py` and `data/datamodule.py` are implemented and
+   verified against the real archive (4032 train / 896 val / 1176 test frames on the
+   spectralis fold). `models/`, the training loop and `eval/subgroup.py` remain.
 6. SEG/SR output and Orthanc round-trip. **Objects done; round-trip blocked on Docker.**
 7. FastAPI service, Docker, full document set, GitHub Pages. **Not started.**
 
@@ -165,22 +168,24 @@ dataset arrives.**
 
 | Blocked on | What it blocks |
 |---|---|
-| **RETOUCH download** (`docs/06` §10 item 1 — registration not yet submitted as of 2026-09-19) | `retouch_reader.read_volume` and `iter_volumes`; per-vendor spacing plausibility ranges (`docs/07` open item 6); training; every metric on real data; `docs/08`, `docs/10`, `docs/12` |
+| ~~RETOUCH download~~ | **Unblocked 2026-09-21.** Training partition only; the test partition was deliberately not taken (`docs/06` §2.1) |
 | **Docker not installed** | TC-080, TC-081, TC-082 — written and **never executed**. The Orthanc round-trip is unverified |
-| **Neither** — these are simply next | `service/api.py` (step 4, not started), `models/`, `data/datamodule.py`, `data/transforms.py`, `eval/subgroup.py`, `eval/report.py` |
+| **Kaggle quota** (30 h/week) | The three primary folds. The optional dtype-scaling comparison fold (`docs/10` §8.1) runs only if they finish comfortably, and never before them |
+| **Neither** — these are simply next | `models/`, the training loop, `eval/subgroup.py`, `eval/report.py`, `service/api.py`, and wiring `scripts/01`–`03` (still stubs; the real run went through an ad-hoc driver) |
 
-### Numbers, as of 2026-09-19
+### Numbers, as of 2026-09-25
 
-Identifiers: URS-001..011, SRS-001..065, NFR-001..008, HAZ-001..015, RC-001..029,
-SOUP-001..022, TC-000..TC-120 (83 allocated).
+Identifiers: URS-001..011, SRS-001..074, NFR-001..008, HAZ-001..015, RC-001..031,
+SOUP-001..022, TC-000..TC-120 (92 allocated).
 
-**83 test cases allocated, 43 written, 40 executed, 3 written but never run.** Those
+**92 test cases allocated, 57 written, 54 executed, 3 written but never run.** Those
 three states are kept separate deliberately and `docs/09` regenerates them from the
 documents and from pytest's own marker resolution — a hand-maintained figure drifted in
 both directions at once and was replaced. A written test nobody has executed is not
-verification.
+verification. The three are TC-080..082, blocked on Docker.
 
-Risk controls: 29 allocated a test, **21 verified by a test that has actually run**.
+Suite: **318 passing, 8 deselected** (`requires_pacs`). Risk controls: 31 allocated a
+test.
 
 ### Standing decisions a future session should not relitigate
 
@@ -195,5 +200,28 @@ Risk controls: 29 allocated a test, **21 verified by a test that has actually ru
 - **HD95 is max-of-directed**, not pooled — found by the MONAI cross-check, TC-120.
 - **URS-011's research-use designation mechanism is still open.** Do not resolve it by
   picking a mechanism; it is a `docs/11` decision.
+- **A fixture written in the consuming code's convention cannot test a conversion**
+  (`docs/07` §3 rule 7). Found via the MetaImage spacing axis order, which no synthetic
+  fixture exercised because every fixture was already in the project's own order.
+- **Per-vendor spacing ranges are the only control that sees an axis transposition.**
+  The 0.5 mm physical bound catches 0 of 210 such cases; the per-vendor range catches
+  all of them (`docs/07` §13.3). Do not weaken the ranges to the physical bound alone.
+- **Intensity normalisation is a per-volume percentile window computed at ingestion**,
+  never dtype scaling and never recomputed in a transform. Topcon carries a p1 = 35/255
+  detector pedestal perfectly correlated with vendor; dtype scaling preserves it. The
+  consequence is stated in `docs/10` §8.1: **the measured cross-vendor gap is a lower
+  bound** on the raw-data gap.
+- **Axial resampling targets the coarsest common spacing (0.004 mm, declared in
+  `configs/train_seg.yaml`).** Never derived from the data — that would make
+  preprocessing depend on fold membership. Never upsample: fabricated detail would
+  substitute a smoothness signature for the brightness one the windowing removes.
+- **B-scan separation is not used by the transform chain** (SRS-073). Training is 2D and
+  frames are independent. Enabling 2.5D is a separate, visible decision.
+- **Training reads the archive's native MetaImage, not the DICOM.** The instances this
+  pipeline writes carry no segmentation; DICOM is the output interface, not the input.
+- **Commits carry no Claude Code attribution.** History was rewritten 2026-09-23 to
+  strip the trailers and force-pushed; content was unchanged and all 51 tree hashes were
+  verified identical. Cited SHAs are checked by TC-108 because that rewrite broke nine
+  of them.
 
 Update this section at the end of each working session.
