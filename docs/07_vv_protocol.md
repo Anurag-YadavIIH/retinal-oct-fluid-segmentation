@@ -192,6 +192,7 @@ lists SRS, NFR and RC identifiers.
 
 | ID | Title | Verifies | Method | Acceptance criterion | Auto |
 |---|---|---|---|---|---|
+| TC-039 | **The frame cache cannot change a value** | SRS-078 | U | Frames served from a pre-pass-populated cache are bit-identical to frames produced with caching disabled; the pre-pass decodes each volume once rather than once per frame | yes |
 | TC-040 | In-domain reference set disjoint | SRS-022 | U | Reference patients drawn from training vendors, disjoint from train and val | yes |
 | TC-041 | Splits seeded, persisted, reproducible | SRS-023, RC-004 | U | Same config and seed reproduce the split exactly; save/load round-trips | yes |
 | TC-042 | Split construction is patient-level from the manifest | SRS-019, RC-002 | U | No B-scan assigned independently of its patient | yes |
@@ -216,6 +217,7 @@ lists SRS, NFR and RC identifiers.
 | TC-056 | Scan-level confidence and review flag | SRS-030, RC-009 | U | Confidence in [0,1]; review flag set exactly when below the configured threshold | yes |
 | TC-057 | Run provenance written | SRS-031, RC-018 | U | Seed, resolved config and version present in the run directory before training starts | yes |
 | TC-058 | **Checkpoint provenance and integrity** | SRS-061, RC-028 | U | Checkpoint outside `artifacts/` refused; altered checkpoint fails hash check and aborts; checkpoint with no recorded hash aborts | yes |
+| TC-059 | **Resuming equals not being interrupted** | SRS-075, SRS-076, SRS-077 | U | Five epochs uninterrupted against three-plus-resume-two: on CPU the resulting weights are **bit-identical**; the checkpoint carries every generator's state and restoring it reproduces the next batch order; an atomic write survives a kill mid-write; the recorded fallback list is present. On GPU the comparison is within the stated tolerance and bit-exactness is not asserted | yes |
 
 ### 6.7 Evaluation and detection
 

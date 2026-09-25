@@ -232,6 +232,45 @@ class LoadFrame:
         return out
 
 
+def prepare_cache(records: Sequence[dict[str, Any]], transform, cache_dir: Path) -> dict[str, int]:
+    """Populate a PersistentDataset cache volume-wise (SRS-078).
+
+    **Why this exists.** `LoadFrame` decodes a whole volume to serve one frame, measured
+    at 1.67 s. Letting the dataloader fill the cache frame by frame therefore costs about
+    1.9 hours of decoding per epoch, or roughly half an hour spread over four workers,
+    before the second epoch can start. Grouping by volume decodes each of a fold's ~32
+    volumes once -- about 53 seconds -- because one decode serves all 128 of its frames.
+
+    **Why it cannot change a value.** This calls the same transform on the same records
+    that the dataloader would; it only controls the order in which they are visited, and
+    the transform chain up to the first random operation is a pure function of the
+    record. TC-039 asserts the frames are bit-identical to the uncached path, because an
+    optimisation that can alter a value is not an optimisation.
+
+    Returns the number of frames prepared per volume, for the run log.
+    """
+    from monai.data import PersistentDataset
+
+    cache_dir = Path(cache_dir)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    # Group by source volume, then order by frame index within it, so each volume is
+    # decoded once and consecutively rather than revisited.
+    ordered = sorted(
+        range(len(records)), key=lambda i: (records[i]["source_path"], records[i]["frame_index"])
+    )
+    grouped = [records[i] for i in ordered]
+
+    dataset = PersistentDataset(grouped, transform=transform, cache_dir=str(cache_dir))
+    counts: dict[str, int] = {}
+    for position in range(len(dataset)):
+        dataset[position]  # noqa: B018 - the indexing IS the work; it writes the cache
+        counts[grouped[position]["source_path"]] = (
+            counts.get(grouped[position]["source_path"], 0) + 1
+        )
+    return counts
+
+
 def build_datasets(
     split: Split,
     cfg: dict,
@@ -321,6 +360,7 @@ def build_loaders(split: Split, cfg: dict, manifest: Sequence[VolumeRecord]):
 
 __all__ = [
     "LoadFrame",
+    "prepare_cache",
     "assert_window_inheritance",
     "build_datasets",
     "build_frame_split",

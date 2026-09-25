@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-074 and NFR-001..NFR-008. Every requirement here derives
+Allocates SRS-001..SRS-078 and NFR-001..NFR-008. Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -117,6 +117,10 @@ measurement, and that gap is HAZ-012.
 | SRS-072 | Axial resampling shall use a **target spacing declared as a constant in `configs/train_seg.yaml`**. The target shall not be derived from the data at run time, shall not depend on fold membership, and shall be written into the run output with the resolved configuration. | URS-010 | TC-046 |
 | SRS-073 | Only the **axial** axis shall be resampled. Lateral spacing shall not be resampled, and B-scan separation shall not be resampled or otherwise used by the transform chain: training is 2D and frames are independent. Separation becomes relevant only if 2.5D mode is enabled, which is a separate decision. | URS-008 | TC-047 |
 | SRS-074 | Every segmentation metric and every volume in mm³ shall be computed in the acquisition's **native geometry**. A prediction produced at the resampled spacing shall be inverted back to the native grid before any metric is computed, and the spacing used shall satisfy SRS-057. | URS-002, URS-008 | TC-048 |
+| SRS-075 | Training shall write a checkpoint at the end of every epoch containing the model state, the optimiser state, the learning-rate scheduler state, the gradient-scaler state, the epoch index, the best metric so far, and the state of **every** random generator that affects training — Python's `random`, NumPy, torch CPU and torch CUDA. The write shall be atomic, so that a process killed mid-write leaves the previous checkpoint intact. | URS-010 | TC-059 |
+| SRS-076 | A run resumed from a checkpoint shall be equivalent to an uninterrupted run of the same length. **On CPU the equivalence shall be bit-identical.** On GPU it shall be within a tolerance stated in the run output, because several CUDA kernels used by this network — among them some interpolation and upsampling backward passes — have no deterministic implementation, so bit-exactness is not achievable and shall not be claimed. | URS-010 | TC-059 |
+| SRS-077 | Training shall request deterministic algorithms via `torch.use_deterministic_algorithms`. Where an operation has no deterministic implementation, the run shall fall back rather than abort, and shall **record in the run output which operations forced a fallback**. An undocumented fallback is an undocumented source of run-to-run variation. | URS-010 | TC-059 |
+| SRS-078 | The frame cache shall be populated by a **volume-wise pre-pass** that decodes each source volume once. Frames served from the cache shall be bit-identical to the frames the same configuration produces without it: the cache is an optimisation and shall not be able to change a value. | URS-010 | TC-039 |
 
 ### 3.5 Training
 
@@ -201,7 +205,8 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `io/dicomweb.py` | SRS-043, SRS-044, SRS-045, SRS-060 |
 | `data/splits.py` | SRS-018..SRS-023, SRS-067, SRS-068, SRS-069, SRS-071 |
 | `data/transforms.py` | SRS-070, SRS-072, SRS-073, SRS-074 |
-| `data/datamodule.py` | SRS-070, SRS-071, SRS-073 |
+| `data/datamodule.py` | SRS-070, SRS-071, SRS-073, SRS-078 |
+| `training/checkpoint.py` | SRS-075, SRS-076, SRS-077 |
 | `data/datamodule.py` | SRS-024 |
 | `data/transforms.py` | SRS-025, SRS-026 |
 | `models/seg_unet.py` | SRS-027, SRS-028, SRS-061 |
