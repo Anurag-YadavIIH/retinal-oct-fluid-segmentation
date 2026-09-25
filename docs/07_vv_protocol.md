@@ -201,6 +201,7 @@ lists SRS, NFR and RC identifiers.
 | TC-046 | Target axial spacing is declared, not derived | SRS-072 | U | The target is read from `configs/train_seg.yaml`; the transform chain built for two different folds uses the identical target; no code path computes a target from the data; the value appears in the resolved run configuration | yes |
 | TC-047 | Only the axial axis is resampled | SRS-073 | U | Lateral spacing is unchanged by the chain; B-scan separation is not read by any transform; a volume differing only in separation produces identical frames | yes |
 | TC-048 | Metrics are computed in native geometry | SRS-074, SRS-057 | U | A prediction made at the resampled spacing and inverted returns to the native shape; the spacing used for mm³ is bit-identical to the ingestion spacing; a metric computed without inverting is detectably different | yes |
+| TC-049 | **The DICOM instance and the MetaImage source agree** | SRS-010, SRS-054, SRS-066; HAZ-004 | D | For a sampled subject per vendor, the written instance and the raw volume carry bit-identical pixel data, identical shape, identical element type and bit-identical spacing. Training reads MetaImage while results are reported against DICOM, so a divergence between the two paths would attribute a measurement to an acquisition it did not come from | yes (`requires_data`) |
 
 ### 6.6 Training, uncertainty and checkpoints
 

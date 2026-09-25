@@ -242,6 +242,27 @@ def cited_shas() -> dict[str, list[str]]:
     return found
 
 
+def assert_history_is_available() -> None:
+    """Fail loudly on a shallow clone rather than reporting every citation as dangling.
+
+    A shallow checkout contains one commit, so `git rev-list` returns one SHA and every
+    cited SHA appears unresolvable. The citations would be fine and the diagnosis would
+    be wrong. This separates the two failures, because they have opposite fixes: a stale
+    citation is remapped, a shallow clone is deepened.
+
+    Deliberately an assertion and not a skip. Skipping would mean the guard silently
+    stops running in exactly the environment it exists to protect -- which is the
+    specified-but-not-wired failure this project has now hit three times.
+    """
+    if git_output("rev-parse", "--is-shallow-repository").strip() == "true":
+        raise AssertionError(
+            "this is a shallow clone, so commit history is not available and TC-108 "
+            "cannot resolve any citation. This is NOT a stale-citation failure. In CI, "
+            "set `fetch-depth: 0` on actions/checkout (it defaults to 1); locally, run "
+            "`git fetch --unshallow`."
+        )
+
+
 def reachable_commits() -> set[str]:
     """Full SHAs reachable from main, falling back to origin/main then HEAD.
 
@@ -256,6 +277,7 @@ def reachable_commits() -> set[str]:
 
 
 def test_TC_108_every_cited_sha_resolves_to_a_commit_on_main():
+    assert_history_is_available()
     reachable = reachable_commits()
     dangling = {
         sha: files
@@ -277,6 +299,7 @@ def test_TC_108_every_cited_sha_resolves_to_a_commit_on_main():
 
 def test_TC_108_retired_shas_are_genuinely_unreachable():
     """RETIRED_SHAS must not become a way to excuse a citation that should resolve."""
+    assert_history_is_available()
     reachable = reachable_commits()
     live = {
         sha: reason

@@ -10,6 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # TC-108 checks that every commit SHA cited in the documents still resolves
+          # to a commit reachable from main. actions/checkout defaults to fetch-depth 1,
+          # which leaves a single commit and makes every citation look dangling. The
+          # check is only meaningful against real history, so fetch all of it. This
+          # repository is small; the cost is negligible.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:

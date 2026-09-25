@@ -323,3 +323,88 @@ class TestArchiveMatchesDocumentation:
             for subj in rr.subject_directories(Path(self.ROOT), vendor):
                 spacing = rr.spacing_from_header(parse_header(subj / "oct.mhd"))
                 rr.validate_spacing(spacing, source=str(subj))
+
+
+# --- TC-049: the two paths must not diverge -----------------------------------------
+#
+# Training reads the archive's native MetaImage; results are reported against the DICOM
+# instance. Two paths now exist for one acquisition, and nothing else checks that they
+# still describe the same thing. That is HAZ-004's shape: a real value attached to the
+# wrong acquisition. The failure would surface as a misaligned SEG overlaid on a study,
+# long after the run that produced it, and by then the run is what would be doubted.
+#
+# This compares the written instance against the source it was written from, rather than
+# re-deriving both from one reader -- comparing a reader to itself would pass whatever
+# the writer did.
+
+
+@pytest.mark.requires_data
+def test_TC_049_dicom_and_metaimage_agree_for_a_sample_per_vendor():
+    from pathlib import Path
+
+    import numpy as np
+    import pydicom
+    import yaml
+
+    from ocuval.io.retouch_reader import read_volume, subject_directories
+
+    config = yaml.safe_load(Path("configs/data.yaml").read_text(encoding="utf-8"))
+    raw_root = Path(config["paths"]["raw_root"])
+    dicom_root = Path(config["paths"]["dicom_root"])
+    if not dicom_root.is_dir():
+        pytest.skip(f"{dicom_root} not present; run the conversion stage first")
+
+    checked = 0
+    for vendor in config["vendors"]:
+        instances = sorted((dicom_root / vendor).glob("*.dcm"))
+        directories = subject_directories(raw_root, vendor)
+        if not instances or not directories:
+            pytest.skip(f"no converted instances for {vendor}")
+
+        # Match by patient identifier rather than by position: a positional match would
+        # pass even if conversion had reordered the subjects, which is the error most
+        # likely to attach a result to the wrong acquisition.
+        by_patient = {}
+        for path in instances:
+            header = pydicom.dcmread(str(path), stop_before_pixels=True)
+            by_patient[str(header.PatientID)] = path
+
+        directory = directories[0]
+        volume = read_volume(directory, vendor)
+        path = by_patient.get(volume.patient_id)
+        if path is None:
+            pytest.skip(
+                f"{vendor}/{volume.patient_id} has no instance under its own identifier "
+                f"(the converted tree may be de-identified; compare against dicom_root)"
+            )
+
+        dataset = pydicom.dcmread(str(path))
+        pixels = dataset.pixel_array
+
+        assert pixels.shape == volume.pixel_array.shape, (
+            f"{vendor}/{volume.patient_id}: DICOM shape {pixels.shape} against MetaImage "
+            f"{volume.pixel_array.shape}. SRS-010 forbids resampling during conversion."
+        )
+        assert pixels.dtype == volume.pixel_array.dtype, (
+            f"{vendor}/{volume.patient_id}: DICOM dtype {pixels.dtype} against MetaImage "
+            f"{volume.pixel_array.dtype}. SRS-066 requires the element type carried, not cast."
+        )
+        assert np.array_equal(pixels, volume.pixel_array), (
+            f"{vendor}/{volume.patient_id}: pixel data differs between the written "
+            f"instance and the source it was written from. Training reads one and "
+            f"results are reported against the other (HAZ-004)."
+        )
+
+        measures = dataset.SharedFunctionalGroupsSequence[0].PixelMeasuresSequence[0]
+        # PixelSpacing is [row, column] = [axial, lateral]; B-scan separation is carried
+        # as SliceThickness, per the writer's reading of Table A.52.4.3-1.
+        axial, lateral = (float(v) for v in measures.PixelSpacing)
+        separation = float(measures.SliceThickness)
+        assert (axial, lateral, separation) == volume.spacing_mm, (
+            f"{vendor}/{volume.patient_id}: DICOM spacing "
+            f"{(axial, lateral, separation)} against MetaImage {volume.spacing_mm}. "
+            f"SRS-054 requires spacing to survive conversion unchanged."
+        )
+        checked += 1
+
+    assert checked == len(config["vendors"]), f"only {checked} vendors checked"
