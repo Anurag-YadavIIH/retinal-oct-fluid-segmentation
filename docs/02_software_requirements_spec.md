@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-078 and NFR-001..NFR-008. Every requirement here derives
+Allocates SRS-001..SRS-079 and NFR-001..NFR-008. Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -121,6 +121,7 @@ measurement, and that gap is HAZ-012.
 | SRS-076 | A run resumed from a checkpoint shall be equivalent to an uninterrupted run of the same length. **On CPU the equivalence shall be bit-identical.** On GPU it shall be within a tolerance stated in the run output, because several CUDA kernels used by this network — among them some interpolation and upsampling backward passes — have no deterministic implementation, so bit-exactness is not achievable and shall not be claimed. | URS-010 | TC-059 |
 | SRS-077 | Training shall request deterministic algorithms via `torch.use_deterministic_algorithms`. Where an operation has no deterministic implementation, the run shall fall back rather than abort, and shall **record in the run output which operations forced a fallback**. An undocumented fallback is an undocumented source of run-to-run variation. | URS-010 | TC-059 |
 | SRS-078 | The frame cache shall be populated by a **volume-wise pre-pass** that decodes each source volume once. Frames served from the cache shall be bit-identical to the frames the same configuration produces without it: the cache is an optimisation and shall not be able to change a value. | URS-010 | TC-039 |
+| SRS-079 | `train.batch_size` shall remain the **effective** batch — the number of samples contributing to each optimiser step — regardless of how many samples pass through the accelerator at once. A separate `train.micro_batch_size` shall control the latter, shall divide `batch_size` exactly, and shall default to it. The gradient from one step of `batch_size` samples and the gradient accumulated over `batch_size / micro_batch_size` micro-batches shall agree to within a stated tolerance. Both values shall be written to the run output. | URS-010 | TC-078 |
 
 ### 3.5 Training
 
@@ -207,7 +208,7 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `data/transforms.py` | SRS-070, SRS-072, SRS-073, SRS-074 |
 | `data/datamodule.py` | SRS-070, SRS-071, SRS-073, SRS-078 |
 | `training/checkpoint.py` | SRS-075, SRS-076, SRS-077 |
-| `training/loop.py` | SRS-024, SRS-031, SRS-075, SRS-076, SRS-077 |
+| `training/loop.py` | SRS-024, SRS-031, SRS-075, SRS-076, SRS-077, SRS-079 |
 | `scripts/benchmark_device.py` | SRS-031 |
 | `data/datamodule.py` | SRS-024 |
 | `data/transforms.py` | SRS-025, SRS-026 |

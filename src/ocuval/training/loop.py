@@ -30,6 +30,7 @@ from typing import Any
 
 import torch
 
+from ocuval.data.datamodule import accumulation_plan
 from ocuval.data.splits import Split
 from ocuval.training.checkpoint import (
     BEST_NAME,
@@ -152,6 +153,7 @@ def train_fold(
     use_amp = bool(train_cfg.get("amp", True)) and device == "cuda"
     classes = int(cfg["model"]["out_channels"])
 
+    micro_batch, accumulation_steps, effective_batch = accumulation_plan(cfg)
     train_loader, val_loader, _ = build_loaders(split, cfg, manifest)
     model = build_model(cfg).to(device)
     loss_fn = build_loss(cfg)
@@ -183,20 +185,38 @@ def train_fold(
             started = time.time()
             model.train()
             total, seen = 0.0, 0
-            for batch in train_loader:
+            optimizer.zero_grad(set_to_none=True)
+            pending = 0
+
+            for position, batch in enumerate(train_loader):
                 images = batch["image"].to(device)
                 labels = batch["label"].to(device).long()
-                optimizer.zero_grad(set_to_none=True)
                 with torch.autocast(device_type=device, enabled=use_amp):
                     loss = loss_fn(model(images), labels)
-                scaler.scale(loss).backward()
+                # Scale by 1/steps so the accumulated gradient is the MEAN over the
+                # effective batch rather than the sum. Without this the gradient is
+                # `steps` times too large and the run is not the run that was
+                # configured -- TC-078 asserts exactly this, by checking that omitting
+                # the scaling falls outside the tolerance.
+                scaler.scale(loss / accumulation_steps).backward()
+                total += float(loss.detach()) * images.shape[0]
+                seen += images.shape[0]
+                pending += 1
+
+                is_last = position + 1 == len(train_loader)
+                if pending < accumulation_steps and not is_last:
+                    continue
+
+                # Clipping applies to the ACCUMULATED gradient, once per optimiser step.
+                # Clipping each micro-batch would clip a partial gradient and change the
+                # direction of the step, not merely its length.
                 if grad_clip > 0:
                     scaler.unscale_(optimizer)
                     torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
                 scaler.step(optimizer)
                 scaler.update()
-                total += float(loss.detach()) * images.shape[0]
-                seen += images.shape[0]
+                optimizer.zero_grad(set_to_none=True)
+                pending = 0
             scheduler.step()
 
             result = EpochResult(epoch=epoch, train_loss=total / max(1, seen))
@@ -241,6 +261,20 @@ def train_fold(
 
         messages = [str(w.message) for w in captured]
 
+    (run_dir / "batching.json").write_text(
+        json.dumps(
+            {
+                "effective_batch_size": effective_batch,
+                "micro_batch_size": micro_batch,
+                "accumulation_steps": accumulation_steps,
+                "amp_enabled": use_amp,
+                "device": device,
+            },
+            indent=2,
+        )
+        + chr(10),
+        encoding="utf-8",
+    )
     (run_dir / "determinism.json").write_text(
         json.dumps(describe_determinism(determinism, messages), indent=2) + "\n",
         encoding="utf-8",

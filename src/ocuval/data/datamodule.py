@@ -37,6 +37,9 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+from monai.transforms import Transform
+
 from ocuval.data.splits import (
     FrameSplit,
     Sample,
@@ -202,14 +205,24 @@ def assert_window_inheritance(
         )
 
 
-class LoadFrame:
+class LoadFrame(Transform):
     """Read one B-scan and its reference mask from the archive's native volume.
 
-    Whole volumes are decoded and the requested frame taken from them, which is wasteful
-    per frame and irrelevant in practice: every frame passes through here once, because
-    `PersistentDataset` caches the transformed result to disk. A per-frame reader would
-    be faster on a cold cache and would need its own correctness argument about frame
-    ordering, which this does not.
+    **Subclasses `monai.transforms.Transform` deliberately, and it is not cosmetic.**
+    `PersistentDataset` decides how much of a chain to cache with
+
+        first_random = transform.get_index_of_first(
+            lambda t: isinstance(t, RandomizableTrait) or not isinstance(t, Transform))
+
+    so a plain callable at position zero makes `first_random` zero and **nothing at all
+    is cached** -- the stored entry holds the record's metadata and no pixels, and every
+    epoch re-decodes. That was the behaviour until 2026-09-25; see docs/13.
+
+    **Holds the last decoded volume**, so a caller that visits frames volume-wise pays
+    one decode per volume rather than one per frame. Decoding is ~1.7 s and a volume
+    serves up to 128 frames, so the difference is roughly two orders of magnitude on a
+    cold cache. One volume at a time, because that is all the ordering guarantees and a
+    larger cache would hold tens of megabytes per dataloader worker for no gain.
 
     The volume's own spacing and intensity window are NOT read here. They arrive on the
     record from the manifest, so that what training normalises against is the value that
@@ -217,19 +230,56 @@ class LoadFrame:
     """
 
     def __init__(self, image_key: str = "image", label_key: str = "label"):
+        super().__init__()
         self.image_key = image_key
         self.label_key = label_key
+        self._cached_path: str | None = None
+        self._cached_volume: Any = None
+        self.decodes = 0
 
-    def __call__(self, record: dict[str, Any]) -> dict[str, Any]:
+    def _volume(self, source_path: str, vendor: str):
         from ocuval.io.retouch_reader import read_volume
 
+        if self._cached_path != source_path:
+            self._cached_volume = read_volume(Path(source_path), vendor)
+            self._cached_path = source_path
+            self.decodes += 1
+        return self._cached_volume
+
+    def __call__(self, record: dict[str, Any]) -> dict[str, Any]:
         out = dict(record)
-        volume = read_volume(Path(record["source_path"]), record["vendor"])
+        volume = self._volume(str(record["source_path"]), record["vendor"])
         index = record["frame_index"]
-        out[self.image_key] = volume.pixel_array[index]
+        # Copied out of the cached volume: the array must not alias a buffer that the
+        # next record's decode will replace.
+        out[self.image_key] = np.array(volume.pixel_array[index], copy=True)
         if volume.label_array is not None:
-            out[self.label_key] = volume.label_array[index]
+            out[self.label_key] = np.array(volume.label_array[index], copy=True)
         return out
+
+
+def flat_chain(*parts):
+    """Build one flat Compose from transforms and nested Composes.
+
+    Nesting matters to `PersistentDataset`. It caches up to the first transform that is
+    `RandomizableTrait` or not a `Transform`, and **`Compose` itself is Randomizable**,
+    so `Compose([LoadFrame(), eval_transforms(cfg)])` stops caching at index 1 and
+    stores only the decoded frame -- the resampling and padding then re-run every epoch.
+    Flattening puts the deterministic transforms at the top level where they are cached,
+    and leaves the boundary where it belongs: at the first genuinely random transform of
+    the training chain.
+    """
+    from monai.transforms import Compose
+
+    flattened = []
+    for part in parts:
+        if isinstance(part, Compose):
+            flattened.extend(part.transforms)
+        elif isinstance(part, list | tuple):
+            flattened.extend(part)
+        else:
+            flattened.append(part)
+    return Compose(flattened)
 
 
 def prepare_cache(records: Sequence[dict[str, Any]], transform, cache_dir: Path) -> dict[str, int]:
@@ -283,7 +333,6 @@ def build_datasets(
     MetaImage that will not fit alongside training on a 16 GB machine.
     """
     from monai.data import CacheDataset, Dataset, PersistentDataset
-    from monai.transforms import Compose
 
     from ocuval.data.transforms import eval_transforms, train_transforms
 
@@ -303,10 +352,12 @@ def build_datasets(
         assert_window_inheritance(records, manifest)
         buckets[name] = records
 
+    # Flattened, not nested: see flat_chain. Nesting would cache only the decode and
+    # re-run resampling and padding on every epoch.
     chain_for = {
-        "train": Compose([LoadFrame(), train_transforms(cfg, seed=seed)]),
-        "val": Compose([LoadFrame(), eval_transforms(cfg)]),
-        "test": Compose([LoadFrame(), eval_transforms(cfg)]),
+        "train": flat_chain(LoadFrame(), train_transforms(cfg, seed=seed)),
+        "val": flat_chain(LoadFrame(), eval_transforms(cfg)),
+        "test": flat_chain(LoadFrame(), eval_transforms(cfg)),
     }
 
     backend = data_cfg.get("cache", "persistent")
@@ -325,6 +376,40 @@ def build_datasets(
         return Dataset(records, transform=chain)
 
     return make("train"), make("val"), make("test")
+
+
+def accumulation_plan(cfg: dict) -> tuple[int, int, int]:
+    """Return (micro_batch_size, accumulation_steps, effective_batch) for SRS-079.
+
+    `batch_size` is the experiment; `micro_batch_size` is the hardware. Keeping them
+    separate means a card with less memory changes how a step is computed and not what
+    a step means, so a result from a 4 GB laptop is comparable with one from a 16 GB
+    accelerator.
+
+    Refuses a micro-batch that does not divide the batch, rather than rounding. An
+    uneven final micro-batch would weight its samples differently from the rest, so the
+    accumulated gradient would not be the whole-batch gradient and the equivalence
+    SRS-079 asserts would quietly stop holding.
+    """
+    train_cfg = cfg.get("train", cfg)
+    effective = int(train_cfg["batch_size"])
+    micro = int(train_cfg.get("micro_batch_size", effective))
+    if micro <= 0 or effective <= 0:
+        raise ValueError(f"batch sizes must be positive, got {effective} and {micro}")
+    if micro > effective:
+        raise ValueError(
+            f"train.micro_batch_size ({micro}) exceeds train.batch_size ({effective}). "
+            f"The micro-batch is what passes through the accelerator at once; it cannot "
+            f"be larger than the effective batch."
+        )
+    if effective % micro:
+        raise ValueError(
+            f"train.micro_batch_size ({micro}) does not divide train.batch_size "
+            f"({effective}) exactly. An uneven final micro-batch would weight its "
+            f"samples differently, so the accumulated gradient would no longer equal "
+            f"the whole-batch gradient (SRS-079, docs/07 section 14)."
+        )
+    return micro, effective // micro, effective
 
 
 def build_loaders(split: Split, cfg: dict, manifest: Sequence[VolumeRecord]):
@@ -355,8 +440,11 @@ def build_loaders(split: Split, cfg: dict, manifest: Sequence[VolumeRecord]):
             "configs/train_seg.yaml has no train.batch_size. It is a declared constant "
             "(SRS-031 records it in the run output) and has no default."
         )
+    # The loader yields MICRO-batches; the loop accumulates them into the effective
+    # batch (SRS-079). Handing the loader `batch_size` would put the whole effective
+    # batch on the accelerator at once, which is the thing accumulation exists to avoid.
     common = {
-        "batch_size": int(train_cfg["batch_size"]),
+        "batch_size": accumulation_plan(cfg)[0],
         "num_workers": int(data_cfg.get("num_workers", 4)),
         "pin_memory": False,
     }
@@ -369,6 +457,8 @@ def build_loaders(split: Split, cfg: dict, manifest: Sequence[VolumeRecord]):
 
 __all__ = [
     "LoadFrame",
+    "flat_chain",
+    "accumulation_plan",
     "prepare_cache",
     "assert_window_inheritance",
     "build_datasets",

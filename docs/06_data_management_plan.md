@@ -576,6 +576,40 @@ is the project's headline result.
 
 ## 7. Access control and storage
 
+### 7.1 Training runs on the local workstation — decision, 2026-09-25
+
+**Decision.** All training, validation and evaluation run on the author's own machine.
+The dataset is never uploaded anywhere. The Kaggle path remains documented below as an
+alternative that was prepared and **not used**.
+
+**Reasoning.** The signed Agreement of Data Confidentiality restricts disclosure to the
+registered team (§2.1). A Kaggle dataset marked private is still **stored on a third
+party's servers**, which is a disclosure to that third party regardless of who can view
+it: the data leaves the registered team's custody, is processed under terms the team
+does not set, and its deletion cannot be verified from outside. Marking it private
+controls *who can read it*, not *where it is*. The Agreement speaks to the second.
+
+This is **DMP-C1** applied rather than a new commitment: the constraint always said the
+data stays within the registered team's control, and the local-training decision is what
+that requires once training hardware is in question.
+
+**Cost accepted.** A GTX 1050 with 4 GB is slower than a Kaggle P100 and has no weekly
+quota to work against. Measured 2026-09-25 at **25.6 images/second** through the real
+cached loader, the three folds at 150 epochs total **≈17 hours** — roughly two overnight
+sessions. That is acceptable, and the checkpoint-resume path (SRS-075) exists so the
+work can be split across nights. Paying two nights to keep the archive on one machine is
+a straightforward trade.
+
+**What this does not change.** The de-identification pipeline still runs and is still
+verified (§5). Not needing a control is not a reason to remove it; demonstrating it is
+part of the point.
+
+**Status of the Kaggle path.** `docs/06` and the training entry point remain
+Kaggle-compatible and the notebook is **not used**. It is kept because the alternative
+should be visible and because a reader assessing this decision should be able to see the
+option that was declined, not only the one taken.
+
+
 **Access is single-recipient.** The signed agreement names one recipient, and that is
 the fact DMP-C5 rests on: the constraint is not "few people" or "the project team" but
 one named individual. There is no team, no collaborator, and no mechanism by which a
@@ -583,14 +617,19 @@ second person could obtain the data through this project. Any future collaborato
 need their own registration and their own signed agreement; the data cannot be passed
 along with the repository.
 
-Data resides on a single local workstation — see §4.1 for the on-disk arrangement — and,
-for training, in a **private** Kaggle Dataset attached to the training notebook. The
-Kaggle dataset must be private; a public one would breach DMP-C1 and the distribution
-clause of the agreement simultaneously.
+Data resides on a single local workstation and nowhere else — see §4.1 for the on-disk
+arrangement and §7.1 for the decision.
+
+~~and, for training, in a **private** Kaggle Dataset attached to the training
+notebook.~~ **Superseded 2026-09-25.** This plan previously anticipated a private Kaggle
+Dataset for training. It is not used, and the reasoning is in §7.1: private controls who
+may read the data, not where it is held, and the agreement speaks to custody. The
+sentence is struck rather than deleted so that the earlier position, and the fact that it
+changed, remain visible.
 
 No cloud object storage, no shared drives, no third-party annotation services.
 
-### 7.1 UID root — unregistered, and declared as such
+### 7.2 UID root — unregistered, and declared as such
 
 The UID root configured in `configs/data.yaml` (`dicom.uid_root`) is **not registered**
 to this project, to its author, or to any organisation. This is a recorded limitation,

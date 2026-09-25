@@ -82,11 +82,10 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     if not args.no_prepass:
-        from monai.transforms import Compose
-
         from ocuval.data.datamodule import (
             LoadFrame,
             build_frame_split,
+            flat_chain,
             frame_records,
             prepare_cache,
         )
@@ -96,7 +95,7 @@ def main(argv: list[str] | None = None) -> int:
         frame_split = build_frame_split(split, manifest)
         for bucket in ("train", "val"):
             records = frame_records(manifest, frame_split, bucket)
-            chain = Compose([LoadFrame(), eval_transforms(cfg)])
+            chain = flat_chain(LoadFrame(), eval_transforms(cfg))
             counts = prepare_cache(records, chain, cache_root / bucket)
             print(
                 f"pre-pass {bucket}: {len(records)} frames from {len(counts)} volumes", flush=True

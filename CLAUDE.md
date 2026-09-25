@@ -189,6 +189,29 @@ verification. The three are TC-080..082, blocked on Docker.
 Suite: **361 passing, 1 skipped (no CUDA here), 8 deselected** (`requires_pacs`), plus
 5 `requires_data`. Risk controls: 31 allocated a test. CI is green on `main`.
 
+### Stage plan for training (agreed 2026-09-25)
+
+| Stage | Content | State |
+|---|---|---|
+| **0** | CUDA torch 2.3.1 (cu121, `sm_61` verified), AMP on/off benchmark, gradient accumulation with the norm-layer check, benchmark including the real loader | **done** |
+| **1** | Smoke run, `cirrus_holdout`, ~20 epochs. **Pass criteria written into `docs/07` before it starts** | not started |
+| **2** | `cirrus_holdout` trained fully **and evaluated end to end** before any other fold begins | not started |
+| **3** | `spectralis_holdout`, `topcon_holdout` | not started |
+| **4** | Uncertainty, subgroup analysis, `docs/10`. May proceed during Stage 3 | not started |
+
+**Owed before Stage 1**, from the nightly-session decision: a `--max-epochs-this-session`
+option; a `STOP` file in the run directory that ends the session cleanly after the
+current epoch; confirmation that the checkpoint carries **everything that changes
+behaviour on resume** — scheduler state including warmup position, early-stopping state
+(best metric, best epoch, epochs since improvement), GradScaler when AMP is on, and all
+RNG states — with the resume test extended to cross a warmup boundary and to resume
+partway through a patience window; and one continuous per-epoch log appended across
+sessions with session boundaries marked.
+
+**Measured on this workstation (GTX 1050, 2026-09-25), micro-batch 8, AMP off:**
+25.6 img/s through the real cached loader, 1.29 GiB peak of 4 GiB. Per 8-hour night:
+**cirrus 263 epochs, topcon 223, spectralis 170.** Three folds at 150 epochs is ~17 h.
+
 ### Standing decisions a future session should not relitigate
 
 - **Refuse, or omit — never fill** (RC-029). Acquisition context RETOUCH does not record
@@ -234,6 +257,22 @@ Suite: **361 passing, 1 skipped (no CUDA here), 8 deselected** (`requires_pacs`)
 - **Resume is detected from the run directory, never requested by a flag**, and `last`
   is written every epoch before any early-stopping decision. `best` selects a model;
   `last` continues a trajectory.
+- **Training runs locally; the dataset never leaves this workstation** (`docs/06` §7.1).
+  A private Kaggle dataset is still third-party storage: private controls who can read
+  it, not where it is held, and the Agreement speaks to custody. DMP-C1 applied. The
+  Kaggle path stays documented and marked not used.
+- **AMP is not used on this GPU.** Consumer Pascal has no tensor cores; measured, AMP
+  cut peak memory 1.29 to 0.81 GiB and cost throughput at every micro-batch. Memory was
+  never the binding constraint, so the trade is all cost.
+- **Gradient accumulation is implemented but not needed here** (micro-batch 8 peaks at
+  1.29 GiB of 4). Its equivalence rests on the network having **instance norm and no
+  batch norm**; under batch norm it is invalid and the response is to stop accumulating,
+  never to widen the tolerance (`docs/07` §14).
+- **`LoadFrame` must remain a `monai.transforms.Transform`, and transform chains must
+  stay flat.** `PersistentDataset` caches only up to the first transform that is
+  Randomizable *or not a Transform*, and `Compose` is itself Randomizable — so a plain
+  callable, or a nested Compose, silently caches nothing at all. TC-039 now inspects the
+  stored artefact rather than comparing served values.
 - **Commits carry no Claude Code attribution.** History was rewritten 2026-09-23 to
   strip the trailers and force-pushed; content was unchanged and all 51 tree hashes were
   verified identical. Cited SHAs are checked by TC-108 because that rewrite broke nine

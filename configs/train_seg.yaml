@@ -43,7 +43,9 @@ data:
   # serves 128 frames, so a per-frame decode costs ~1.9 h per epoch against ~53 s for
   # the pre-pass. On Kaggle point this at /kaggle/temp (~57 GB, ephemeral) rather than
   # /kaggle/working (20 GB and counted as run output). Per-fold size is 3.8-5.9 GB.
-  cache_dir: artifacts/cache
+  # On D:, not C:. The system volume had 23 GB free against 3.8-5.9 GB of cache per
+  # fold plus the 6.2 GB of derived DICOM already moved there (docs/06 section 4.1).
+  cache_dir: D:/RETOUCH_DATA/ocuval_cache
   cache_rate: 0.2
   num_workers: 4
 
@@ -70,10 +72,19 @@ optim:
 
 train:
   epochs: 150
-  # Declared, not defaulted. At 576x512 a batch of 8 holds roughly 6 GB of activations
-  # for this UNet, which fits a 16 GB P100 with headroom. This is the ONLY batch size in
-  # the configuration; the datamodule reads it from here.
+  # The EFFECTIVE batch: how many samples contribute to each optimiser step. This is the
+  # number that defines the experiment, and it does not change with the hardware.
   batch_size: 8
+
+  # How many samples pass through the accelerator at once (SRS-079). Must divide
+  # batch_size exactly. Setting it below batch_size turns on gradient accumulation:
+  # batch_size / micro_batch_size micro-batches are accumulated before each optimiser
+  # step, so the effective batch is unchanged while peak activation memory falls roughly
+  # in proportion. Equivalence holds because the network uses instance normalisation and
+  # nothing couples samples within a batch -- see docs/07 section 14.
+  #
+  # 8 means no accumulation. Lower it to fit a smaller card.
+  micro_batch_size: 8
   amp: true
   grad_clip: 1.0
   early_stopping_patience: 25

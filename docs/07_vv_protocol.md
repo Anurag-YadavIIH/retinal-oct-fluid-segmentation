@@ -218,6 +218,7 @@ lists SRS, NFR and RC identifiers.
 | TC-057 | Run provenance written | SRS-031, RC-018 | U | Seed, resolved config and version present in the run directory before training starts | yes |
 | TC-058 | **Checkpoint provenance and integrity** | SRS-061, RC-028 | U | Checkpoint outside `artifacts/` refused; altered checkpoint fails hash check and aborts; checkpoint with no recorded hash aborts | yes |
 | TC-059 | **Resuming equals not being interrupted** | SRS-075, SRS-076, SRS-077 | U | Five epochs uninterrupted against three-plus-resume-two: on CPU the resulting weights are **bit-identical**; the checkpoint carries every generator's state and restoring it reproduces the next batch order; an atomic write survives a kill mid-write; the recorded fallback list is present. On GPU the comparison is within the stated tolerance and bit-exactness is not asserted | yes |
+| TC-078 | **Accumulated gradient equals the whole-batch gradient** | SRS-079 | U | On CPU, one step over 8 samples and four accumulated micro-batches of 2 produce gradients agreeing within the tolerance in §14; a micro-batch that does not divide the batch is refused; the effective batch recorded in the run output is `batch_size`, not the micro-batch. **The number lies outside this section's original TC-050..TC-059 range because that range is full**; placement here is by subject, and traceability is by identifier rather than by numeric order | yes |
 
 ### 6.7 Evaluation and detection
 
@@ -536,3 +537,37 @@ being written correctly. There is now a second, independent check.
   otherwise fail anything.
 - **Not stable if the archive changes.** They were measured from 70 volumes on one date.
   Re-measuring is a change control event under rule 6.
+
+---
+
+## 14. Gradient accumulation equivalence — the tolerance for TC-078
+
+**Why accumulation is equivalent here at all.** Summing the gradients of four
+micro-batches of two, each loss scaled by one quarter, equals the gradient of one batch
+of eight **only if no operation in the network couples samples within a batch**. The
+network built from `configs/train_seg.yaml` uses **`InstanceNorm2d` — eight layers, and
+zero batch-normalisation layers**, verified 2026-09-25 by inspecting the constructed
+module tree rather than by reading the MONAI defaults. Instance normalisation computes
+its statistics per sample and per channel, so a sample's activations do not depend on
+which other samples share its micro-batch.
+
+**Had it been batch normalisation, accumulation would not be equivalent** and no
+tolerance would have made it so: batch-norm statistics over two samples differ from
+statistics over eight, so the accumulated gradient would be the gradient of a *different
+function*, not a rounding-error approximation of the same one. That is why the layer is
+checked before the equivalence is relied on, and why a batch-norm finding is a stop
+rather than a tolerance adjustment.
+
+**The tolerance is for floating-point summation order, nothing else.** The two paths add
+the same quantities in different orders, and float addition is not associative. The
+bound is therefore relative:
+
+| Device | Tolerance | Basis |
+|---|---|---|
+| CPU, float32 | `rtol = 1e-4`, `atol = 1e-6` on each gradient tensor | Accumulated reordering over four additions at float32 |
+
+**What the tolerance does not certify.** Staying inside it is not proof that
+accumulation is implemented correctly — a bug that scaled every gradient identically
+would also stay inside it. TC-078 therefore also asserts the negative case: omitting the
+`1/steps` loss scaling produces a gradient that is **outside** the tolerance, so the test
+can distinguish correct accumulation from no accumulation at all.

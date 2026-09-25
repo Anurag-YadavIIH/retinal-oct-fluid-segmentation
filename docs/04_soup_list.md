@@ -152,7 +152,7 @@ These execute as part of the software system.
 | SOUP-001 | pydicom | 2.4.4 | DICOM read and write; de-identification primitives | SRS-006, SRS-011, SRS-012..SRS-017, SRS-044 | Yes — 2026-09-17, OSV. **Affected**, not reachable; no action (§2.4) | Carries the de-identification path. **Confirmed on implementation (2026-09-17):** the profile table and its verification share one source of truth, so verification cannot detect an attribute the table omits — a limitation of the control, not of the library. The table is keyed by DICOM keyword rather than tag number, so pydicom resolves every tag and none can be invented |
 | SOUP-002 | highdicom | 0.22.0 | SEG and SR construction | SRS-006, SRS-038..SRS-042 | Yes — 2026-09-17, OSV. None found | Sole implementer of SRS-042, whose mechanism is still unresolved (`docs/11` §10 item 2). What this library exposes for algorithm identification is one of the candidate mechanisms and has not been examined |
 | SOUP-003 | MONAI | 1.3.2 | Transforms, networks, metrics | SRS-025..SRS-029, SRS-032, SRS-061 | Yes — 2026-09-17, OSV. **Affected**, **accepted** on RC-028 (§2.5) | Supplies both the Dice metric and the training loss. A defect common to both would not be caught by comparing them |
-| SOUP-004 | PyTorch | 2.3.1 | Tensor operations, training and inference | SRS-027, SRS-028, SRS-029, SRS-061 | Yes — 2026-09-17, OSV. **Affected**, **accepted** on RC-028 (§2.5) | Determinism under NFR-002 depends on this library's seeding and on non-deterministic kernel selection being disabled; `configs/train_seg.yaml` sets `deterministic: true` but nothing yet verifies it takes effect |
+| SOUP-004 | PyTorch | 2.3.1, build **`2.3.1+cu121`** (see §4.1) | Tensor operations, training and inference | SRS-027, SRS-028, SRS-029, SRS-061 | Yes — 2026-09-17, OSV. **Affected**, **accepted** on RC-028 (§2.5) | Determinism under NFR-002 depends on this library's seeding and on non-deterministic kernel selection being disabled; `configs/train_seg.yaml` sets `deterministic: true` but nothing yet verifies it takes effect |
 | SOUP-005 | SimpleITK | 2.3.1 | MetaImage (`.mhd`/`.raw`) reading | SRS-001, SRS-003 | Yes — 2026-09-17, OSV. None found | **The template described this as "MetaImage reading, resampling". Resampling is the concern:** SRS-010 and SRS-026 forbid resampling volumes onto a common cross-vendor geometry, and this library makes that easy to do by accident. Its resampling API must not be used for geometric harmonisation |
 | SOUP-006 | NumPy | 1.26.4 | Array operations throughout | SRS-001, SRS-040 | Yes — 2026-09-17, OSV. None found | Volume computation in SRS-040 depends on dtype and rounding behaviour |
 | SOUP-007 | SciPy | 1.13.1 | Distance transforms underlying HD95 | SRS-032 | Yes — 2026-09-17, OSV. None found | HD95 is sensitive to how an empty prediction or empty reference is handled; that is a definition decision for `docs/07`, not a library default to inherit silently |
@@ -173,6 +173,48 @@ Not SOUP in the strict sense, but every component in §3 executes on these.
 | SOUP-016 | CPython | 3.11 (`requires-python = "==3.11.*"`) | Language runtime | NFR-001 | No | The pin is a range within 3.11, not an exact patch version. Reproducibility under NFR-002 is therefore not pinned to the patch level |
 | SOUP-017 | `python:3.11-slim` base image | `sha256:9534e5a8e315485d4061ed659af0fd78a284c015f9b73661b41d6bab25604534` (digest resolved from registry 2026-09-17) | Container base for the API service | NFR-001 | See §2 | Pinned by digest in `docker/Dockerfile.api`, not by tag. A tag resolves to different contents over time and defeats reproducible builds; the digest does not. Changing it requires a change control entry. The digest identifies an image, not a reviewed inventory of the OS packages inside it — those are not enumerated here |
 | SOUP-014 | Orthanc | 24.7.3, `sha256:57a3d037729897331027ddc00c12695b50f1effbbf805f855396f3d0248d2d5f` (digest resolved from registry 2026-09-17) | Local PACS — test and demonstration environment only | SRS-043, SRS-044, SRS-045 | Out of scope — see §2 | Does not ship as part of the device software. It is the DICOMweb peer against which SRS-043..SRS-045 are exercised, so a defect in it can cause a passing round-trip test to mean less than it appears to. Pinned by digest in `docker/docker-compose.yml` |
+
+### 4.1 PyTorch build, and why the build is recorded as well as the version
+
+`torch==2.3.1` pins a version. It does **not** pin a build, and the two differ in what
+they can execute: `2.3.1+cpu` and `2.3.1+cu121` report the same `torch.__version__` and
+satisfy the same pin, while one cannot run on a GPU at all. A version-only record would
+have said nothing about why a test was skipped.
+
+**Installed, 2026-09-25:** `2.3.1+cu121`, from `https://download.pytorch.org/whl/cu121`,
+installed with `--force-reinstall --no-deps` because pip treats `2.3.1+cpu` as already
+satisfying `torch==2.3.1` and would otherwise leave it in place. The pinned version is
+unchanged; only the build differs.
+
+| Property | Value |
+|---|---|
+| Build | `2.3.1+cu121` (CUDA runtime 12.1) |
+| GPU | NVIDIA GeForce GTX 1050, 4.00 GiB, compute capability **6.1** |
+| Driver | 576.88, CUDA 12.9 |
+| cuDNN | 8907 |
+| Compiled architectures | `sm_50 sm_60 sm_61 sm_70 sm_75 sm_80 sm_86 sm_90` |
+
+**`sm_61` is present**, so the device's architecture is compiled into the wheel and
+kernels are not JIT-compiled from PTX at first use. That was checked rather than
+assumed: a wheel lacking the architecture still runs, via PTX JIT, with a startup cost
+and a different kernel-selection path — which would be a silent difference between this
+machine and any other, and NFR-002 rests on runs being comparable.
+
+A driver reporting CUDA 12.9 runs a 12.1 build: the CUDA runtime is forward-compatible
+with newer drivers, and the build's runtime is what matters.
+
+**Verified on the device, not merely reported available:** a convolution forward and
+backward, then the full UNet at 576×512, both producing finite gradients. `is_available()`
+returning True says the library found a device, not that it can compute on it.
+
+**What this changed in the verification record.** TC-059's GPU case was skipped while the
+CPU build was installed, so SRS-076's GPU tolerance path was written and never executed.
+It now runs and passes. That case is the reason the build is recorded here: a test that
+skips for an environmental reason is indistinguishable, in a bare pass count, from one
+that never existed.
+
+**Training runs on this workstation, not on Kaggle** (`docs/06` §7). The Kaggle path
+remains documented as an alternative.
 
 ## 5. Development and test tools
 
