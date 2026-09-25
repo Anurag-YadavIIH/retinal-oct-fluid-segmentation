@@ -207,6 +207,7 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `data/transforms.py` | SRS-070, SRS-072, SRS-073, SRS-074 |
 | `data/datamodule.py` | SRS-070, SRS-071, SRS-073, SRS-078 |
 | `training/checkpoint.py` | SRS-075, SRS-076, SRS-077 |
+| `scripts/benchmark_device.py` | SRS-031 |
 | `data/datamodule.py` | SRS-024 |
 | `data/transforms.py` | SRS-025, SRS-026 |
 | `models/seg_unet.py` | SRS-027, SRS-028, SRS-061 |

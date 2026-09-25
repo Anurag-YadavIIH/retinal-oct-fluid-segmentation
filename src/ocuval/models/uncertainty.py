@@ -1,7 +1,8 @@
 """Monte Carlo dropout uncertainty estimation.
 
-Traces to: SRS-TBD (uncertainty output)
-Implements risk control: RC-TBD (routing low-confidence cases to human review)
+Traces to: SRS-029, SRS-030 (uncertainty output)
+Implements risk control: RC-009 (routing low-confidence cases to human review)
+Verifies: TC-055, TC-056
 
 Dropout layers are kept active at inference and the forward pass is repeated;
 the per-voxel standard deviation across passes is the uncertainty map.

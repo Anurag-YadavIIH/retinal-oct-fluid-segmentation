@@ -346,8 +346,17 @@ def build_loaders(split: Split, cfg: dict, manifest: Sequence[VolumeRecord]):
     if seed is not None:
         generator.manual_seed(int(seed))
 
+    # Batch size lives under `train:` and nowhere else. Reading it from `data:` as well
+    # would give the configuration two places to say one thing, which is how a run ends
+    # up reporting a batch size it did not use.
+    train_cfg = cfg.get("train", {})
+    if "batch_size" not in train_cfg:
+        raise KeyError(
+            "configs/train_seg.yaml has no train.batch_size. It is a declared constant "
+            "(SRS-031 records it in the run output) and has no default."
+        )
     common = {
-        "batch_size": int(data_cfg.get("batch_size", 8)),
+        "batch_size": int(train_cfg["batch_size"]),
         "num_workers": int(data_cfg.get("num_workers", 4)),
         "pin_memory": False,
     }

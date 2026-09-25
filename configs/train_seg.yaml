@@ -38,11 +38,6 @@ data:
     # stored on the record. These are the percentiles that define it. Clipping is
     # required, not optional: spectralis saturates at exactly 65535 and p99 is ~48000.
     intensity_percentiles: [1.0, 99.0]
-  # Declared, not defaulted. At 576x512 a batch of 8 holds roughly 6 GB of activations
-  # for this UNet, which fits a 16 GB P100 with headroom. Recorded in the run output by
-  # SRS-031, so a result can be tied to the batch size that produced it.
-  batch_size: 8
-
   cache: persistent     # persistent | memory | none — see CLAUDE.md on 16GB RAM
   # Built by a volume-wise pre-pass (SRS-078). Decoding one volume takes ~1.7 s and
   # serves 128 frames, so a per-frame decode costs ~1.9 h per epoch against ~53 s for
@@ -75,6 +70,9 @@ optim:
 
 train:
   epochs: 150
+  # Declared, not defaulted. At 576x512 a batch of 8 holds roughly 6 GB of activations
+  # for this UNet, which fits a 16 GB P100 with headroom. This is the ONLY batch size in
+  # the configuration; the datamodule reads it from here.
   batch_size: 8
   amp: true
   grad_clip: 1.0
