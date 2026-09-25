@@ -157,10 +157,11 @@ dataset arrives.**
    2026-09-25, closing `docs/07` item 6.
 4. ~~Splits and leakage gate.~~ **done** — 2026-09-17. TC-004 passes for real; its
    `strict` xfail was removed when `splits.py` landed.
-5. Training on Kaggle; evaluation and subgroup reporting. **Preprocessing done
-   2026-09-25** — `data/transforms.py` and `data/datamodule.py` are implemented and
-   verified against the real archive (4032 train / 896 val / 1176 test frames on the
-   spectralis fold). `models/`, the training loop and `eval/subgroup.py` remain.
+5. Training on Kaggle; evaluation and subgroup reporting. **Pipeline complete and
+   untrained, 2026-09-25.** Preprocessing, `models/seg_unet.py`, checkpoint-resume and
+   the training loop are implemented and exercised on CPU with synthetic frames. No
+   model has been trained. `models/uncertainty.py` (MC-dropout, SRS-029/030),
+   `eval/subgroup.py` and `eval/report.py` remain, plus the accelerator benchmark.
 6. SEG/SR output and Orthanc round-trip. **Objects done; round-trip blocked on Docker.**
 7. FastAPI service, Docker, full document set, GitHub Pages. **Not started.**
 
@@ -170,22 +171,23 @@ dataset arrives.**
 |---|---|
 | ~~RETOUCH download~~ | **Unblocked 2026-09-21.** Training partition only; the test partition was deliberately not taken (`docs/06` §2.1) |
 | **Docker not installed** | TC-080, TC-081, TC-082 — written and **never executed**. The Orthanc round-trip is unverified |
-| **Kaggle quota** (30 h/week) | The three primary folds. The optional dtype-scaling comparison fold (`docs/10` §8.1) runs only if they finish comfortably, and never before them |
-| **Neither** — these are simply next | `models/`, the training loop, `eval/subgroup.py`, `eval/report.py`, `service/api.py`, and wiring `scripts/01`–`03` (still stubs; the real run went through an ad-hoc driver) |
+| **Kaggle quota** (30 h/week) | The three primary folds. Budget: **~7.3 h** total at 60 img/s with AMP, **~14.6 h** at 30 img/s, 150 epochs. No fold exceeds the 12-hour session cap — the largest, spectralis, is 3.0–6.0 h. The optional dtype-scaling comparison fold (`docs/10` §8.1) runs only if the three finish comfortably, and never before them |
+| **A Kaggle session** | `scripts/benchmark_device.py` — must be run on both P100 and T4×2 before the first real run, and the faster used. The budget rests on an assumed ~30% MFU, not a measurement, and the P100 has no tensor cores |
+| **Neither** — these are simply next | `models/uncertainty.py`, `eval/subgroup.py`, `eval/report.py`, `service/api.py` |
 
 ### Numbers, as of 2026-09-25
 
-Identifiers: URS-001..011, SRS-001..074, NFR-001..008, HAZ-001..015, RC-001..031,
-SOUP-001..022, TC-000..TC-120 (92 allocated).
+Identifiers: URS-001..011, SRS-001..078, NFR-001..008, HAZ-001..015, RC-001..031,
+SOUP-001..022, TC-000..TC-120 (95 allocated).
 
-**92 test cases allocated, 57 written, 54 executed, 3 written but never run.** Those
+**95 test cases allocated, 65 written, 62 executed, 3 written but never run.** Those
 three states are kept separate deliberately and `docs/09` regenerates them from the
 documents and from pytest's own marker resolution — a hand-maintained figure drifted in
 both directions at once and was replaced. A written test nobody has executed is not
 verification. The three are TC-080..082, blocked on Docker.
 
-Suite: **318 passing, 8 deselected** (`requires_pacs`). Risk controls: 31 allocated a
-test.
+Suite: **361 passing, 1 skipped (no CUDA here), 8 deselected** (`requires_pacs`), plus
+5 `requires_data`. Risk controls: 31 allocated a test. CI is green on `main`.
 
 ### Standing decisions a future session should not relitigate
 
@@ -219,6 +221,19 @@ test.
   frames are independent. Enabling 2.5D is a separate, visible decision.
 - **Training reads the archive's native MetaImage, not the DICOM.** The instances this
   pipeline writes carry no segmentation; DICOM is the output interface, not the input.
+- **Splits are keyed on the source subject (`TRAIN001`..`TRAIN070`), never the SOP
+  Instance UID.** UIDs are minted per conversion, so a split keyed on one is a different
+  file every re-conversion (SRS-023). UIDs stay random — a re-conversion is a new
+  instance, and deterministic UIDs would make separate objects share an identity.
+- **Training reads `train.batch_size` and nowhere else.** A second `data.batch_size` was
+  added and removed the same day; two places to state one value is how a run reports a
+  batch size it did not use.
+- **Resume equivalence is claimed per platform**: bit-identical on CPU (SRS-076),
+  within a stated tolerance on GPU, because several CUDA kernels here have no
+  deterministic implementation. Never claim bit-exactness on GPU.
+- **Resume is detected from the run directory, never requested by a flag**, and `last`
+  is written every epoch before any early-stopping decision. `best` selects a model;
+  `last` continues a trajectory.
 - **Commits carry no Claude Code attribution.** History was rewritten 2026-09-23 to
   strip the trailers and force-pushed; content was unchanged and all 51 tree hashes were
   verified identical. Cited SHAs are checked by TC-108 because that rewrite broke nine
