@@ -417,6 +417,23 @@ junction pointing at `D:\RETOUCH_DATA\retouch_traning_data_extracted`, where the
 extracted archive actually lives. The indirection exists because the archive is large
 and sits on a separate volume.
 
+**The derived stages are junctioned the same way**, from 2026-09-23:
+
+| Path in the repository | Target |
+|---|---|
+| `data/raw/retouch` | `D:\RETOUCH_DATA\retouch_traning_data_extracted` |
+| `data/dicom` | `D:\RETOUCH_DATA\ocuval_dicom` |
+| `data/dicom_deident` | `D:\RETOUCH_DATA\ocuval_dicom_deident` |
+
+The first end-to-end run produced 3.1 GB of DICOM and 3.1 GB of de-identified copies
+against 23 GB free on the system volume. That is enough to complete but not enough to
+add a training cache on top, so the derived stages were moved before the next stage
+rather than after it ran out. `data/splits` stays on the system volume: it is 28 KB of
+JSON.
+
+Two consequences follow from §8.1: a deletion must remove the junction **targets**, and
+`data/splits` is on a different volume from everything else it describes.
+
 Every tool in this project treats it as an ordinary path and none needs to know it is a
 link. Two properties make that safe: git does not follow it and `.gitignore` excludes
 `data/` regardless (DMP-C1), and `data/raw/` is read-only once extracted, so nothing
@@ -448,9 +465,61 @@ project generates must be conformant to be meaningful, and the control is a
 demonstrable capability independent of whether this particular dataset needs it.
 
 Patient identifiers are replaced by salted-hash pseudonyms. The salt is read from
-the environment variable named in `configs/data.yaml` and is never committed.
-Pseudonyms are stable within a run so that patient-level splitting remains valid
-after de-identification.
+the environment variable named in `configs/data.yaml` (`OCUVAL_DEID_SALT`) and is never
+committed.
+
+### 5.1 The salt is persistent, and lives outside the repository
+
+A **persistent salt exists** as of 2026-09-23. It is 32 random bytes, base64-encoded,
+generated once and stored at:
+
+```
+%USERPROFILE%\.ocuval\deid_salt          (outside this repository, outside data/)
+```
+
+Its **value is never committed, never logged, and never written to any run output**. It
+is not under `data/`, so it survives the deletion in §8.1 — and must, because deleting
+it would make every pseudonym already issued unreproducible while achieving nothing for
+confidentiality: the salt protects the *mapping*, and the source identifiers are
+destroyed by that deletion anyway.
+
+**Why persistence is required rather than convenient.** An ephemeral salt satisfies the
+letter of "stable within a run" and defeats the purpose. Two runs would issue different
+pseudonyms for the same subject, so a result recorded in one run could not be matched to
+the volume it came from in another — provenance, which URS-010 exists for, would hold
+only inside a single process. SRS-014 previously required within-run stability only;
+that was a requirements defect and was corrected on 2026-09-25 to require the pseudonym
+to be a deterministic function of the identifier and salt alone, in every run and on
+every machine.
+
+**What losing the salt costs.** Nothing about confidentiality — the hash is one-way in
+either case. It costs the ability to reproduce existing pseudonyms, so previously
+written objects could no longer be matched to a re-run. Treat it as run configuration
+worth backing up, not as a secret whose disclosure is catastrophic.
+
+Pseudonyms remain stable within a run for the original reason as well: patient-level
+splitting must stay valid after de-identification.
+
+### 5.2 First run under the persistent salt — 2026-09-25
+
+The whole pipeline was re-run under the persistent salt on 2026-09-25: 70 volumes
+converted, 70 instances de-identified and verified, three folds rewritten. Five checks
+were made against the written objects, not against the run's own bookkeeping:
+
+| Check | Result |
+|---|---|
+| Pseudonym equals `sha256(salt:patient_id)` recomputed independently | 70 / 70 |
+| Same, re-read from the de-identified instances on disk | 70 / 70 |
+| Pseudonyms distinct (a collision would break patient-level splitting) | 70 / 70 |
+| Salt value present anywhere in a written object | 0 |
+| Changed from the previous run's pseudonyms | 70 / 70 |
+
+The last row is the point. **Every pseudonym issued before 2026-09-25 is unreproducible**,
+because the run that issued them read an ephemeral salt that no longer exists. Nothing is
+lost — those objects were superseded by this run and no result was recorded against them —
+but it is exactly the failure the corrected SRS-014 forbids, and it is recorded here rather
+than left as an absence. From this run forward a pseudonym can be recomputed from the
+patient identifier and the stored salt by anyone holding both.
 
 Verification: `io/deident.verify_deidentified()` returns any tag that should have
 been removed and was not. Any non-empty return aborts the conversion run; failing

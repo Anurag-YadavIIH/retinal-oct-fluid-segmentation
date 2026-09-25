@@ -103,9 +103,17 @@ def _violates(action: Action, value: str) -> bool:
 def pseudonymise(patient_id: str, salt: str) -> str:
     """Return a stable pseudonym for a patient identifier.
 
-    Stable within a run for one salt (SRS-014), so patient-level splitting stays valid
-    after de-identification. Different under a different salt, so the mapping cannot be
-    reversed by anyone without it.
+    A pure function of the identifier and the salt (SRS-014): the same pair yields the
+    same pseudonym in every run and on every machine, not merely within one process.
+    Within-run stability is what keeps patient-level splitting valid after
+    de-identification; cross-run stability is what makes a recorded result traceable to
+    the volume it came from, which is what URS-010 is actually for. The requirement said
+    only the first until 2026-09-25, when the wording was corrected -- this function
+    always satisfied both, but a requirement that permits an ephemeral salt is a
+    requirement that permits losing provenance. See docs/06 section 5.1.
+
+    Different under a different salt, so the mapping cannot be reversed by anyone
+    without it.
 
     The salt is required and has no default. A pseudonym derived from an unsalted hash
     of a small identifier space is trivially reversible by enumeration, which would be a

@@ -94,7 +94,7 @@ measurement, and that gap is HAZ-012.
 |---|---|---|---|
 | SRS-012 | De-identification shall apply the DICOM PS3.15 Annex E Basic Application Confidentiality Profile with no retention options, as configured in `configs/data.yaml` (`deidentification`). | URS-010 | TC-030 |
 | SRS-013 | Patient identifiers shall be replaced by a salted-hash pseudonym. The salt shall be read from the environment variable named in `configs/data.yaml` (`deidentification.pseudonym_salt_env`) and shall never be written to any committed file or run output. | URS-010 | TC-031 |
-| SRS-014 | Pseudonyms shall be stable within a run, so that patient-level splitting remains valid after de-identification. | URS-010 | TC-032 |
+| SRS-014 | A pseudonym shall be a deterministic function of the patient identifier and the salt alone. The same identifier and salt shall yield the same pseudonym in **every** run and on every machine, not merely within one run. | URS-010 | TC-032 |
 | SRS-015 | A verification function shall return the identity of every tag that the profile requires to be removed and that remains present. An empty result shall be the only condition under which an instance passes. | URS-010 | TC-033 |
 | SRS-016 | A non-empty verification result shall abort the run. Failing instances shall never be skipped, quarantined or logged-and-continued. | URS-010 | TC-034 |
 | SRS-017 | The vendor attribute shall survive de-identification. Its loss shall abort the run on the same terms as SRS-016. | URS-006 | TC-035, TC-110 |

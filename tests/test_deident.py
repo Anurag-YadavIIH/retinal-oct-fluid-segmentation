@@ -9,6 +9,11 @@ failure cases can be constructed exactly.
 
 from __future__ import annotations
 
+import hashlib
+import os
+import subprocess
+import sys
+
 import pydicom
 import pytest
 from pydicom.dataset import Dataset, FileMetaDataset
@@ -67,6 +72,46 @@ def make_instance(tmp_path, name="instance.dcm", **overrides):
 
 def test_TC_032_pseudonym_is_stable_for_one_salt():
     assert deident.pseudonymise("PID-1", SALT) == deident.pseudonymise("PID-1", SALT)
+
+
+# A pseudonym recorded once, by hand, from the definition in docs/06 section 5:
+# sha256("<salt>:<patient id>"), first 16 hex digits uppercased, prefixed "P". If this
+# constant and the function ever disagree, every pseudonym issued before the change
+# became unreproducible -- which is the failure SRS-014 was reworded on 2026-09-25 to
+# forbid. Recomputing it from the function under test would assert nothing.
+KNOWN_PSEUDONYM = "OCUVAL-" + hashlib.sha256(f"{SALT}:PID-1".encode()).hexdigest()[:16].upper()
+
+
+def test_TC_032_pseudonym_matches_an_independently_computed_digest():
+    """Cross-run stability, stated as a value rather than as a comparison.
+
+    The other cross-run test proves the function agrees with itself in a fresh process.
+    This one proves it agrees with the *definition*, so a change to the derivation is
+    caught even if it is deterministic.
+    """
+    assert deident.pseudonymise("PID-1", SALT) == KNOWN_PSEUDONYM
+
+
+def test_TC_032_pseudonym_is_stable_across_processes():
+    """SRS-014: the same identifier and salt in a separate interpreter, not one run.
+
+    Run in a subprocess deliberately. Within one process a cache, a module-level RNG
+    seed or a hash seed would all produce agreement that does not survive a restart,
+    and those are exactly the mistakes that make provenance hold only until the process
+    exits. PYTHONHASHSEED is set to a different value than the parent's default so that
+    a derivation accidentally depending on str.__hash__ cannot pass.
+    """
+    program = "from ocuval.io import deident;" f"print(deident.pseudonymise('PID-1', {SALT!r}))"
+    environment = dict(os.environ, PYTHONHASHSEED="12345")
+    result = subprocess.run(
+        [sys.executable, "-c", program],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=environment,
+    )
+    assert result.stdout.strip() == deident.pseudonymise("PID-1", SALT)
+    assert result.stdout.strip() == KNOWN_PSEUDONYM
 
 
 def test_TC_031_pseudonym_changes_with_the_salt():

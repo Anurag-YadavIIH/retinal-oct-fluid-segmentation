@@ -183,7 +183,7 @@ lists SRS, NFR and RC identifiers.
 |---|---|---|---|---|---|
 | TC-030 | Confidentiality profile applied | SRS-012, RC-011 | U | PS3.15 Annex E applied with no retention options, per config | yes |
 | TC-031 | Pseudonyms salted, salt never written | SRS-013, RC-012 | U | Pseudonym differs under a different salt; salt absent from every output file and log | yes |
-| TC-032 | Pseudonyms stable within a run | SRS-014, RC-012 | U | Same patient yields the same pseudonym across instances in one run | yes |
+| TC-032 | Pseudonyms stable across runs, not only within one | SRS-014, RC-012 | U | Same identifier and salt yield the same pseudonym in a separate process, not merely across instances in one run; a different salt yields a different pseudonym | yes |
 | TC-033 | Verification reports residual tags | SRS-015, RC-011 | U | Returns the offending tag for a doctored instance; returns empty for a clean one | yes |
 | TC-034 | Non-empty verification aborts the run | SRS-016, RC-011 | U | Run aborts; failing instance not skipped, quarantined or logged-and-continued | yes |
 | TC-035 | Vendor survives de-identification | SRS-017, RC-008 | U | Vendor readable after the profile is applied; its loss aborts | yes |
