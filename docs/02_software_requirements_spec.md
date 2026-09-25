@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-069 and NFR-001..NFR-008. Every requirement here derives
+Allocates SRS-001..SRS-074 and NFR-001..NFR-008. Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -112,6 +112,11 @@ measurement, and that gap is HAZ-012.
 | SRS-067 | Expansion from volume to frame shall occur **strictly after** splitting. No frame shall be presented to training, validation or evaluation before the volume it belongs to has been assigned to a split. | URS-007 | TC-043 |
 | SRS-068 | Every frame shall inherit the split assignment of the volume it came from. No other mechanism shall assign a frame to a split, and `ocuval.data.splits` shall remain the only module that performs the expansion. | URS-007 | TC-043 |
 | SRS-069 | Expansion shall be deterministic: the same split and the same frame counts shall produce the same frames in the same order on every execution. | URS-010 | TC-043 |
+| SRS-070 | Intensity shall be normalised by a **per-volume percentile window**: the 1st and 99th percentiles of the raw volume shall be mapped to 0.0 and 1.0 and values outside the window clipped. The window shall be computed **at ingestion, from the raw volume, before any other transform**, and recorded as a field of the volume record and of the manifest. No transform shall recompute it. | URS-006, URS-010 | TC-044 |
+| SRS-071 | Every frame shall inherit the intensity window of the volume it came from. No frame-level intensity statistic shall be computed anywhere in the pipeline, and inheritance shall be **asserted** after expansion rather than assumed. | URS-006 | TC-045 |
+| SRS-072 | Axial resampling shall use a **target spacing declared as a constant in `configs/train_seg.yaml`**. The target shall not be derived from the data at run time, shall not depend on fold membership, and shall be written into the run output with the resolved configuration. | URS-010 | TC-046 |
+| SRS-073 | Only the **axial** axis shall be resampled. Lateral spacing shall not be resampled, and B-scan separation shall not be resampled or otherwise used by the transform chain: training is 2D and frames are independent. Separation becomes relevant only if 2.5D mode is enabled, which is a separate decision. | URS-008 | TC-047 |
+| SRS-074 | Every segmentation metric and every volume in mm³ shall be computed in the acquisition's **native geometry**. A prediction produced at the resampled spacing shall be inverted back to the native grid before any metric is computed, and the spacing used shall satisfy SRS-057. | URS-002, URS-008 | TC-048 |
 
 ### 3.5 Training
 
@@ -189,12 +194,14 @@ whose docstring names an SRS identifier not listed here, is a defect.
 
 | Module | Implements |
 |---|---|
-| `io/retouch_reader.py` | SRS-001, SRS-003, SRS-004, SRS-005, SRS-054, SRS-055, SRS-056 |
+| `io/retouch_reader.py` | SRS-001, SRS-003, SRS-004, SRS-005, SRS-054, SRS-055, SRS-056, SRS-070 |
 | `io/metaimage.py` | SRS-001, SRS-003, SRS-004, SRS-005 |
 | `io/dicom_writer.py` | SRS-006..SRS-011, SRS-054, SRS-062, SRS-063, SRS-064, SRS-066 |
 | `io/deident.py` | SRS-012..SRS-017, SRS-054 |
 | `io/dicomweb.py` | SRS-043, SRS-044, SRS-045, SRS-060 |
-| `data/splits.py` | SRS-018..SRS-023, SRS-067, SRS-068, SRS-069 |
+| `data/splits.py` | SRS-018..SRS-023, SRS-067, SRS-068, SRS-069, SRS-071 |
+| `data/transforms.py` | SRS-070, SRS-072, SRS-073, SRS-074 |
+| `data/datamodule.py` | SRS-070, SRS-071, SRS-073 |
 | `data/datamodule.py` | SRS-024 |
 | `data/transforms.py` | SRS-025, SRS-026 |
 | `models/seg_unet.py` | SRS-027, SRS-028, SRS-061 |

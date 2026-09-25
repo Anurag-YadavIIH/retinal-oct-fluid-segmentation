@@ -1,6 +1,6 @@
 """Read native RETOUCH volumes into arrays plus metadata.
 
-Traces to: SRS-001, SRS-003, SRS-004, SRS-005, SRS-054, SRS-055, SRS-056 (data ingestion)
+Traces to: SRS-001, SRS-003, SRS-004, SRS-005, SRS-054, SRS-055, SRS-056, SRS-070
 Implements risk control: RC-021, RC-022, RC-023 (HAZ-012)
 
 RETOUCH ships per-vendor directories of MetaImage (.mhd/.raw) volumes with a
@@ -74,6 +74,56 @@ def spacing_ranges() -> dict[str, dict[str, tuple[float, float]]]:
     return _ranges_cache
 
 
+INTENSITY_PERCENTILES = (1.0, 99.0)
+
+
+def intensity_window(pixels: np.ndarray) -> tuple[float, float]:
+    """The (low, high) intensity window for one volume, from the RAW array (SRS-070).
+
+    Why percentiles of the volume rather than the dtype maximum. Dividing by 255 or
+    65535 normalises the *container*, not the signal. Measured on RETOUCH: cirrus and
+    spectralis land within 8% of each other that way, but topcon sits at roughly twice
+    their median because it carries a raised black level -- its 1st percentile is 35/255,
+    a detector offset rather than tissue. Dtype scaling preserves that pedestal and hands
+    the network a constant brightness offset perfectly correlated with vendor, which is
+    the most learnable shortcut in the dataset and exactly what would inflate in-domain
+    Dice and collapse on the held-out vendor. A percentile window removes gain and offset
+    together and does not care what the source bit depth was.
+
+    Why percentiles rather than mean and standard deviation. A B-scan is mostly
+    background, and the background *fraction* is itself vendor-dependent -- 49 B-scans
+    against 128, and axial extents from 1.69 to 2.30 mm -- so a z-score is dominated by a
+    quantity that varies with vendor.
+
+    Why at ingestion rather than inside the transform. Computed here, the window is a
+    property of the volume, recorded once, identical on every epoch and every run, and
+    auditable from the manifest. Computed in a transform it would depend on transform
+    order and on whatever array the transform happened to be handed, which for 2D
+    training is a single frame -- see SRS-071.
+    """
+    low, high = np.percentile(np.asarray(pixels), INTENSITY_PERCENTILES)
+    low, high = float(low), float(high)
+    if not high > low:
+        raise ValueError(
+            f"intensity window is degenerate: p{INTENSITY_PERCENTILES[0]}={low} is not "
+            f"below p{INTENSITY_PERCENTILES[1]}={high}. A volume with no intensity range "
+            f"cannot be normalised, and rescaling it would amplify noise to full scale."
+        )
+    return (low, high)
+
+
+def apply_intensity_window(pixels: np.ndarray, window: tuple[float, float]) -> np.ndarray:
+    """Map `window` onto [0, 1] and clip outside it. Returns float32.
+
+    Clipping is required rather than optional: spectralis saturates at exactly 65535
+    while its 99th percentile is near 48000, so without the clip those voxels land above
+    1.0 and carry a vendor-specific overshoot into the network.
+    """
+    low, high = window
+    scaled = (np.asarray(pixels, dtype=np.float32) - low) / (high - low)
+    return np.clip(scaled, 0.0, 1.0)
+
+
 @dataclass(frozen=True)
 class OCTVolume:
     """One OCT volume with the metadata the pipeline must preserve end to end."""
@@ -84,6 +134,9 @@ class OCTVolume:
     vendor: str
     spacing_mm: tuple[float, float, float]
     source_path: Path
+    # (low, high) raw intensities mapped to 0.0 and 1.0. Computed once at ingestion from
+    # the raw array (SRS-070) and inherited by every frame of this volume (SRS-071).
+    intensity_window: tuple[float, float] = (0.0, 1.0)
 
 
 def validate_spacing(
@@ -268,6 +321,7 @@ def read_volume(path: Path, vendor: str) -> OCTVolume:
         vendor=vendor,
         spacing_mm=spacing,
         source_path=path,
+        intensity_window=intensity_window(pixels),
     )
 
 

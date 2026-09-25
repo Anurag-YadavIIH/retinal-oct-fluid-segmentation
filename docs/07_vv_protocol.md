@@ -196,6 +196,11 @@ lists SRS, NFR and RC identifiers.
 | TC-041 | Splits seeded, persisted, reproducible | SRS-023, RC-004 | U | Same config and seed reproduce the split exactly; save/load round-trips | yes |
 | TC-042 | Split construction is patient-level from the manifest | SRS-019, RC-002 | U | No B-scan assigned independently of its patient | yes |
 | TC-043 | **Disjointness survives volume-to-frame expansion** | SRS-067, SRS-068, SRS-069, RC-031 | U | After expansion, no patient's frames appear in more than one split; every frame traces to a volume in the same bucket; every frame of every assigned volume is present exactly once; expansion is deterministic across executions; and expanding a deliberately overlapping split is refused | yes |
+| TC-044 | Per-volume intensity window is computed at ingestion | SRS-070 | U | The window equals the 1st and 99th percentiles of the raw volume; applying it maps those to 0 and 1 and clips outside; it is present on the volume record and survives into the manifest; an 8-bit and a 16-bit volume of the same underlying signal normalise to the same values | yes |
+| TC-045 | Frames inherit the volume's window | SRS-071 | U | Every expanded frame carries its source volume's window; no frame-level percentile is computed; a frame whose window differs from its volume's is rejected | yes |
+| TC-046 | Target axial spacing is declared, not derived | SRS-072 | U | The target is read from `configs/train_seg.yaml`; the transform chain built for two different folds uses the identical target; no code path computes a target from the data; the value appears in the resolved run configuration | yes |
+| TC-047 | Only the axial axis is resampled | SRS-073 | U | Lateral spacing is unchanged by the chain; B-scan separation is not read by any transform; a volume differing only in separation produces identical frames | yes |
+| TC-048 | Metrics are computed in native geometry | SRS-074, SRS-057 | U | A prediction made at the resampled spacing and inverted returns to the native shape; the spacing used for mm³ is bit-identical to the ingestion spacing; a metric computed without inverting is detectably different | yes |
 
 ### 6.6 Training, uncertainty and checkpoints
 

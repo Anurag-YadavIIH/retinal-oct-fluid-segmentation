@@ -12,7 +12,32 @@ data:
   fold: configs/folds/spectralis_holdout.yaml
   mode: "2d"            # 2d | 2.5d — full 3D is explicitly out of scope
   slice_context: 1      # B-scans either side, used only when mode == 2.5d
-  roi_size: [512, 512]
+  roi_size: [576, 512]   # (axial, lateral) after resampling — see preprocessing below
+
+  preprocessing:
+    # SRS-072: DECLARED constants. Never derived from the data at run time, because a
+    # target computed from whichever volumes are in the fold would make preprocessing
+    # depend on fold membership and stop being comparable across folds.
+
+    # Axial target, millimetres per pixel. SRS-073: the axial axis ONLY. Lateral spacing
+    # is ~0.0117 mm in all three vendors and is left alone; B-scan separation is not used
+    # by the transform chain at all, because training is 2D and frames are independent.
+    #
+    # 0.004 is the COARSEST choice, deliberately. Every observed axial spacing is at or
+    # below it (cirrus 0.001955, topcon 0.0026-0.0035, spectralis 0.003872), so no volume
+    # is ever upsampled. Downsampling discards information; upsampling fabricates it, and
+    # fabricated detail would substitute a smoothness signature for the brightness
+    # signature the normalisation removes. Rounding to 0.004 rather than to spectralis's
+    # 0.003872 also means no single vendor passes through untouched.
+    #
+    # Resulting heights: cirrus 500, spectralis 480, topcon 422/569/575 -- all below the
+    # 576 roi_size above, so the chain pads and never crops.
+    axial_spacing_mm: 0.004
+
+    # SRS-070: per-volume percentile window, computed at ingestion on the RAW volume and
+    # stored on the record. These are the percentiles that define it. Clipping is
+    # required, not optional: spectralis saturates at exactly 65535 and p99 is ~48000.
+    intensity_percentiles: [1.0, 99.0]
   cache: persistent     # persistent | memory | none — see CLAUDE.md on 16GB RAM
   cache_rate: 0.2
   num_workers: 4
