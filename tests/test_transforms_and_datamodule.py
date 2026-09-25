@@ -196,8 +196,8 @@ def test_TC_045_a_frame_whose_volume_is_absent_raises_rather_than_being_skipped(
     split = resolved_split(rows)
     frame_split = build_frame_split(split, rows)
     # Drop a volume that is genuinely in the bucket being read, not just any row.
-    dropped = split.test[0]
-    thinned = [r for r in rows if r["sample_id"] != dropped]
+    dropped = split.test[0]  # a subject identifier since SRS-023 was corrected
+    thinned = [r for r in rows if r["patient_id"] != dropped]
     assert len(thinned) == len(rows) - 1
     with pytest.raises(KeyError, match="not in the manifest"):
         frame_records(thinned, frame_split, "test")

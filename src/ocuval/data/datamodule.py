@@ -81,12 +81,23 @@ def frame_counts_from_manifest(manifest: Sequence[VolumeRecord]) -> dict[str, in
     split was built against, and a count taken from the file could disagree with it
     without anything failing.
     """
-    counts = {}
+    counts: dict[str, int] = {}
     for row in manifest:
         shape = row["shape"]
         if len(shape) != 3:
             raise ValueError(f"volume {row['sample_id']!r} has shape {shape!r}, expected 3-D")
-        counts[row["sample_id"]] = int(shape[0])
+        subject = row["patient_id"]
+        if subject in counts:
+            # Splits are keyed on the subject (SRS-023), which assumes one acquisition
+            # per subject. RETOUCH satisfies that -- 70 subjects, 70 volumes, identifiers
+            # unique across vendors -- and if it ever stops being true the expansion
+            # would silently drop a volume, so fail here instead.
+            raise ValueError(
+                f"subject {subject!r} has more than one volume in the manifest. Splits "
+                f"are keyed on the subject identifier, so the expansion cannot tell the "
+                f"volumes apart. This needs a decision, not a default."
+            )
+        counts[subject] = int(shape[0])
     return counts
 
 
@@ -127,21 +138,22 @@ def frame_records(
     Skipping would silently shrink a split, changing a reported metric without changing
     anything observable about the run.
     """
-    by_id = {row["sample_id"]: row for row in manifest}
+    by_subject = {row["patient_id"]: row for row in manifest}
     records = []
     for fid in getattr(frame_split, bucket):
-        volume_id = frame_split.volume_of[fid]
-        row = by_id.get(volume_id)
+        subject_id = frame_split.volume_of[fid]
+        row = by_subject.get(subject_id)
         if row is None:
             raise KeyError(
-                f"frame {fid!r} belongs to volume {volume_id!r}, which is not in the "
+                f"frame {fid!r} belongs to subject {subject_id!r}, which is not in the "
                 f"manifest. Dropping it would remove data from {bucket} without changing "
                 f"the split's apparent size."
             )
         records.append(
             {
                 "frame_id": fid,
-                "sample_id": volume_id,
+                "sample_id": row["sample_id"],
+                "subject_id": subject_id,
                 "frame_index": _index_of(fid),
                 "patient_id": row["patient_id"],
                 "vendor": row["vendor"],
@@ -175,12 +187,12 @@ def assert_window_inheritance(
     pass over the frames.
     """
     expected = {
-        row["sample_id"]: tuple(float(v) for v in row["intensity_window"]) for row in manifest
+        row["patient_id"]: tuple(float(v) for v in row["intensity_window"]) for row in manifest
     }
     wrong = [
-        (record["frame_id"], record["intensity_window"], expected.get(record["sample_id"]))
+        (record["frame_id"], record["intensity_window"], expected.get(record["subject_id"]))
         for record in records
-        if record["intensity_window"] != expected.get(record["sample_id"])
+        if record["intensity_window"] != expected.get(record["subject_id"])
     ]
     if wrong:
         raise AssertionError(

@@ -27,10 +27,17 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class Sample:
-    """One B-scan, carrying the identity that must survive the whole pipeline.
+    """One acquisition, carrying the identity that must survive the whole pipeline.
 
-    `sample_id` is a DICOM SOP Instance UID in a real manifest and an arbitrary stable
-    string in a synthetic one.
+    `sample_id` identifies the *instance*: a DICOM SOP Instance UID in a real manifest,
+    an arbitrary stable string in a synthetic one. It is **not** stable across
+    conversions — a re-conversion produces a new instance and therefore a new UID.
+
+    `patient_id` is the source subject identifier, RETOUCH's own anonymous case label
+    (`TRAIN001`..`TRAIN070`). It is a property of the archive, not of any run, so it is
+    stable across conversions and across machines. **Splits are keyed on it** (SRS-023):
+    a split partitions subjects, so an instance identifier was the wrong key, and keying
+    on one made the persisted split change every time the data was re-converted.
     """
 
     sample_id: str
@@ -40,7 +47,13 @@ class Sample:
 
 @dataclass(frozen=True)
 class Split:
-    """One resolved split. Sample IDs are DICOM SOP Instance UIDs.
+    """One resolved split. The four lists hold **source subject identifiers**.
+
+    Not SOP Instance UIDs. A UID is minted per conversion, so a split keyed on one is a
+    different file every time the archive is re-converted even though the partition is
+    identical — which defeats SRS-023. Subject identifiers are the organisers' anonymous
+    case labels and are a property of the archive, so the same configuration and seed
+    reproduce the same file byte for byte.
 
     `in_domain_ref` holds patients drawn from the *training* vendors and held out from
     both train and val (SRS-022). The gap between performance on `test` and on
@@ -77,9 +90,14 @@ def _patients_by_vendor(manifest: Sequence[Sample]) -> dict[str, set[str]]:
     return by_vendor
 
 
-def _samples_for(manifest: Sequence[Sample], patients: set[str]) -> list[str]:
-    """Expand a patient set to its sample IDs, in manifest order."""
-    return [s.sample_id for s in manifest if s.patient_id in patients]
+def _subjects_for(manifest: Sequence[Sample], patients: set[str]) -> list[str]:
+    """The subject identifiers of a patient set, sorted and without duplicates.
+
+    Sorted rather than in manifest order: manifest order depends on directory listing
+    order, which is stable on one filesystem and not guaranteed across them, and a split
+    file that differs by ordering alone is not reproducible in any useful sense.
+    """
+    return sorted({s.patient_id for s in manifest if s.patient_id in patients})
 
 
 def leave_one_vendor_out(
@@ -148,10 +166,10 @@ def leave_one_vendor_out(
 
     split = Split(
         fold_id=fold_id or f"{held_out_vendor}_holdout",
-        train=_samples_for(manifest, train_patients),
-        val=_samples_for(manifest, val_patients),
-        test=_samples_for(manifest, test_patients),
-        in_domain_ref=_samples_for(manifest, ref_patients),
+        train=_subjects_for(manifest, train_patients),
+        val=_subjects_for(manifest, val_patients),
+        test=_subjects_for(manifest, test_patients),
+        in_domain_ref=_subjects_for(manifest, ref_patients),
         held_out_vendor=held_out_vendor,
         seed=seed,
     )
@@ -170,8 +188,11 @@ def assert_no_patient_overlap(split: Split, manifest: Sequence[Sample]) -> None:
     exists to prevent: adjacent B-scans from one patient have different sample IDs and
     are near-duplicate images.
     """
-    patient_of = {s.sample_id: s.patient_id for s in manifest}
-    vendor_of = {s.sample_id: s.vendor for s in manifest}
+    # The split lists subjects, so the patient identifier IS the entry. The mapping is
+    # kept as an explicit membership check rather than dropped: an entry that is not a
+    # known subject must fail loudly, not be treated as a patient of its own.
+    known = {s.patient_id for s in manifest}
+    vendor_of = {s.patient_id: s.vendor for s in manifest}
 
     buckets = {
         "train": split.train,
@@ -180,11 +201,11 @@ def assert_no_patient_overlap(split: Split, manifest: Sequence[Sample]) -> None:
         "in_domain_ref": split.in_domain_ref,
     }
 
-    unknown = {sid for ids in buckets.values() for sid in ids if sid not in patient_of}
+    unknown = {sid for ids in buckets.values() for sid in ids if sid not in known}
     if unknown:
-        raise ValueError(f"split references samples absent from the manifest: {sorted(unknown)}")
+        raise ValueError(f"split references subjects absent from the manifest: {sorted(unknown)}")
 
-    patients = {name: {patient_of[sid] for sid in ids} for name, ids in buckets.items()}
+    patients = {name: set(ids) for name, ids in buckets.items()}
 
     names = sorted(buckets)
     for i, left in enumerate(names):
@@ -197,7 +218,7 @@ def assert_no_patient_overlap(split: Split, manifest: Sequence[Sample]) -> None:
                 )
 
     assigned = set().union(*patients.values()) if patients else set()
-    missing = set(patient_of.values()) - assigned
+    missing = known - assigned
     if missing:
         raise ValueError(f"patients in the manifest appear in no split: {sorted(missing)}")
 
@@ -249,7 +270,7 @@ class FrameSplit:
     volume_of: dict[str, str]
 
 
-def frame_id(sample_id: str, index: int) -> str:
+def frame_id(subject_id: str, index: int) -> str:
     """Identifier for one frame of one volume.
 
     The volume's identifier is the prefix, so a frame is traceable to its acquisition
@@ -258,7 +279,7 @@ def frame_id(sample_id: str, index: int) -> str:
     """
     if index < 0:
         raise ValueError(f"frame index must be non-negative, got {index}")
-    return f"{sample_id}#{index:04d}"
+    return f"{subject_id}#{index:04d}"
 
 
 def expand_to_frames(split: Split, frame_counts: dict[str, int]) -> FrameSplit:
@@ -294,7 +315,7 @@ def expand_to_frames(split: Split, frame_counts: dict[str, int]) -> FrameSplit:
     missing = sorted({sid for ids in buckets.values() for sid in ids if sid not in frame_counts})
     if missing:
         raise ValueError(
-            f"no frame count for {len(missing)} assigned volume(s): {missing[:5]}. "
+            f"no frame count for {len(missing)} assigned subject(s): {missing[:5]}. "
             f"Dropping them would remove data from training or evaluation without "
             f"changing anything observable about the split."
         )
@@ -303,14 +324,14 @@ def expand_to_frames(split: Split, frame_counts: dict[str, int]) -> FrameSplit:
     volume_of: dict[str, str] = {}
     for name, ids in buckets.items():
         frames: list[str] = []
-        for sample_id in ids:
-            count = frame_counts[sample_id]
+        for subject_id in ids:
+            count = frame_counts[subject_id]
             if count <= 0:
-                raise ValueError(f"volume {sample_id!r} reports {count} frames")
+                raise ValueError(f"subject {subject_id!r} reports {count} frames")
             for index in range(count):
-                fid = frame_id(sample_id, index)
+                fid = frame_id(subject_id, index)
                 frames.append(fid)
-                volume_of[fid] = sample_id
+                volume_of[fid] = subject_id
         expanded[name] = frames
 
     return FrameSplit(
@@ -334,7 +355,7 @@ def assert_no_patient_overlap_after_expansion(
     says nothing about whether the expansion preserved it, and the two failures look
     identical downstream — a Dice score that reflects memorisation.
     """
-    patient_of = {s.sample_id: s.patient_id for s in manifest}
+    known = {s.patient_id for s in manifest}
 
     buckets = {
         "train": frame_split.train,
@@ -347,17 +368,14 @@ def assert_no_patient_overlap_after_expansion(
         fid
         for ids in buckets.values()
         for fid in ids
-        if frame_split.volume_of.get(fid) not in patient_of
+        if frame_split.volume_of.get(fid) not in known
     }
     if unknown:
         raise ValueError(
-            f"expanded frames reference volumes absent from the manifest: {sorted(unknown)[:5]}"
+            f"expanded frames reference subjects absent from the manifest: {sorted(unknown)[:5]}"
         )
 
-    patients = {
-        name: {patient_of[frame_split.volume_of[fid]] for fid in ids}
-        for name, ids in buckets.items()
-    }
+    patients = {name: {frame_split.volume_of[fid] for fid in ids} for name, ids in buckets.items()}
     names = sorted(buckets)
     for i, left in enumerate(names):
         for right in names[i + 1 :]:
