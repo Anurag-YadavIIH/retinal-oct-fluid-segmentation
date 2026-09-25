@@ -434,6 +434,22 @@ JSON.
 Two consequences follow from §8.1: a deletion must remove the junction **targets**, and
 `data/splits` is on a different volume from everything else it describes.
 
+**A junction is not a symlink, and some tools do not cross it.** Verified 2026-09-25 on
+the populated tree, which holds 70 instances in each of `data/dicom` and
+`data/dicom_deident`:
+
+| Tool | Sees through the junction |
+|---|---|
+| Python `pathlib.glob` / `rglob`, `os.walk`, `Path.is_dir` | yes — 70 of 70 |
+| Git Bash / MSYS `find` | **no — reports 0** |
+| `du`, `ls` on the target path | yes |
+
+Python is what the pipeline uses, so nothing in the codebase is affected. The hazard is
+operational: a shell one-liner counting files under `data/` returns zero and looks like
+an answer rather than a failure. **A zero from `find` under `data/` means the tool, not
+the data** — count on the target path instead. `git status` and TC-100 are unaffected,
+because git is told about these paths by `.gitignore` and never walks them.
+
 Every tool in this project treats it as an ordinary path and none needs to know it is a
 link. Two properties make that safe: git does not follow it and `.gitignore` excludes
 `data/` regardless (DMP-C1), and `data/raw/` is read-only once extracted, so nothing
