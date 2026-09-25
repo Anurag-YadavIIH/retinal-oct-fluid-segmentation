@@ -36,9 +36,42 @@ from ocuval.io.metaimage import MetaImageHeader, parse_header, read_volume_array
 # micrometres, so a spacing that should read 0.0039 mm arriving as 3.9 is a 1000x volume
 # error, and 3.9 > 0.5 rejects it.
 #
-# Per-vendor empirical ranges remain owed (docs/07 open item 6) and need the data. They
-# will tighten this, not replace it.
+# Per-vendor ranges were measured on 2026-09-25 and now live in configs/data.yaml
+# (SRS-056). They tighten this bound rather than replacing it, and in practice they are
+# the bound that rejects: see docs/07 item 6. This one still fires for a vendor with no
+# measured range, and states a limit that holds without the dataset.
 MAX_PLAUSIBLE_SPACING_MM = 0.5
+
+# Component order of every spacing tuple in this project. Not the MetaImage header
+# order -- see spacing_from_header and docs/13, 2026-09-23.
+SPACING_COMPONENTS = ("axial", "lateral", "separation")
+
+_CONFIG_PATH = Path(__file__).resolve().parents[3] / "configs" / "data.yaml"
+_ranges_cache: dict[str, dict[str, tuple[float, float]]] | None = None
+
+
+def spacing_ranges() -> dict[str, dict[str, tuple[float, float]]]:
+    """Per-vendor plausibility ranges from configs/data.yaml, in millimetres.
+
+    Read from the configuration rather than hard-coded, because SRS-056 says the ranges
+    live there and the units are stated there. Cached, because validate_spacing is
+    called once per volume and the file does not change during a run.
+    """
+    global _ranges_cache
+    if _ranges_cache is None:
+        import yaml
+
+        block = yaml.safe_load(_CONFIG_PATH.read_text(encoding="utf-8"))["spacing_plausibility"]
+        if block["units"] != "mm":
+            raise ValueError(
+                f"configs/data.yaml declares spacing units {block['units']!r}; this code "
+                f"assumes millimetres and will not silently reinterpret them."
+            )
+        _ranges_cache = {
+            vendor: {axis: (float(lo), float(hi)) for axis, (lo, hi) in axes.items()}
+            for vendor, axes in block["per_vendor"].items()
+        }
+    return _ranges_cache
 
 
 @dataclass(frozen=True)
@@ -53,7 +86,12 @@ class OCTVolume:
     source_path: Path
 
 
-def validate_spacing(spacing: tuple[float, ...] | None, *, source: str = "<unknown>") -> None:
+def validate_spacing(
+    spacing: tuple[float, ...] | None,
+    *,
+    source: str = "<unknown>",
+    vendor: str | None = None,
+) -> None:
     """Reject voxel spacing that cannot have come from a retinal OCT acquisition.
 
     Rejects rather than warns or clamps (SRS-056, RC-023): a warning on a metadata
@@ -62,6 +100,19 @@ def validate_spacing(spacing: tuple[float, ...] | None, *, source: str = "<unkno
     No default is ever substituted for missing spacing (SRS-055, RC-022) — a volume
     without spacing cannot yield a measurement, and inventing one converts a loud failure
     into a silent wrong number.
+
+    Two bounds apply, in this order:
+
+    1. **Structural and physical checks**, which hold without the dataset: present,
+       three components, numeric, finite, positive, anisotropic, and no component above
+       MAX_PLAUSIBLE_SPACING_MM.
+    2. **The per-vendor measured range** from configs/data.yaml, when `vendor` is given
+       and a range exists for it (SRS-056).
+
+    Passing no vendor applies only the first. That is deliberate rather than lenient:
+    a caller that does not know the vendor cannot be given a vendor's range, and
+    inventing one would be the same class of error as defaulting the spacing itself.
+    Ingestion always knows the vendor and always passes it.
 
     Raises ValueError naming the component and the permitted range. Returns None on
     acceptance.
@@ -97,6 +148,25 @@ def validate_spacing(spacing: tuple[float, ...] | None, *, source: str = "<unkno
             f"sampling is far finer than B-scan separation — so three equal components "
             f"indicate collapsed or defaulted metadata rather than a real acquisition."
         )
+
+    if vendor is None:
+        return
+    ranges = spacing_ranges().get(vendor)
+    if ranges is None:
+        # An unknown vendor is not an error here: the physical bound above still applied,
+        # and refusing every unmeasured vendor would make the reader unusable on new data
+        # for a reason that is about our measurements, not about the acquisition.
+        return
+    for axis_name, component in zip(SPACING_COMPONENTS, spacing, strict=True):
+        low, high = ranges[axis_name]
+        if not low <= component <= high:
+            raise ValueError(
+                f"{source}: {axis_name} spacing is {component} mm, outside the measured "
+                f"range for {vendor} of [{low}, {high}] mm (configs/data.yaml, SRS-056). "
+                f"Spacing components are ordered (axial, lateral, separation); a value "
+                f"that looks like another component's is an axis-order error, which "
+                f"produces a confidently wrong volume in mm³ — see docs/13, 2026-09-23."
+            )
 
 
 #: The archive nests one level below the vendor directory and uses the organisers' own
@@ -175,7 +245,7 @@ def read_volume(path: Path, vendor: str) -> OCTVolume:
     pixels = read_volume_array(oct_header_path)
 
     spacing = spacing_from_header(oct_header)
-    validate_spacing(spacing, source=source)
+    validate_spacing(spacing, source=source, vendor=vendor)
 
     labels = None
     ref_header_path = path / "reference.mhd"

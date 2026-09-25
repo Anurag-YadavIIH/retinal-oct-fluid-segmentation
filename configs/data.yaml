@@ -39,4 +39,37 @@ deidentification:
   retain_options: []                 # no retention options applied
   pseudonym_salt_env: OCUVAL_DEID_SALT
 
+# Per-vendor voxel spacing plausibility ranges (SRS-056). UNITS: MILLIMETRES.
+# Component order is (axial, lateral, separation) -- the project's own order, which is
+# NOT the MetaImage header order. See docs/13, 2026-09-23.
+#
+# Each range is the range measured across the RETOUCH training partition, divided by
+# two at the low end and multiplied by two at the high end. The factor is not a guess:
+# at x2 the range accepts all 70 real volumes and rejects an axial/lateral transposition
+# on 70 of 70; at x3 transposition detection on spectralis collapses to 3 of 24. Two is
+# inside the working band, three is outside it.
+#
+# These are measured from the TRAINING partition only -- the test partition was
+# deliberately not downloaded (docs/06 section 2.1) -- so the observed extremes are not
+# the population extremes. That is what the margin is for.
+spacing_plausibility:
+  units: mm
+  # Absolute physical bound, applied to every vendor including unknown ones. A retinal
+  # OCT voxel edge cannot exceed this. Retained as an outer guard: see docs/07 item 6
+  # for which bound actually rejects.
+  max_any_component_mm: 0.5
+  per_vendor:
+    cirrus:
+      axial: [0.000978, 0.003910]   # measured 0.001955 (n=24)
+      lateral: [0.005871, 0.023484]   # measured 0.011742 (n=24)
+      separation: [0.023439, 0.094488]   # measured 0.046878..0.047244 (n=24)
+    spectralis:
+      axial: [0.001936, 0.007744]   # measured 0.003872 (n=24)
+      lateral: [0.005428, 0.023900]   # measured 0.010856..0.011950 (n=24)
+      separation: [0.058190, 0.257248]   # measured 0.116380..0.128624 (n=24)
+    topcon:
+      axial: [0.001300, 0.007000]   # measured 0.002600..0.003500 (n=22)
+      lateral: [0.005860, 0.023440]   # measured 0.011720 (n=22)
+      separation: [0.023440, 0.093760]   # measured 0.046880 (n=22)
+
 seed: 20260916

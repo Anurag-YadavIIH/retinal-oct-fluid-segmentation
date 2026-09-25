@@ -438,5 +438,93 @@ run differently, or an acceptance criterion changed.
 | 3 | TC-105's gate forces review rather than proving re-classification (§7.3). If a stronger guarantee is wanted it needs a commit-level check outside pytest. | — |
 | 4 | Validation, as distinct from verification, is not performed and cannot be (§1.1). `docs/08` must state this rather than letting a full verification table imply it. | `docs/08` |
 | 5 | No test verifies that a recorded checkpoint hash is itself correct — RC-028 degrades to trust-on-first-write (`docs/05` open item 7). TC-058 inherits that limit. | `docs/05` |
-| 6 | Per-vendor spacing plausibility ranges still do not exist in `configs/data.yaml`, and defining them needs the data. **Partly mitigated 2026-09-17:** `io.retouch_reader.validate_spacing` rejects on physical grounds instead — a voxel edge above 0.5 mm cannot be retinal OCT, and isotropic spacing cannot be OCT at all — so TC-015's rejection cases including the micrometre case are implemented now. The per-vendor ranges will tighten that bound, not replace it. | Milestone 3 |
+| 6 | ~~Per-vendor spacing plausibility ranges do not exist in `configs/data.yaml`.~~ **Closed 2026-09-25.** Measured from all 70 training volumes and implemented under SRS-056; the 0.5 mm physical bound is retained as an outer guard. §13 records the ranges and which bound rejects. | — closed |
 | 7 | `io/deident.py` applies a **subset** of the PS3.15 Annex E attribute table, and its verification checks exactly that subset — so neither half can detect an identifying attribute the table omits. Closing this needs the standard's full table. | `docs/11` |
+
+---
+
+## 13. Per-vendor spacing plausibility ranges — closing item 6
+
+Measured 2026-09-25 from all 70 volumes of the RETOUCH training partition, the only
+partition held (`docs/06` §2.1). Implemented in `configs/data.yaml` under SRS-056 and
+applied by `io.retouch_reader.validate_spacing`.
+
+### 13.1 What was measured
+
+Components are in this project's order, **(axial, lateral, separation)**, which is not
+the MetaImage header order. Values in millimetres.
+
+| Vendor | n | Axial | Lateral | Separation |
+|---|---|---|---|---|
+| cirrus | 24 | 0.001955 | 0.011742 | 0.046878 – 0.047244 |
+| spectralis | 24 | 0.003872 | 0.010856 – 0.011950 | 0.116380 – 0.128624 |
+| topcon | 22 | 0.002600 – 0.003500 | 0.011720 | 0.046880 |
+
+Cirrus and Topcon are near-identical in lateral and separation and differ almost twofold
+in axial. Spectralis separates from both on separation by a factor of about 2.5.
+
+### 13.2 The configured range, and why the margin is two
+
+Each configured range is the measured range **divided by two at the low end and
+multiplied by two at the high end**. The margin exists because these are the training
+partition's extremes, not the population's — the test partition was deliberately not
+downloaded — so an unseen volume may legitimately fall outside what was observed.
+
+The factor is measured, not chosen by taste. Three candidates were evaluated against
+both properties the range has to satisfy at once:
+
+| Margin | Real volumes accepted | Axial/lateral transposition rejected |
+|---|---|---|
+| ×1.5 | 70 / 70 | 70 / 70 |
+| **×2** | **70 / 70** | **70 / 70** |
+| ×3 | 70 / 70 | **3 / 24 on spectralis** |
+
+Two sits inside the working band with room on both sides; three is past the edge, where
+Spectralis's axial and lateral ranges begin to overlap and a transposed pair lands
+inside the permitted range. ×1.5 works equally well but leaves less headroom for unseen
+acquisitions, which is the whole reason a margin exists.
+
+### 13.3 Which bound rejects
+
+Each of the 70 real spacings was perturbed by each realistic defect class and passed to
+the validator, recording which bound fired. "Structural" means the present / three
+components / numeric / finite / positive / anisotropic checks.
+
+| Defect | Outer 0.5 mm | Per-vendor | Structural | Missed |
+|---|---|---|---|---|
+| Micrometres read as millimetres (×1000) | **70** | 0 | 0 | 0 |
+| Centimetres read as millimetres (×10) | 24 | **46** | 0 | 0 |
+| Axial/lateral transposed | 0 | **70** | 0 | 0 |
+| Lateral/separation transposed | 0 | **70** | 0 | 0 |
+| Full reversal to MetaImage (x, y, z) order | 0 | **70** | 0 | 0 |
+| Collapsed to isotropic | 0 | 0 | **70** | 0 |
+
+Real volumes accepted by their own vendor's range: **70 / 70**. Nothing was missed by
+every bound.
+
+**The answer to "which bound rejected" is that it depends on the defect, and the split
+is not incidental.** The outer bound catches gross unit errors and nothing else. It
+rejects **zero** of the 210 axis-order cases, because a transposed spacing is physically
+small in every component — 0.011742 mm is a perfectly plausible OCT number, it is simply
+the wrong axis's number. The per-vendor range is the only control in the pipeline that
+sees that class.
+
+That class is HAZ-012, and it is the one `docs/13` (2026-09-23) records as producing a
+volume in mm³ wrong by a factor of six from a segmentation that is entirely correct,
+with nothing visible in the mask, the image or on a review screen. Before 2026-09-25 the
+only thing standing between that defect and a reported number was `spacing_from_header`
+being written correctly. There is now a second, independent check.
+
+### 13.4 What these ranges are not
+
+- **Not vendor specifications.** They are what this archive contains. A vendor may
+  support modes RETOUCH does not include, and a volume from such a mode would be
+  rejected as implausible when it is merely unrepresented. The failure is loud and names
+  the vendor, axis and range, so it is diagnosable — which is the trade SRS-056 makes.
+- **Not a substitute for the physical bound.** A vendor with no configured range falls
+  back to the 0.5 mm bound rather than being refused, so the reader stays usable on new
+  data. TC-015 asserts that the configured vendors and `vendors:` in `configs/data.yaml`
+  are the same set, because a vendor silently dropping to the weaker bound would not
+  otherwise fail anything.
+- **Not stable if the archive changes.** They were measured from 70 volumes on one date.
+  Re-measuring is a change control event under rule 6.

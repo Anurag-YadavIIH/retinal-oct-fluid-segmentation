@@ -483,7 +483,7 @@ def write_volume(
     """
     from ocuval import __version__
 
-    validate_spacing(volume.spacing_mm, source=str(volume.source_path))
+    validate_spacing(volume.spacing_mm, source=str(volume.source_path), vendor=volume.vendor)
     omissions = _resolve_omissions(context, research_exception)
 
     study_uid = study_instance_uid or generate_uid(uid_root)

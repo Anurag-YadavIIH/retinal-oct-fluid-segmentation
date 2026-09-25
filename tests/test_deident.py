@@ -13,6 +13,7 @@ import hashlib
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 import pydicom
 import pytest
@@ -20,7 +21,13 @@ from pydicom.dataset import Dataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian, generate_uid
 
 from ocuval.io import deident
-from ocuval.io.retouch_reader import MAX_PLAUSIBLE_SPACING_MM, validate_spacing
+from ocuval.io.retouch_reader import (
+    MAX_PLAUSIBLE_SPACING_MM,
+    spacing_ranges,
+    validate_spacing,
+)
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 SALT = "test-salt-not-a-real-one"
 
@@ -309,3 +316,93 @@ def test_TC_015_the_bound_is_far_above_any_real_oct_spacing():
     """Guards the guard: the limit must not be so tight it rejects real acquisitions."""
     assert MAX_PLAUSIBLE_SPACING_MM > 0.25  # coarsest plausible B-scan separation
     assert MAX_PLAUSIBLE_SPACING_MM < 3.9  # and still rejects the micrometre case
+
+
+# --- per-vendor spacing ranges: TC-015 (docs/07 item 6, closed 2026-09-25) ---------
+#
+# Spacings below are real, taken from the RETOUCH training partition. They are written
+# in this project's (axial, lateral, separation) order, so a test that transposes them
+# is testing the thing docs/07 section 3 rule 7 warns about.
+
+REAL_SPACING = {
+    "cirrus": (0.001955, 0.011742, 0.046878),
+    "spectralis": (0.003872, 0.010856, 0.116380),
+    "topcon": (0.002600, 0.011720, 0.046880),
+}
+
+
+@pytest.mark.parametrize("vendor", sorted(REAL_SPACING))
+def test_TC_015_measured_spacing_is_accepted_for_its_own_vendor(vendor):
+    validate_spacing(REAL_SPACING[vendor], vendor=vendor, source=f"{vendor}/real")
+
+
+@pytest.mark.parametrize("vendor", sorted(REAL_SPACING))
+def test_TC_015_axis_transposition_is_rejected_by_the_per_vendor_range(vendor):
+    """The defect the outer bound cannot see.
+
+    A transposed axial/lateral pair is physically small in every component, so the
+    0.5 mm bound accepts it and the resulting volume in mm3 is wrong by a factor of
+    roughly six with nothing visible in the mask or on a review screen. That is HAZ-012,
+    and the per-vendor range is the only control in the pipeline that catches it.
+    """
+    axial, lateral, separation = REAL_SPACING[vendor]
+    transposed = (lateral, axial, separation)
+
+    validate_spacing(transposed, source="outer bound alone")  # no vendor: accepted
+
+    with pytest.raises(ValueError, match="outside the measured range"):
+        validate_spacing(transposed, vendor=vendor, source=f"{vendor}/transposed")
+
+
+@pytest.mark.parametrize("vendor", sorted(REAL_SPACING))
+def test_TC_015_full_metaimage_axis_reversal_is_rejected(vendor):
+    """The specific wrong conversion spacing_from_header exists to prevent."""
+    axial, lateral, separation = REAL_SPACING[vendor]
+    with pytest.raises(ValueError, match="outside the measured range"):
+        validate_spacing((separation, lateral, axial), vendor=vendor, source=vendor)
+
+
+def test_TC_015_an_unmeasured_vendor_falls_back_to_the_physical_bound():
+    """Not an error: the physical bound still applied, and refusing every new vendor
+    would fail for a reason about our measurements rather than about the acquisition."""
+    validate_spacing((0.0039, 0.0117, 0.047), vendor="nidek", source="unmeasured")
+    with pytest.raises(ValueError, match="physical limit"):
+        validate_spacing((3.9, 0.0117, 0.047), vendor="nidek", source="unmeasured")
+
+
+def test_TC_015_per_vendor_rejection_names_vendor_axis_and_range():
+    with pytest.raises(ValueError) as excinfo:
+        validate_spacing((0.011742, 0.001955, 0.046878), vendor="cirrus", source="cirrus/T1")
+    message = str(excinfo.value)
+    assert "cirrus/T1" in message
+    assert "axial" in message
+    assert "cirrus" in message
+    assert "0.000978" in message and "0.00391" in message
+
+
+def test_TC_015_ranges_are_declared_in_millimetres():
+    """The units are read, not assumed: a config in micrometres must not be silently
+    reinterpreted, which is the same 1000x error the physical bound exists to catch."""
+    import yaml
+
+    block = yaml.safe_load((REPO_ROOT / "configs" / "data.yaml").read_text(encoding="utf-8"))[
+        "spacing_plausibility"
+    ]
+    assert block["units"] == "mm"
+    assert block["max_any_component_mm"] == MAX_PLAUSIBLE_SPACING_MM
+
+
+def test_TC_015_every_configured_vendor_has_all_three_components():
+    for vendor, axes in spacing_ranges().items():
+        assert set(axes) == {"axial", "lateral", "separation"}, vendor
+        for axis, (low, high) in axes.items():
+            assert 0 < low < high <= MAX_PLAUSIBLE_SPACING_MM, (vendor, axis)
+
+
+def test_TC_015_configured_vendors_match_the_configured_vendor_list():
+    """A vendor with no range silently falls back to the physical bound, so the two
+    lists drifting apart would weaken the guard without any test failing."""
+    import yaml
+
+    config = yaml.safe_load((REPO_ROOT / "configs" / "data.yaml").read_text(encoding="utf-8"))
+    assert set(spacing_ranges()) == set(config["vendors"])
