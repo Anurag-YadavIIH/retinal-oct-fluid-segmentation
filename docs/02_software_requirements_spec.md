@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-079 and NFR-001..NFR-008. Every requirement here derives
+Allocates SRS-001..SRS-083 and NFR-001..NFR-008. Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -117,11 +117,15 @@ measurement, and that gap is HAZ-012.
 | SRS-072 | Axial resampling shall use a **target spacing declared as a constant in `configs/train_seg.yaml`**. The target shall not be derived from the data at run time, shall not depend on fold membership, and shall be written into the run output with the resolved configuration. | URS-010 | TC-046 |
 | SRS-073 | Only the **axial** axis shall be resampled. Lateral spacing shall not be resampled, and B-scan separation shall not be resampled or otherwise used by the transform chain: training is 2D and frames are independent. Separation becomes relevant only if 2.5D mode is enabled, which is a separate decision. | URS-008 | TC-047 |
 | SRS-074 | Every segmentation metric and every volume in mm³ shall be computed in the acquisition's **native geometry**. A prediction produced at the resampled spacing shall be inverted back to the native grid before any metric is computed, and the spacing used shall satisfy SRS-057. | URS-002, URS-008 | TC-048 |
-| SRS-075 | Training shall write a checkpoint at the end of every epoch containing the model state, the optimiser state, the learning-rate scheduler state, the gradient-scaler state, the epoch index, the best metric so far, and the state of **every** random generator that affects training — Python's `random`, NumPy, torch CPU and torch CUDA. The write shall be atomic, so that a process killed mid-write leaves the previous checkpoint intact. | URS-010 | TC-059 |
+| SRS-075 | Training shall write a checkpoint at the end of every epoch containing **everything that changes behaviour after a resume**, not only the weights: the model state; the optimiser state; the learning-rate scheduler state **including its position within any warmup phase**; the gradient-scaler state whenever AMP is enabled; the epoch index; the **complete early-stopping state** — best metric, the epoch at which it occurred, and epochs elapsed since improvement; and the state of **every** random generator that affects training — Python's `random`, NumPy, torch CPU and torch CUDA. Omitting the early-stopping state silently resets patience on resume, which changes when training ends without changing anything visible. The write shall be atomic, so that a process killed mid-write leaves the previous checkpoint intact. | URS-010 | TC-059 |
 | SRS-076 | A run resumed from a checkpoint shall be equivalent to an uninterrupted run of the same length. **On CPU the equivalence shall be bit-identical.** On GPU it shall be within a tolerance stated in the run output, because several CUDA kernels used by this network — among them some interpolation and upsampling backward passes — have no deterministic implementation, so bit-exactness is not achievable and shall not be claimed. | URS-010 | TC-059 |
 | SRS-077 | Training shall request deterministic algorithms via `torch.use_deterministic_algorithms`. Where an operation has no deterministic implementation, the run shall fall back rather than abort, and shall **record in the run output which operations forced a fallback**. An undocumented fallback is an undocumented source of run-to-run variation. | URS-010 | TC-059 |
 | SRS-078 | The frame cache shall be populated by a **volume-wise pre-pass** that decodes each source volume once. Frames served from the cache shall be bit-identical to the frames the same configuration produces without it: the cache is an optimisation and shall not be able to change a value. | URS-010 | TC-039 |
 | SRS-079 | `train.batch_size` shall remain the **effective** batch — the number of samples contributing to each optimiser step — regardless of how many samples pass through the accelerator at once. A separate `train.micro_batch_size` shall control the latter, shall divide `batch_size` exactly, and shall default to it. The gradient from one step of `batch_size` samples and the gradient accumulated over `batch_size / micro_batch_size` micro-batches shall agree to within a stated tolerance. Both values shall be written to the run output. | URS-010 | TC-078 |
+| SRS-080 | Training shall be bounded within a session by two independent means: a `--max-epochs-this-session` option that trains that many epochs, checkpoints and exits cleanly; and a **`STOP` file** in the run directory, which shall cause the current epoch to finish, a checkpoint to be written, the file to be removed and the process to exit with success. Neither shall terminate an epoch part-way, because a half-completed epoch leaves the optimiser in a state no checkpoint describes. | URS-010 | TC-079 |
+| SRS-081 | Per-epoch metrics shall be appended to **one continuous log per fold**, never restarted, so that a fold's training curve is a single record however many sessions it took. Each session shall record its own boundary in that log. | URS-010 | TC-079 |
+| SRS-082 | Every training run shall sample accelerator telemetry — at least temperature, clock frequency, utilisation and memory — at a fixed interval into the run directory, for the whole duration of the run. A laptop GPU throttles under sustained load, so a throughput figure measured over minutes does not describe a run lasting hours, and the record is also the execution environment `docs/08` must report. | URS-010, NFR-002 | TC-095 |
+| SRS-083 | The learning-rate schedule shall honour `optim.warmup_epochs`: the rate shall rise linearly from a fraction of the configured rate to the configured rate across that many epochs, then follow the declared decay. A configured warmup that the schedule ignores is a run that did not do what its configuration says. | URS-010 | TC-079 |
 
 ### 3.5 Training
 
@@ -208,7 +212,8 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `data/transforms.py` | SRS-070, SRS-072, SRS-073, SRS-074 |
 | `data/datamodule.py` | SRS-070, SRS-071, SRS-073, SRS-078 |
 | `training/checkpoint.py` | SRS-075, SRS-076, SRS-077 |
-| `training/loop.py` | SRS-024, SRS-031, SRS-075, SRS-076, SRS-077, SRS-079 |
+| `training/loop.py` | SRS-024, SRS-031, SRS-075..SRS-077, SRS-079, SRS-080, SRS-081, SRS-083 |
+| `training/telemetry.py` | SRS-082 |
 | `scripts/benchmark_device.py` | SRS-031 |
 | `data/datamodule.py` | SRS-024 |
 | `data/transforms.py` | SRS-025, SRS-026 |

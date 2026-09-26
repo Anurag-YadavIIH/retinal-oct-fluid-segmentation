@@ -35,6 +35,21 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--data-config", type=Path, default=Path("configs/data.yaml"))
     parser.add_argument("--run-dir", type=Path, default=None)
     parser.add_argument("--epochs", type=int, default=None, help="override train.epochs")
+    parser.add_argument(
+        "--max-epochs-this-session",
+        type=int,
+        default=None,
+        help=(
+            "train at most this many epochs now, checkpoint and exit (SRS-080). "
+            "Bounds this invocation, not the fold: --epochs is the fold total."
+        ),
+    )
+    parser.add_argument(
+        "--telemetry-interval",
+        type=float,
+        default=30.0,
+        help="seconds between accelerator telemetry samples; 0 disables (SRS-082)",
+    )
     parser.add_argument("--device", default=None)
     parser.add_argument("--no-prepass", action="store_true", help="skip the cache pre-pass")
     return parser.parse_args(argv)
@@ -103,7 +118,16 @@ def main(argv: list[str] | None = None) -> int:
 
     from ocuval.training.loop import train_fold
 
-    history = train_fold(split, cfg, manifest, run_dir, device=args.device, max_epochs=args.epochs)
+    history = train_fold(
+        split,
+        cfg,
+        manifest,
+        run_dir,
+        device=args.device,
+        max_epochs=args.epochs,
+        max_epochs_this_session=args.max_epochs_this_session,
+        telemetry_interval=args.telemetry_interval or None,
+    )
     best = max(
         (r for r in history if r.val_dice is not None), key=lambda r: r.val_dice, default=None
     )

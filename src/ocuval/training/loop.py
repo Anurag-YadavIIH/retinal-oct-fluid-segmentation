@@ -25,6 +25,7 @@ import json
 import time
 import warnings
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -88,11 +89,43 @@ def build_optimizer(cfg: dict, model: torch.nn.Module):
     )
 
 
+WARMUP_START_FACTOR = 0.1
+
+
 def build_scheduler(cfg: dict, optimizer, epochs: int):
+    """Linear warmup then cosine decay, honouring `optim.warmup_epochs` (SRS-083).
+
+    **The warmup was configured and not implemented until 2026-09-26.** `warmup_epochs`
+    has been in `configs/train_seg.yaml` since it was written, and `build_scheduler`
+    read only `scheduler`, so every run would have started at the full rate while its
+    recorded configuration said otherwise. A configuration key nothing reads is worse
+    than an absent one: it describes a run that did not happen.
+
+    `SequentialLR` rather than a hand-rolled lambda, because its `state_dict` carries the
+    position within the sequence. A closure over the epoch index would resume at the
+    wrong place, which is exactly the defect SRS-075 exists to prevent and which TC-059
+    now crosses a warmup boundary to check.
+    """
     name = str(cfg["optim"].get("scheduler", "cosine")).lower()
     if name != "cosine":
         raise ValueError(f"unsupported scheduler {name!r}; only 'cosine' is provided")
-    return torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max(1, epochs))
+
+    warmup_epochs = int(cfg["optim"].get("warmup_epochs", 0))
+    total = max(1, epochs)
+    if warmup_epochs <= 0:
+        return torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=total)
+    if warmup_epochs >= total:
+        raise ValueError(
+            f"optim.warmup_epochs ({warmup_epochs}) is not less than the epoch count "
+            f"({total}); there would be no decay phase at all."
+        )
+    warmup = torch.optim.lr_scheduler.LinearLR(
+        optimizer, start_factor=WARMUP_START_FACTOR, total_iters=warmup_epochs
+    )
+    decay = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=total - warmup_epochs)
+    return torch.optim.lr_scheduler.SequentialLR(
+        optimizer, schedulers=[warmup, decay], milestones=[warmup_epochs]
+    )
 
 
 @torch.no_grad()
@@ -122,6 +155,41 @@ def validate(model, loader, classes: int, device: str) -> tuple[float, list[floa
     return (sum(finite) / len(finite) if finite else float("nan")), values
 
 
+STOP_FILE = "STOP"
+EPOCH_LOG = "epochs.jsonl"
+
+
+def stop_requested(run_dir: Path) -> bool:
+    """True when a STOP file is present (SRS-080).
+
+    A file rather than a signal, because the run may be started from a notebook, a
+    terminal or a scheduled task, and a file is something the author can create from any
+    of them without knowing the process id.
+    """
+    return (Path(run_dir) / STOP_FILE).exists()
+
+
+def clear_stop(run_dir: Path) -> None:
+    """Remove the STOP file, so the next session is not stopped by a stale one."""
+    target = Path(run_dir) / STOP_FILE
+    if target.exists():
+        target.unlink()
+
+
+def append_epoch_log(run_dir: Path, record: dict[str, Any]) -> None:
+    """Append one line to the fold's continuous log (SRS-081).
+
+    JSON Lines, appended and never rewritten. A fold trained across three evenings is
+    one training curve, and a log restarted per session would show three unrelated
+    fragments -- which is also how an accidental restart from epoch zero would hide
+    itself.
+    """
+    path = Path(run_dir) / EPOCH_LOG
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, sort_keys=True) + "\n")
+
+
 def train_fold(
     split: Split,
     cfg: dict,
@@ -130,14 +198,23 @@ def train_fold(
     *,
     device: str | None = None,
     max_epochs: int | None = None,
+    max_epochs_this_session: int | None = None,
+    telemetry_interval: float | None = 30.0,
 ) -> list[EpochResult]:
     """Train one fold, resuming if the run directory holds a checkpoint.
 
-    Returns the per-epoch history. Everything else it produces -- checkpoints, the
-    provenance record, the determinism report -- lands in `run_dir`.
+    `max_epochs` is the fold's total; `max_epochs_this_session` bounds *this* invocation
+    (SRS-080). They are different quantities and conflating them is how a resumed run
+    trains the wrong number of epochs: the first is a property of the experiment, the
+    second of the evening.
+
+    Returns this session's per-epoch history. The fold's whole history is the appended
+    log in `run_dir`, not the return value, precisely because a session only ever sees
+    its own part.
     """
     from ocuval.data.datamodule import build_loaders
     from ocuval.models.seg_unet import build_model, record_checkpoint_hash
+    from ocuval.training.telemetry import GpuTelemetry
 
     run_dir = Path(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -161,7 +238,13 @@ def train_fold(
     scheduler = build_scheduler(cfg, optimizer, epochs)
     scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
 
-    start_epoch, best_metric, best_epoch = 0, float("-inf"), -1
+    # Early-stopping state is part of the checkpoint (SRS-075). Without `best_epoch`
+    # and `since_improvement`, a resume silently restarts the patience window, so a run
+    # that should have stopped keeps going and one interrupted near the end never does.
+    start_epoch, best_metric, best_epoch, since_improvement = 0, float("-inf"), -1, 0
+    # A STOP present before the run starts is honoured, not discarded: setting it ahead
+    # of time is a reasonable way to ask for one more epoch and stop. It cannot go stale,
+    # because it is removed the moment it is consumed.
     resume_from = find_resume(run_dir)
     if resume_from is not None:
         meta = load_checkpoint(
@@ -175,13 +258,45 @@ def train_fold(
         start_epoch = meta["epoch"] + 1
         if meta["best_metric"] is not None:
             best_metric = float(meta["best_metric"])
-        print(f"resuming from epoch {start_epoch} (best so far {best_metric:.4f})", flush=True)
+        early = meta.get("extra", {}).get("early_stopping", {})
+        best_epoch = int(early.get("best_epoch", -1))
+        since_improvement = int(early.get("since_improvement", 0))
+        print(
+            f"resuming from epoch {start_epoch} (best {best_metric:.4f} at epoch "
+            f"{best_epoch}, {since_improvement} epoch(s) since improvement)",
+            flush=True,
+        )
+
+    session_end = epochs
+    if max_epochs_this_session is not None:
+        session_end = min(epochs, start_epoch + int(max_epochs_this_session))
+
+    append_epoch_log(
+        run_dir,
+        {
+            "event": "session_start",
+            "utc": datetime.now(UTC).isoformat(timespec="seconds"),
+            "from_epoch": start_epoch,
+            "to_epoch_exclusive": session_end,
+            "fold_total_epochs": epochs,
+            "device": device,
+            "resumed": resume_from is not None,
+            "effective_batch_size": effective_batch,
+            "micro_batch_size": micro_batch,
+            "amp_enabled": use_amp,
+        },
+    )
+
+    telemetry = None
+    if telemetry_interval:
+        telemetry = GpuTelemetry(run_dir, interval=float(telemetry_interval)).start()
 
     history: list[EpochResult] = []
+    stopped_by, completed = None, start_epoch
     with warnings.catch_warnings(record=True) as captured:
         warnings.simplefilter("always")
 
-        for epoch in range(start_epoch, epochs):
+        for epoch in range(start_epoch, session_end):
             started = time.time()
             model.train()
             total, seen = 0.0, 0
@@ -226,7 +341,21 @@ def train_fold(
                 )
             result.seconds = time.time() - started
             history.append(result)
+            completed = epoch + 1
             print(json.dumps(result.as_dict()), flush=True)
+
+            entry = result.as_dict()
+            entry.update(
+                {
+                    "event": "epoch",
+                    "utc": datetime.now(UTC).isoformat(timespec="seconds"),
+                    "lr": float(optimizer.param_groups[0]["lr"]),
+                    "since_improvement": since_improvement,
+                    "best_metric": None if best_metric == float("-inf") else best_metric,
+                    "best_epoch": best_epoch,
+                }
+            )
+            append_epoch_log(run_dir, entry)
 
             # Written every epoch, before any early-stopping decision, so an interrupted
             # run always resumes from the most recent state rather than the best one.
@@ -238,12 +367,21 @@ def train_fold(
                 scheduler=scheduler,
                 scaler=scaler,
                 best_metric=best_metric if best_metric > float("-inf") else None,
-                extra={"fold_id": split.fold_id, "device": device},
+                extra={
+                    "fold_id": split.fold_id,
+                    "device": device,
+                    # SRS-075: without these a resume restarts the patience window.
+                    "early_stopping": {
+                        "best_epoch": best_epoch,
+                        "since_improvement": since_improvement,
+                        "patience": patience,
+                    },
+                },
             )
             record_checkpoint_hash(last)
 
             if result.val_dice is not None and result.val_dice > best_metric:
-                best_metric, best_epoch = result.val_dice, epoch
+                best_metric, best_epoch, since_improvement = result.val_dice, epoch, 0
                 best = save_checkpoint(
                     run_dir / BEST_NAME,
                     epoch=epoch,
@@ -255,11 +393,46 @@ def train_fold(
                     extra={"fold_id": split.fold_id, "device": device},
                 )
                 record_checkpoint_hash(best)
-            elif best_epoch >= 0 and epoch - best_epoch >= patience:
-                print(f"early stop: no improvement for {patience} epochs", flush=True)
+            elif result.val_dice is not None:
+                # Counted rather than derived from `epoch - best_epoch`, because that
+                # subtraction is wrong the moment validation does not run every epoch.
+                since_improvement += 1
+                if best_epoch >= 0 and since_improvement >= patience:
+                    print(f"early stop: no improvement for {patience} epochs", flush=True)
+                    stopped_by = "early_stopping"
+                    break
+
+            # Checked AFTER the epoch is complete and checkpointed (SRS-080). Stopping
+            # part-way would leave the optimiser in a state no checkpoint describes.
+            if stop_requested(run_dir):
+                print("STOP file present: ending session after this epoch", flush=True)
+                clear_stop(run_dir)
+                stopped_by = "stop_file"
                 break
 
         messages = [str(w.message) for w in captured]
+
+    if telemetry is not None:
+        telemetry.stop()
+
+    if stopped_by is None and completed >= epochs:
+        stopped_by = "fold_complete"
+    elif stopped_by is None:
+        stopped_by = "session_epoch_limit"
+
+    append_epoch_log(
+        run_dir,
+        {
+            "event": "session_end",
+            "utc": datetime.now(UTC).isoformat(timespec="seconds"),
+            "stopped_by": stopped_by,
+            "epochs_this_session": len(history),
+            "next_epoch": completed,
+            "fold_total_epochs": epochs,
+            "fold_complete": stopped_by in ("fold_complete", "early_stopping"),
+            "telemetry_samples": None if telemetry is None else telemetry.samples,
+        },
+    )
 
     (run_dir / "batching.json").write_text(
         json.dumps(

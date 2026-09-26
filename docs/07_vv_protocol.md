@@ -97,6 +97,37 @@ Required for Class B. This section is the process; §4 is the criteria.
    spacing and never the MetaImage `(x, y, z)` conversion that real ingestion performs.
    The conversion was written correctly, but nothing in the suite would have caught it
    had it not been.
+8. **A test for a mechanism must inspect the mechanism, not only its observable
+   output.** Where a unit exists to make something happen *behind* an interface — a
+   cache, a hook, a scheduler, a counter — asserting only that the interface still
+   returns the right answer will pass when the mechanism is absent, because the
+   fallback path usually produces the same answer more slowly.
+
+   The test must therefore reach the artefact: open the cache file, run the hook,
+   read the recorded state, count the calls.
+
+   **Four instances of this in this project, all found by something other than the
+   test that should have caught them:**
+
+   | Mechanism | What the test asserted | Why it passed while broken | Found by |
+   |---|---|---|---|
+   | `pre-commit` change-control hook | The config file listed the hook | The hook was never installed, so it could not run | A commit that should have failed, succeeding |
+   | Coverage figures in `docs/09` | A hand-maintained number | Nothing recomputed it, so it drifted in both directions at once | Reading it against pytest |
+   | Frame cache (TC-039) | Cached and uncached values matched | They match when the cache is empty and the transform simply re-runs | Benchmarking, when entries turned out to be 4 KB of metadata |
+   | `optim.warmup_epochs` | Nothing — the key was read by no code at all | A configured warmup that never happens looks exactly like no warmup | Writing a test that had to cross a warmup boundary |
+
+   The common shape: **the observable output is identical whether the mechanism works
+   or is missing entirely.** That is precisely when a black-box assertion is worthless,
+   and precisely when the mechanism is easiest to leave unwired.
+
+   Two consequences for how such a test is written:
+
+   - **Assert against the artefact the mechanism produces**, not against what the system
+     returns. TC-039 now opens the cache file and asserts an image is in it, counts
+     decodes, and asserts a warm cache decodes zero times.
+   - **Assert the mechanism can fail.** If disabling it does not break the test, the
+     test was not testing it. TC-039 checks that a nested `Compose` truncates the cached
+     prefix; TC-059 checks that discarding the RNG state makes a resumed run diverge.
 
 ## 4. Unit acceptance criteria — IEC 62304 §5.5.3
 
@@ -219,6 +250,8 @@ lists SRS, NFR and RC identifiers.
 | TC-058 | **Checkpoint provenance and integrity** | SRS-061, RC-028 | U | Checkpoint outside `artifacts/` refused; altered checkpoint fails hash check and aborts; checkpoint with no recorded hash aborts | yes |
 | TC-059 | **Resuming equals not being interrupted** | SRS-075, SRS-076, SRS-077 | U | Five epochs uninterrupted against three-plus-resume-two: on CPU the resulting weights are **bit-identical**; the checkpoint carries every generator's state and restoring it reproduces the next batch order; an atomic write survives a kill mid-write; the recorded fallback list is present. On GPU the comparison is within the stated tolerance and bit-exactness is not asserted | yes |
 | TC-078 | **Accumulated gradient equals the whole-batch gradient** | SRS-079 | U | On CPU, one step over 8 samples and four accumulated micro-batches of 2 produce gradients agreeing within the tolerance in §14; a micro-batch that does not divide the batch is refused; the effective batch recorded in the run output is `batch_size`, not the micro-batch. **The number lies outside this section's original TC-050..TC-059 range because that range is full**; placement here is by subject, and traceability is by identifier rather than by numeric order | yes |
+| TC-079 | **Session bounds, warmup and the continuous log** | SRS-080, SRS-081, SRS-083 | U | `--max-epochs-this-session` stops after exactly that many epochs having checkpointed; a `STOP` file finishes the current epoch, checkpoints, removes the file and exits successfully, never mid-epoch; the per-epoch log is **appended** across sessions and never truncated, and each session records a boundary in it; the learning rate rises across `optim.warmup_epochs` and the schedule after warmup matches an uninterrupted one. Numbered outside §6.6's range for the reason given against TC-078 | yes |
+| TC-095 | **Accelerator telemetry is recorded for the whole run** | SRS-082 | U | A telemetry file appears in the run directory, is appended at the configured interval, carries temperature, clock, utilisation and memory with timestamps, survives the sampler being unable to reach `nvidia-smi`, and stops when the run does | yes |
 
 ### 6.7 Evaluation and detection
 
