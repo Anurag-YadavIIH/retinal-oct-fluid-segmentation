@@ -175,38 +175,48 @@ dataset arrives.**
 | **A Kaggle session** | `scripts/benchmark_device.py` — must be run on both P100 and T4×2 before the first real run, and the faster used. The budget rests on an assumed ~30% MFU, not a measurement, and the P100 has no tensor cores |
 | **Neither** — these are simply next | `models/uncertainty.py`, `eval/subgroup.py`, `eval/report.py`, `service/api.py` |
 
-### Numbers, as of 2026-09-25
+### Numbers, as of 2026-09-26
 
-Identifiers: URS-001..011, SRS-001..078, NFR-001..008, HAZ-001..015, RC-001..031,
-SOUP-001..022, TC-000..TC-120 (95 allocated).
+Identifiers: URS-001..011, SRS-001..083, NFR-001..008, HAZ-001..015, RC-001..031,
+SOUP-001..022, TC-000..TC-120 (99 allocated).
 
-**95 test cases allocated, 65 written, 62 executed, 3 written but never run.** Those
+**99 test cases allocated, 68 written, 65 executed, 3 written but never run.** Those
 three states are kept separate deliberately and `docs/09` regenerates them from the
 documents and from pytest's own marker resolution — a hand-maintained figure drifted in
 both directions at once and was replaced. A written test nobody has executed is not
 verification. The three are TC-080..082, blocked on Docker.
 
-Suite: **361 passing, 1 skipped (no CUDA here), 8 deselected** (`requires_pacs`), plus
-5 `requires_data`. Risk controls: 31 allocated a test. CI is green on `main`.
+Suite: **403 passing, 0 skipped, 8 deselected** (`requires_pacs`), plus 5
+`requires_data`. The GPU resume test runs now that the CUDA build is installed. Risk
+controls: 31 allocated a test. CI is green on `main`.
 
 ### Stage plan for training (agreed 2026-09-25)
 
 | Stage | Content | State |
 |---|---|---|
 | **0** | CUDA torch 2.3.1 (cu121, `sm_61` verified), AMP on/off benchmark, gradient accumulation with the norm-layer check, benchmark including the real loader | **done** |
-| **1** | Smoke run, `cirrus_holdout`, ~20 epochs. **Pass criteria written into `docs/07` before it starts** | not started |
+| **1** | Smoke run, `cirrus_holdout`, ~20 epochs. **Criteria pre-registered in `docs/07` §15 and committed 2026-09-26, before any run** | criteria committed; run not started — the author runs it |
 | **2** | `cirrus_holdout` trained fully **and evaluated end to end** before any other fold begins | not started |
 | **3** | `spectralis_holdout`, `topcon_holdout` | not started |
 | **4** | Uncertainty, subgroup analysis, `docs/10`. May proceed during Stage 3 | not started |
 
-**Owed before Stage 1**, from the nightly-session decision: a `--max-epochs-this-session`
-option; a `STOP` file in the run directory that ends the session cleanly after the
-current epoch; confirmation that the checkpoint carries **everything that changes
-behaviour on resume** — scheduler state including warmup position, early-stopping state
-(best metric, best epoch, epochs since improvement), GradScaler when AMP is on, and all
-RNG states — with the resume test extended to cross a warmup boundary and to resume
-partway through a patience window; and one continuous per-epoch log appended across
-sessions with session boundaries marked.
+**Owed before Stage 1 — all delivered 2026-09-26** (SRS-080..083, TC-079, TC-095):
+`--max-epochs-this-session`; a `STOP` file that ends the session after the current epoch
+is complete and checkpointed; the checkpoint now carries the **complete early-stopping
+state** (best metric, best epoch, epochs since improvement) alongside scheduler, scaler
+and all RNG states, with TC-059 extended across a warmup boundary and mid-patience; one
+continuous appended `epochs.jsonl` per fold with session boundaries; and accelerator
+telemetry every 30 s for the whole run.
+
+**`optim.warmup_epochs` was configured and read by no code until 2026-09-26.** Every run
+would have started at the full learning rate while its recorded configuration said
+otherwise. Now implemented with `SequentialLR`, whose `state_dict` carries the position
+in the sequence.
+
+**Stage 1 criteria are pre-registered and committed** (`docs/07` §15, TC-096). The
+trivial baseline is a measured number, not an intention: a spatial prior ignoring the
+image scores **IRF 0.0451, SRF 0.0428, PED 0.0384** on in-domain validation. A failed
+criterion stops Stage 2 and does not get rewritten.
 
 **Measured on this workstation (GTX 1050, 2026-09-25), micro-batch 8, AMP off:**
 25.6 img/s through the real cached loader, 1.29 GiB peak of 4 GiB. Per 8-hour night:
@@ -273,6 +283,15 @@ sessions with session boundaries marked.
   Randomizable *or not a Transform*, and `Compose` is itself Randomizable — so a plain
   callable, or a nested Compose, silently caches nothing at all. TC-039 now inspects the
   stored artefact rather than comparing served values.
+- **A test for a mechanism must inspect the mechanism** (`docs/07` §3 rule 8). Four
+  instances here shared one shape — the observable output is identical whether the
+  mechanism works or is absent: the uninstalled pre-commit hook, the hand-maintained
+  coverage figures, the frame cache that stored no pixels while TC-039 passed, and
+  `optim.warmup_epochs` that no code read. Assert against the artefact, and assert the
+  mechanism can fail.
+- **Pre-registered criteria are not edited after seeing results.** `docs/07` §15 was
+  committed before any run. A failure stops the next stage and goes in `docs/13`;
+  concluding a criterion was wrong is a recorded argument, never a quiet edit.
 - **Commits carry no Claude Code attribution.** History was rewritten 2026-09-23 to
   strip the trailers and force-pushed; content was unchanged and all 51 tree hashes were
   verified identical. Cited SHAs are checked by TC-108 because that rewrite broke nine
