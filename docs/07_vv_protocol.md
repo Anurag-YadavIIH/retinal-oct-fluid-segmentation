@@ -252,6 +252,7 @@ lists SRS, NFR and RC identifiers.
 | TC-078 | **Accumulated gradient equals the whole-batch gradient** | SRS-079 | U | On CPU, one step over 8 samples and four accumulated micro-batches of 2 produce gradients agreeing within the tolerance in §14; a micro-batch that does not divide the batch is refused; the effective batch recorded in the run output is `batch_size`, not the micro-batch. **The number lies outside this section's original TC-050..TC-059 range because that range is full**; placement here is by subject, and traceability is by identifier rather than by numeric order | yes |
 | TC-079 | **Session bounds, warmup and the continuous log** | SRS-080, SRS-081, SRS-083 | U | `--max-epochs-this-session` stops after exactly that many epochs having checkpointed; a `STOP` file finishes the current epoch, checkpoints, removes the file and exits successfully, never mid-epoch; the per-epoch log is **appended** across sessions and never truncated, and each session records a boundary in it; the learning rate rises across `optim.warmup_epochs` and the schedule after warmup matches an uninterrupted one. Numbered outside §6.6's range for the reason given against TC-078 | yes |
 | TC-095 | **Accelerator telemetry is recorded for the whole run** | SRS-082 | U | A telemetry file appears in the run directory, is appended at the configured interval, carries temperature, clock, utilisation and memory with timestamps, survives the sampler being unable to reach `nvidia-smi`, and stops when the run does | yes |
+| TC-096 | **Stage 1 smoke run acceptance** | SRS-024, SRS-031, SRS-075, SRS-080, SRS-081, SRS-082 | D | The four criteria in §15, all of which were committed before the run | no — read from the run output |
 
 ### 6.7 Evaluation and detection
 
@@ -604,3 +605,94 @@ accumulation is implemented correctly — a bug that scaled every gradient ident
 would also stay inside it. TC-078 therefore also asserts the negative case: omitting the
 `1/steps` loss scaling produces a gradient that is **outside** the tolerance, so the test
 can distinguish correct accumulation from no accumulation at all.
+
+
+---
+
+## 15. Stage 1 smoke run — acceptance criteria, pre-registered
+
+**Committed before the run.** These criteria exist to be failable. A criterion written
+after seeing the numbers is a description, not a test, so the commit that adds this
+section precedes the commit that records any result — the history is the evidence of
+which came first.
+
+**Run under test.** `cirrus_holdout`, the fold with the fewest training frames (2610
+train, 580 in-domain validation), ~20 epochs, on the local GTX 1050 at micro-batch 8
+with AMP off. Evaluated on the **in-domain validation split**: unseen patients from the
+training vendors. The held-out vendor is not touched at Stage 1 — that is Stage 2, and
+looking at it now would spend the result the project exists to report.
+
+### 15.1 Criterion 1 — training loss decreases materially
+
+The mean training loss of the **last three epochs** shall be **at least 10% below** the
+mean of the first three.
+
+Ten percent, not "decreases", because a loss that drifts down by a fraction of a percent
+over twenty epochs is indistinguishable from noise and would pass a bare inequality. The
+figure is deliberately modest: twenty epochs of a 2.64 M-parameter network on 2610 frames
+is not expected to converge, only to show that optimisation is working at all.
+
+### 15.2 Criterion 2 — validation Dice beats both baselines, per class
+
+Per-class in-domain validation Dice shall exceed **both** of the following.
+
+**Baseline A — the all-background predictor.** Predicts background everywhere. Its Dice
+is **0.000** for every fluid class on every frame where that class is present. Beating it
+means only that the model predicts the class somewhere, ever. It is the floor, not the
+bar.
+
+**Baseline B — the spatial prior.** A predictor that **ignores the image entirely**: for
+each class, the fixed set of pixels where that class occurs in at least 2% of training
+frames, the same mask predicted on every B-scan. The threshold was tuned on the training
+split and the figure below measured on validation, so it is given the same fair treatment
+any method would get. Computed 2026-09-26, before the run
+(`artifacts/benchmarks/stage1_baseline.json`):
+
+| Class | Prior pixels | Val frames with the class | **Baseline B val Dice** |
+|---|---|---|---|
+| IRF | 10 855 | 236 / 580 | **0.0451** |
+| SRF | 12 748 | 173 / 580 | **0.0428** |
+| PED | 22 669 | 126 / 580 | **0.0384** |
+
+**Why this baseline and not a random or prevalence one.** Random and
+predict-everything baselines score near zero and are trivially beaten, so they test
+nothing. The spatial prior encodes the one thing a model could learn *without looking at
+the pixels* — that fluid appears in characteristic retinal locations. Failing to beat it
+means the network has learned anatomy-independent position and not image content.
+
+**Expected difficulty, stated in advance.** PED occurs in 126 of 580 validation frames
+and is the rarest. If PED alone falls short while the loss criterion passes and IRF and
+SRF clear their bars, that is a **recorded observation about class rarity at twenty
+epochs — not a pass**. The decision whether to proceed is the author's and is written
+into `docs/13` with its reasoning. What is not permitted is quietly lowering this table.
+
+### 15.3 Criterion 3 — no class collapses to always-empty
+
+For each fluid class, the number of validation frames in which the model predicts **at
+least one voxel** of that class shall be **greater than zero**, and the model shall not
+predict a class on **zero** frames across the whole validation split.
+
+A network can reach a respectable mean Dice by learning the two commoner classes and
+never emitting the third, and a per-class mean that excludes absent-absent frames will
+not reveal it. This criterion is checked by counting predicted frames per class, which is
+a property of the mechanism rather than of the score — `docs/07` §3 rule 8.
+
+### 15.4 Criterion 4 — the run's own records exist
+
+All of the following shall be present in the run directory afterwards:
+
+| Artefact | What its absence would mean |
+|---|---|
+| `last.pt` and `best.pt`, both in `checkpoints.sha256` | The run cannot be resumed or audited (SRS-061, SRS-075) |
+| A successful **resume**: stopping via `STOP` or `--max-epochs-this-session`, restarting, and the epoch log continuing rather than restarting | The safety net is untested on a real run (SRS-080) |
+| `determinism.json`, including its `fallbacks` list | Non-deterministic kernels went unrecorded (SRS-077) |
+| `epochs.jsonl`, appended, with `session_start` and `session_end` boundaries | The training curve is not a single record (SRS-081) |
+| `gpu_telemetry.csv`, covering the whole run | No thermal record, so a slow epoch cannot be explained and `docs/08` has no environment (SRS-082) |
+| `run.json` with the resolved configuration and seed | The run is not reproducible from the repository (SRS-031) |
+
+### 15.5 What a failure means
+
+A failed criterion stops Stage 2. It does not get the criterion rewritten. The failure,
+its investigation and its resolution go into `docs/13` in the ordinary way, and Stage 2
+begins only once the cause is understood — which may legitimately conclude that the
+criterion was wrong, but that conclusion is a recorded argument, not an edit.
