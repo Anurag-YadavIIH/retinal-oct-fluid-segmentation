@@ -14,6 +14,7 @@ import re
 from pathlib import Path
 
 import pytest
+import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -326,3 +327,44 @@ def test_TC_108_finds_the_citations_that_are_actually_there():
     assert any(
         "scripts/check_change_control.py" in files for files in found.values()
     ), "the change control hook's own citation is no longer being scanned"
+
+
+# --- TC-097 -----------------------------------------------------------------------
+#
+# Added 2026-09-28 after the first Stage 1 launch was aborted. The Stage 0 measurement
+# concluded AMP off, that decision was written into docs/13 and CLAUDE.md, and
+# `configs/train_seg.yaml` was left at `amp: true`. The run that started therefore
+# contradicted both the standing decision and the run conditions pre-registered in
+# docs/07 section 15, and nothing caught it until the provenance file was read by hand.
+#
+# This is docs/07 section 3 rule 8 in its purest form: the decision existed only as
+# prose, and prose is not a mechanism. The configuration is what drives the run.
+
+
+def train_config() -> dict:
+    return yaml.safe_load((REPO_ROOT / "configs" / "train_seg.yaml").read_text(encoding="utf-8"))
+
+
+def test_TC_097_amp_is_off_as_the_measurement_concluded():
+    """docs/13, 2026-09-26: AMP cost throughput at every micro-batch on this GPU."""
+    assert train_config()["train"]["amp"] is False, (
+        "configs/train_seg.yaml has AMP enabled, contradicting the measured decision in "
+        "docs/13 (2026-09-26) and the run conditions pre-registered in docs/07 section "
+        "15. The config is what drives the run; the prose is not."
+    )
+
+
+def test_TC_097_micro_batch_divides_the_effective_batch():
+    from ocuval.data.datamodule import accumulation_plan
+
+    micro, steps, effective = accumulation_plan(train_config())
+    assert micro * steps == effective
+
+
+def test_TC_097_the_cache_is_not_on_the_system_volume():
+    """docs/06 section 4.1: C: had 23 GB free against 3.8-5.9 GB of cache per fold."""
+    cache_dir = str(train_config()["data"]["cache_dir"])
+    assert not cache_dir.upper().startswith("C:"), cache_dir
+    assert cache_dir.upper().startswith(
+        "D:"
+    ), f"cache_dir is {cache_dir!r}; it belongs on D: (docs/06 section 4.1)"

@@ -85,7 +85,12 @@ train:
   #
   # 8 means no accumulation. Lower it to fit a smaller card.
   micro_batch_size: 8
-  amp: true
+  # OFF, and measured rather than assumed (docs/13, 2026-09-26). This GPU is consumer
+  # Pascal with no tensor cores: AMP cut peak memory 1.29 -> 0.81 GiB and cost
+  # throughput at every micro-batch (25.6 -> 25.0 img/s at micro-batch 8, 24.5 -> 17.2
+  # at micro-batch 2). Memory was never the binding constraint at 1.29 GiB of 4.0, so
+  # the trade is all cost. docs/07 section 15 pre-registers the Stage 1 run as AMP off.
+  amp: false
   grad_clip: 1.0
   early_stopping_patience: 25
   val_interval: 1
