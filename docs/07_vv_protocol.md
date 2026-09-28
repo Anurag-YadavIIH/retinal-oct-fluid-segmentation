@@ -393,6 +393,7 @@ about each other and about the code, and nothing else checks them.
 | TC-107 | Change control log touched | NFR-007 | D | A commit introducing a new `URS`/`SRS`/`NFR`/`HAZ`/`RC`/`TC`/`SOUP` identifier in `docs/` also stages `docs/13`. Implemented as a `commit-msg` hook, `scripts/check_change_control.py` | partial — implemented 2026-09-19 |
 | TC-108 | Cited commit SHAs resolve | NFR-008 | D | Every commit SHA cited in `docs/`, `scripts/`, `CLAUDE.md` or `.pre-commit-config.yaml` resolves to a commit reachable from `main` | yes |
 | TC-097 | **The shipped config matches the recorded hardware decisions** | SRS-031; `docs/13` 2026-09-26 | D | `configs/train_seg.yaml` has `train.amp: false`, matching the measured AMP decision and the run conditions pre-registered in §15; `micro_batch_size` divides `batch_size`; `cache_dir` is not on the system volume. A decision recorded only in prose is one nothing enforces — §3 rule 8 | yes |
+| TC-098 | **Every module under  imports** | NFR-001, NFR-008 | U | Walking the package and importing every module succeeds. A module that cannot be imported is not covered by any test that never imports it, so a green suite says nothing about it — §3 rule 8 | yes |
 
 TC-107 is marked partial deliberately: it can check that a change control entry exists,
 not that what was written there is true. That is a review activity, not a test, and
