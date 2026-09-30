@@ -190,20 +190,28 @@ dataset arrives.**
 | **A Kaggle session** | `scripts/benchmark_device.py` — must be run on both P100 and T4×2 before the first real run, and the faster used. The budget rests on an assumed ~30% MFU, not a measurement, and the P100 has no tensor cores |
 | **Neither** — these are simply next | `models/uncertainty.py`, `eval/subgroup.py`, `eval/report.py`, `service/api.py` |
 
-### Numbers, as of 2026-09-26
+### Numbers, measured 2026-09-30
 
-Identifiers: URS-001..011, SRS-001..083, NFR-001..008, HAZ-001..015, RC-001..031,
-SOUP-001..022, TC-000..TC-120 (99 allocated).
+Identifiers: URS-001..011, SRS-001..085, NFR-001..008, HAZ-001..015, RC-001..031,
+SOUP-001..022, TC-000..TC-121 (**107 registered**).
 
-**99 test cases allocated, 68 written, 65 executed, 3 written but never run.** Those
-three states are kept separate deliberately and `docs/09` regenerates them from the
-documents and from pytest's own marker resolution — a hand-maintained figure drifted in
-both directions at once and was replaced. A written test nobody has executed is not
+**107 test cases registered, 76 written, 73 executed, 3 written but never run.** Those
+three states are kept separate deliberately. A written test nobody has executed is not
 verification. The three are TC-080..082, blocked on Docker.
 
-Suite: **403 passing, 0 skipped, 8 deselected** (`requires_pacs`), plus 5
-`requires_data`. The GPU resume test runs now that the CUDA build is installed. Risk
-controls: 31 allocated a test. CI is green on `main`.
+**These figures are hand-maintained, and the previous version of this paragraph claimed
+otherwise.** It said `docs/09` "regenerates them from the documents and from pytest's own
+marker resolution — a hand-maintained figure drifted in both directions at once and was
+replaced". The replacement was *allocated* as **TC-104** and **never written**, so nothing
+regenerates anything, and the figures drifted again: `docs/09` read "50 of 85 written, 47
+executed", understating the written count by 26. Corrected 2026-09-30 by counting. This is
+`docs/07` §3 rule 8 for the second time on the same artefact — a document with numbers in it
+looks identical whether anything computes them or not — and the durable fix is to write
+TC-104, not to recount by hand again.
+
+Suite: **515 passing, 1 skipped, 8 deselected** (`requires_pacs`), plus `requires_data` and
+`slow` cases. The skip is TC-109's, which scopes its determinism invariant to run records
+written since SRS-085. Risk controls: 31 allocated a test. CI is green on `main`.
 
 ### Stage plan for training (agreed 2026-09-25)
 

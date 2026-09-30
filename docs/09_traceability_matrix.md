@@ -27,6 +27,7 @@ A stale matrix is worse than no matrix (CLAUDE.md rule 5).
 | — | — | — | — | TC-000 | `src/ocuval/__init__.py` — smoke test, allocated to no requirement (`docs/02` §3) |
 | URS-001 | SRS-002 | HAZ-003 | RC-020 | TC-001 | `configs/data.yaml` |
 | URS-007 | SRS-019, SRS-020, SRS-021 | HAZ-008 | RC-002, RC-003, RC-005 | TC-004 | `src/ocuval/data/splits.py` |
+| URS-010 | SRS-076, SRS-077, SRS-084, SRS-085 | HAZ-009 | RC-028 | TC-121 | `src/ocuval/training/{loop,losses,checkpoint}.py`, `src/ocuval/data/datamodule.py` — two GPU runs compared byte for byte; the evidence for CLAUDE.md rule 4 on GPU |
 
 The eleven `URS` rows carry their software requirements from `docs/02` §3, and their
 hazard and risk-control columns are **derived, not authored**: an RC appears against a
@@ -61,14 +62,26 @@ implemented.
 - User requirements with at least one software requirement: **11 of 11**. Every URS in
   `docs/01` derives at least one SRS or NFR in `docs/02`.
 - Software requirements with a verifying test case **allocated**: **66 of 66**
-  SRS and **8 of 8** NFR. `docs/07` allocates 85 test cases
-  and every SRS, NFR and RC names one.
-- Test cases **written**: **50 of 85**. Of those,
-  **47 are executed** by the suite and
+  SRS and **8 of 8** NFR. Every SRS, NFR and RC names one.
+- Test cases **registered** in `docs/07` §6: **107**.
+  Test cases **written**: **76**. Of those,
+  **73 are executed** by the suite and
   **3 have never been run** (TC-080, TC-081, TC-082) because
   they need a PACS, which is not available here. A written test that nobody has executed is not
   verification, and is not counted as such here. The remaining
-  35 are specified and unwritten.
+  **31** are registered and unwritten.
+
+> **These four figures are hand-maintained and were measured on 2026-09-30, not
+> regenerated.** They had drifted to "50 of 85 written, 47 executed" — understating the
+> written count by 26 — and the drift was found by reading them, which is the only thing
+> that currently can. **TC-104 exists to remove exactly this problem and has never been
+> written** (`docs/07` §6 registers it, `docs/07` §1.2 counts it among the unwritten). Until
+> it is, every number in this section is a claim about someone's memory. CLAUDE.md §7
+> asserted that `docs/09` "regenerates them from the documents and from pytest's own
+> marker resolution"; that describes TC-104's intent, not the repository's behaviour, and
+> the claim has been corrected there. This is `docs/07` §3 rule 8 again: a document with
+> numbers in it looks the same whether anything computes them or not.
+
 - Hazards with at least one risk control: **15 of 15** — every HAZ in `docs/05`
   §3.2 carries at least one RC.
 - Risk controls with a verifying test **allocated**: **29 of 29**;
