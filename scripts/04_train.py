@@ -23,7 +23,13 @@ from pathlib import Path
 import yaml
 
 from ocuval.data.splits import load as load_split
-from ocuval.runs import load_manifest, manifest_path, resolve, write_provenance
+from ocuval.runs import (
+    load_manifest,
+    manifest_path,
+    resolve,
+    resolve_cache_dir,
+    write_provenance,
+)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -52,6 +58,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--device", default=None)
     parser.add_argument("--no-prepass", action="store_true", help="skip the cache pre-pass")
+    parser.add_argument(
+        "--cache-dir",
+        type=Path,
+        default=None,
+        help=(
+            "where the frame cache lives; overrides OCUVAL_CACHE_DIR and data.cache_dir. "
+            "The committed config holds a relative default because it is shared by every "
+            "machine; the resolved path is recorded in run.json."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -93,6 +109,10 @@ def main(argv: list[str] | None = None) -> int:
             "split": str(split_file),
             "manifest": str(source),
             "resolved_fold": fold,
+            # The config holds a relative default; this is where the cache actually was.
+            "resolved_cache_dir": str(resolve_cache_dir(cfg, args.cache_dir).resolve()),
+            "epochs_requested": args.epochs,
+            "max_epochs_this_session": args.max_epochs_this_session,
         },
     )
 
@@ -106,7 +126,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         from ocuval.data.transforms import eval_transforms
 
-        cache_root = Path(cfg["data"].get("cache_dir", "artifacts/cache")) / fold_id
+        cache_root = resolve_cache_dir(cfg, args.cache_dir) / fold_id
         frame_split = build_frame_split(split, manifest)
         for bucket in ("train", "val"):
             records = frame_records(manifest, frame_split, bucket)

@@ -361,10 +361,36 @@ def test_TC_097_micro_batch_divides_the_effective_batch():
     assert micro * steps == effective
 
 
-def test_TC_097_the_cache_is_not_on_the_system_volume():
-    """docs/06 section 4.1: C: had 23 GB free against 3.8-5.9 GB of cache per fold."""
+def test_TC_097_the_committed_config_holds_no_machine_specific_path():
+    """A committed config is shared by every checkout, so an absolute path in it is one
+    laptop's filesystem asserted as everyone's.
+
+    The earlier version of this test asserted `cache_dir` *started with* `D:`, which
+    enforced the opposite of what it should have: it required the committed file to name
+    this particular workstation's drive. Corrected 2026-09-28.
+    """
+    import re
+
     cache_dir = str(train_config()["data"]["cache_dir"])
-    assert not cache_dir.upper().startswith("C:"), cache_dir
-    assert cache_dir.upper().startswith(
-        "D:"
-    ), f"cache_dir is {cache_dir!r}; it belongs on D: (docs/06 section 4.1)"
+    assert not re.match(r"^[A-Za-z]:", cache_dir), (
+        f"cache_dir is {cache_dir!r}, an absolute Windows path in a committed file. "
+        f"Per-machine locations belong in OCUVAL_CACHE_DIR or --cache-dir."
+    )
+    assert not cache_dir.startswith("/"), f"cache_dir is {cache_dir!r}, an absolute path"
+    assert not Path(cache_dir).is_absolute(), cache_dir
+
+
+def test_TC_097_the_cache_location_is_resolved_at_run_time(monkeypatch, tmp_path):
+    """Precedence: explicit override, then OCUVAL_CACHE_DIR, then the config default."""
+    from ocuval.runs import CACHE_DIR_ENV, resolve_cache_dir
+
+    config = train_config()
+
+    monkeypatch.delenv(CACHE_DIR_ENV, raising=False)
+    assert resolve_cache_dir(config) == Path(config["data"]["cache_dir"])
+
+    monkeypatch.setenv(CACHE_DIR_ENV, str(tmp_path / "from_env"))
+    assert resolve_cache_dir(config) == tmp_path / "from_env"
+
+    explicit = tmp_path / "from_flag"
+    assert resolve_cache_dir(config, explicit) == explicit, "an explicit path must win"

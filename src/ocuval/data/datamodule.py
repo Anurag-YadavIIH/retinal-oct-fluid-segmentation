@@ -361,7 +361,11 @@ def build_datasets(
     }
 
     backend = data_cfg.get("cache", "persistent")
-    cache_root = Path(data_cfg.get("cache_dir", "artifacts/cache")) / split.fold_id
+    from ocuval.runs import resolve_cache_dir
+
+    # Resolved at run time, not read straight from the committed config: the config
+    # holds a relative default and the machine supplies its own location.
+    cache_root = resolve_cache_dir(cfg) / split.fold_id
 
     def make(name: str):
         records, chain = buckets[name], chain_for[name]
