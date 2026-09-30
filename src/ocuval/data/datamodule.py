@@ -33,6 +33,7 @@ the only geometry reaching a transform is axial and lateral spacing (SRS-073). E
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -416,6 +417,62 @@ def accumulation_plan(cfg: dict) -> tuple[int, int, int]:
     return micro, effective // micro, effective
 
 
+def epoch_seed(seed: int, epoch: int, stream: str = "sampler") -> int:
+    """A seed that is a pure function of `(seed, epoch, stream)` (SRS-076).
+
+    **Why a function and not saved state.** Everything an epoch draws has to be identical
+    at epoch N whether the run reached it in one session or three. Saving each generator's
+    state would work and adds something that can be lost, mismatched or silently not
+    restored -- which is exactly how this broke, twice. Deriving the seed instead means a
+    resume reproduces the epoch by construction, with nothing to restore.
+
+    Hashed rather than `seed + epoch` so that two runs whose seeds differ by a small
+    integer do not share most of their epoch orders. `stream` separates the independent
+    consumers, so the sampler and the augmentation chain never draw from the same number.
+    """
+    digest = hashlib.sha256(f"{stream}:{int(seed)}:{int(epoch)}".encode()).digest()
+    return int.from_bytes(digest[:8], "big") % (2**63 - 1)
+
+
+def seed_epoch(loader, seed: int | None, epoch: int) -> None:
+    """Reseed everything an epoch draws from, for `epoch`. Call before iterating (SRS-076).
+
+    A resumed run must be the same run, and that requires every generator the epoch
+    touches to be a function of the epoch number rather than of how many epochs this
+    *process* has run. There are two such generators here, and neither is in the
+    checkpoint:
+
+    **The sampler.** `RandomSampler.__iter__` (torch sampler.py:167) calls
+    `torch.randperm(n, generator=...)` lazily, on each `__iter__` -- it caches no
+    permutation, so the loader generator's state when iteration begins *is* the epoch's
+    order. Seeding it once at construction made a session resuming at epoch 12 serve
+    epoch 0's permutation.
+
+    **The augmentation chain.** Every MONAI `Randomizable` holds its own
+    `np.random.RandomState` (monai transform.py:186), deliberately independent of the
+    global NumPy state -- so `np.random.get_state()` cannot see it and the checkpoint
+    cannot save it. `transforms.py:253` seeds the chain once, at construction, so a fresh
+    process replays epoch 0's augmentation at whatever epoch it resumes. One
+    `set_random_state` on the `Compose` reseeds the whole chain, each child from a
+    distinct derived seed (monai compose.py:258-264); `LoadFrame` is not `Randomizable`
+    and is skipped, so the `PersistentDataset` cache prefix is untouched.
+
+    Worker processes need nothing of their own. Each worker's `random`, `torch` and
+    `numpy` seeds derive from `_base_seed` (torch worker.py:223-229), itself drawn from
+    the loader generator (torch dataloader.py:602), and the dataset -- transform chain
+    included -- is sent to the workers when the iterator is created, which is after this
+    call. That holds only while `persistent_workers` is off; see `build_loaders`.
+    """
+    if seed is None:
+        return
+    generator = getattr(loader, "generator", None)
+    if generator is not None:
+        generator.manual_seed(epoch_seed(int(seed), int(epoch), "sampler"))
+    chain = getattr(getattr(loader, "dataset", None), "transform", None)
+    if hasattr(chain, "set_random_state"):
+        chain.set_random_state(seed=epoch_seed(int(seed), int(epoch), "augment"))
+
+
 def build_loaders(split: Split, cfg: dict, manifest: Sequence[VolumeRecord]):
     """DataLoaders for the three buckets, seeded so a run is reproducible.
 
@@ -431,9 +488,14 @@ def build_loaders(split: Split, cfg: dict, manifest: Sequence[VolumeRecord]):
     seed = cfg.get("run", {}).get("seed")
     train_ds, val_ds, test_ds = build_datasets(split, cfg, manifest)
 
+    # Reseeded every epoch by `seed_epoch`, not once here. Seeding once made the order
+    # depend on how many epochs this *process* had already run: a resumed session
+    # replayed the sequence from the beginning and served epoch 0's permutation at
+    # whatever epoch it resumed -- see SRS-076 and docs/13, 2026-09-30. Epoch 0 is set
+    # here so a loader is usable without the loop, and the loop reseeds it regardless.
     generator = torch.Generator()
     if seed is not None:
-        generator.manual_seed(int(seed))
+        generator.manual_seed(epoch_seed(int(seed), 0))
 
     # Batch size lives under `train:` and nowhere else. Reading it from `data:` as well
     # would give the configuration two places to say one thing, which is how a run ends
@@ -451,6 +513,13 @@ def build_loaders(split: Split, cfg: dict, manifest: Sequence[VolumeRecord]):
         "batch_size": accumulation_plan(cfg)[0],
         "num_workers": int(data_cfg.get("num_workers", 4)),
         "pin_memory": False,
+        # Deliberately NOT persistent. Respawning spawn-mode workers each epoch costs a
+        # re-import of torch and MONAI per worker, and that cost is accepted: persistent
+        # workers are seeded once per process (torch dataloader.py:602, never redrawn by
+        # `_reset` at :610), so their augmentation stream would depend on how many epochs
+        # the process had run -- the same defect this reseeding fixes. Making augmentation
+        # reproducible under persistent workers means seeding per sample from the frame
+        # id, not per worker; that is a separate change and is not needed for 2D frames.
     }
     return (
         DataLoader(train_ds, shuffle=True, generator=generator, **common),
@@ -469,8 +538,10 @@ __all__ = [
     "build_frame_split",
     "build_loaders",
     "check_manifest",
+    "epoch_seed",
     "frame_counts_from_manifest",
     "frame_id",
     "frame_records",
     "samples_from_manifest",
+    "seed_epoch",
 ]

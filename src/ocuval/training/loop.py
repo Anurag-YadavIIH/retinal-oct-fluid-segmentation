@@ -212,7 +212,7 @@ def train_fold(
     log in `run_dir`, not the return value, precisely because a session only ever sees
     its own part.
     """
-    from ocuval.data.datamodule import build_loaders
+    from ocuval.data.datamodule import build_loaders, seed_epoch
     from ocuval.models.seg_unet import build_model, record_checkpoint_hash
     from ocuval.training.telemetry import GpuTelemetry
 
@@ -297,6 +297,12 @@ def train_fold(
         warnings.simplefilter("always")
 
         for epoch in range(start_epoch, session_end):
+            # The epoch's sample order is a pure function of `(seed, epoch)`, so a resume
+            # reproduces it with nothing to restore. Before the fix the generator was
+            # seeded once at loader construction, which made the order depend on how many
+            # epochs *this process* had run: a session resuming at epoch 12 served
+            # epoch 0's permutation (SRS-076, docs/13 2026-09-30).
+            seed_epoch(train_loader, seed, epoch)
             started = time.time()
             model.train()
             total, seen = 0.0, 0
@@ -344,6 +350,35 @@ def train_fold(
             completed = epoch + 1
             print(json.dumps(result.as_dict()), flush=True)
 
+            # ---- the best-metric decision comes FIRST -----------------------------
+            #
+            # Corrected 2026-09-30. `last.pt` and the epoch log used to be written
+            # before this block, so both described the state after epoch N-1 while
+            # claiming to be epoch N. A resume then inherited an understated best and
+            # could overwrite `best.pt` with a worse model that merely beat the stale
+            # figure -- which happened in the Stage 1 smoke run: `best.pt` ended up
+            # holding epoch 16 (0.681178) after the genuinely better epoch 15
+            # (0.682068) was discarded. See docs/13, 2026-09-30.
+            #
+            # The weights are identical at either point in this block, so moving the
+            # writes after the decision costs nothing and makes both artefacts
+            # describe their own epoch.
+            improved = result.val_dice is not None and result.val_dice > best_metric
+            exhausted_patience = False
+            if improved:
+                best_metric, best_epoch, since_improvement = result.val_dice, epoch, 0
+            elif result.val_dice is not None:
+                # Counted rather than derived from `epoch - best_epoch`, because that
+                # subtraction is wrong the moment validation does not run every epoch.
+                since_improvement += 1
+                exhausted_patience = best_epoch >= 0 and since_improvement >= patience
+
+            early_stopping_state = {
+                "best_epoch": best_epoch,
+                "since_improvement": since_improvement,
+                "patience": patience,
+            }
+
             entry = result.as_dict()
             entry.update(
                 {
@@ -357,8 +392,29 @@ def train_fold(
             )
             append_epoch_log(run_dir, entry)
 
-            # Written every epoch, before any early-stopping decision, so an interrupted
-            # run always resumes from the most recent state rather than the best one.
+            if improved:
+                best = save_checkpoint(
+                    run_dir / BEST_NAME,
+                    epoch=epoch,
+                    model=model,
+                    optimizer=optimizer,
+                    scheduler=scheduler,
+                    scaler=scaler,
+                    best_metric=best_metric,
+                    # Carried here too, so `best.pt` is self-describing rather than
+                    # only interpretable next to `last.pt`.
+                    extra={
+                        "fold_id": split.fold_id,
+                        "device": device,
+                        "early_stopping": dict(early_stopping_state),
+                    },
+                )
+                record_checkpoint_hash(best)
+
+            # `last` is still written every epoch and still holds the most recent
+            # weights rather than the best ones -- `best` selects a model, `last`
+            # continues a trajectory. What changed is that its early-stopping state is
+            # now current for this epoch instead of the previous one.
             last = save_checkpoint(
                 run_dir / CHECKPOINT_NAME,
                 epoch=epoch,
@@ -371,36 +427,17 @@ def train_fold(
                     "fold_id": split.fold_id,
                     "device": device,
                     # SRS-075: without these a resume restarts the patience window.
-                    "early_stopping": {
-                        "best_epoch": best_epoch,
-                        "since_improvement": since_improvement,
-                        "patience": patience,
-                    },
+                    "early_stopping": early_stopping_state,
                 },
             )
             record_checkpoint_hash(last)
 
-            if result.val_dice is not None and result.val_dice > best_metric:
-                best_metric, best_epoch, since_improvement = result.val_dice, epoch, 0
-                best = save_checkpoint(
-                    run_dir / BEST_NAME,
-                    epoch=epoch,
-                    model=model,
-                    optimizer=optimizer,
-                    scheduler=scheduler,
-                    scaler=scaler,
-                    best_metric=best_metric,
-                    extra={"fold_id": split.fold_id, "device": device},
-                )
-                record_checkpoint_hash(best)
-            elif result.val_dice is not None:
-                # Counted rather than derived from `epoch - best_epoch`, because that
-                # subtraction is wrong the moment validation does not run every epoch.
-                since_improvement += 1
-                if best_epoch >= 0 and since_improvement >= patience:
-                    print(f"early stop: no improvement for {patience} epochs", flush=True)
-                    stopped_by = "early_stopping"
-                    break
+            # Stopping happens only after both artefacts are on disk, so the epoch
+            # that triggers it is never the epoch that goes unrecorded.
+            if exhausted_patience:
+                print(f"early stop: no improvement for {patience} epochs", flush=True)
+                stopped_by = "early_stopping"
+                break
 
             # Checked AFTER the epoch is complete and checkpointed (SRS-080). Stopping
             # part-way would leave the optimiser in a state no checkpoint describes.
