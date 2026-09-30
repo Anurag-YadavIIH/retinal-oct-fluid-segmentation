@@ -1,0 +1,44 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/Scripts/python.exe -m pytest *)",
+      "Bash(.venv/Scripts/python.exe -m ruff *)",
+      "Bash(.venv/Scripts/python.exe scripts/*)",
+      "Bash(ruff check *)",
+      "Bash(ruff format *)",
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push)",
+      "Bash(git push origin main)",
+      "Bash(nvidia-smi)",
+      "Bash(nvidia-smi *)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push --force-with-lease*)",
+      "Bash(git push --delete*)",
+      "Bash(git push --mirror*)",
+      "Bash(git reset --hard*)",
+      "Bash(git rebase*)",
+      "Bash(git filter-branch*)",
+      "Bash(git filter-repo*)",
+      "Bash(git commit --amend*)",
+      "Bash(git commit --no-verify*)",
+      "Bash(git commit -n*)",
+      "Bash(git branch -d*)",
+      "Bash(git branch -D*)",
+      "Bash(git update-ref*)",
+      "Bash(git reflog expire*)",
+      "Bash(git gc --prune*)",
+      "Bash(rm *)",
+      "Bash(del *)",
+      "Bash(Remove-Item *)"
+    ]
+  }
+}
