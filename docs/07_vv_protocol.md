@@ -645,12 +645,62 @@ bound is therefore relative:
 | Device | Tolerance | Basis |
 |---|---|---|
 | CPU, float32 | `rtol = 1e-4`, `atol = 1e-6` on each gradient tensor | Accumulated reordering over four additions at float32 |
+| CUDA, float32 | `rtol = 1e-4`, `atol = 1e-6` — **unchanged** | Measured 2026-09-30: needs `atol = 1.3e-09`, three orders inside the bound |
+| **CUDA, AMP** | **`rtol = 1e-4`, `atol = 5e-5`** | Measured 2026-09-30 over 72 cases: worst needs `1.96e-05`. See below |
+
+**Re-measured 2026-09-30 after AMP was enabled and the loss replaced** (`docs/13`). The
+quantity measured is the smallest `atol` that satisfies `torch.allclose` elementwise at
+`rtol = 1e-4`, which is `max(|a-b| - rtol·|b|)` over every element — not a ratio against a
+tensor's maximum, which says nothing about the element that actually violates.
+
+| Configuration | max abs deviation | `atol` needed | Inside `atol = 1e-6`? |
+|---|---|---|---|
+| CPU fp32, `dice_ce` | 6.15e-08 | 1.88e-10 | yes |
+| CPU fp32, `dice_ce_deterministic` | 6.15e-08 | 1.88e-10 | yes |
+| CUDA fp32, `dice_ce` | 2.79e-09 | 1.34e-09 | yes |
+| CUDA fp32, `dice_ce_deterministic` | 2.79e-09 | 1.34e-09 | yes |
+| CUDA AMP, `dice_ce`, 12 seeds × 2/4/8 steps | 1.96e-05 | **1.96e-05** | **no** |
+| CUDA AMP, `dice_ce_deterministic`, 12 seeds × 2/4/8 steps | 1.20e-05 | **1.20e-05** | **no** |
+
+The AMP rows are the worst of **36 measurements each**; means were 4.5e-06 to 6.8e-06, so
+the worst case is roughly 3× the typical one and a bound set near the mean would fail
+intermittently.
+
+**This bound was got wrong once, in the obvious way.** It was first set to `atol = 1e-5`
+from a **single seed** that needed 6.0e-06. The very next seed measured needed 1.53e-05 and
+the test failed. A tolerance derived from one sample is a guess wearing a measurement's
+notation, and the correction is recorded here rather than quietly applied: the seeds are now
+parametrised in TC-078, including the two that produced the worst deviations.
+
+**Two conclusions, and the first is the one that was in doubt.** Replacing the loss does
+**not** move the tolerance — the fp32 figures are identical to ten significant figures for
+both losses, and under AMP the deterministic loss is if anything slightly *tighter*
+(1.20e-05 against 1.96e-05). That is what a substitution rather than an approximation should
+look like, and is independent evidence for the claim TC-089 makes, reached by a different
+route. **AMP does** move it, by a factor of 50, and `atol = 5e-5` leaves 2.55× headroom over
+the worst of the 72 measurements.
+
+**Why this widening is not the thing CLAUDE.md forbids.** The standing decision says that
+under batch normalisation accumulation is invalid and the response is to stop accumulating,
+never to widen the tolerance. That case is categorically different: batch norm makes the
+accumulated gradient the gradient of a *different function*, and no tolerance is correct.
+Here the function is identical and only the arithmetic precision changed, which is exactly
+what this tolerance has always been for. The structural precondition — instance norm, zero
+batch-norm layers — is unchanged and still asserted first.
+
+**And it is dormant.** `configs/train_seg.yaml` sets `micro_batch_size: 8` against
+`batch_size: 8`, so `accumulation_steps` is 1: there is nothing to accumulate and no
+summation to reorder. The AMP tolerance therefore binds no planned run. It is measured and
+recorded now rather than when a smaller card forces accumulation, because that is when
+nobody will want to stop and measure it.
 
 **What the tolerance does not certify.** Staying inside it is not proof that
 accumulation is implemented correctly — a bug that scaled every gradient identically
 would also stay inside it. TC-078 therefore also asserts the negative case: omitting the
 `1/steps` loss scaling produces a gradient that is **outside** the tolerance, so the test
-can distinguish correct accumulation from no accumulation at all.
+can distinguish correct accumulation from no accumulation at all. **That negative case is
+re-asserted at the wider AMP tolerance**, because a bound loosened by 50× is only a bound
+if it still rejects the error it was written to catch.
 
 
 ---

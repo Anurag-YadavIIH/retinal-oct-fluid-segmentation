@@ -247,42 +247,91 @@ def test_TC_059_gpu_tolerance_is_stated_and_nonzero():
     assert resume_tolerance("cuda") > 0.0
 
 
+def train_scaled(model, optimizer, epoch_batches, scaler, amp: bool) -> None:
+    """The loop's step, including the GradScaler, so AMP is exercised as it is used."""
+    model.train()
+    loss_fn = torch.nn.MSELoss()
+    for x, y in epoch_batches:
+        optimizer.zero_grad()
+        with torch.autocast(device_type="cuda", enabled=amp):
+            loss = loss_fn(model(x), y)
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
+
+
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="no CUDA device in this environment")
-def test_TC_059_resuming_on_gpu_agrees_within_the_stated_tolerance(tmp_path):
+@pytest.mark.parametrize("amp", [False, True], ids=["fp32", "amp"])
+def test_TC_059_resuming_on_gpu_agrees_within_the_stated_tolerance(tmp_path, amp):
+    """SRS-076's GPU case, re-verified under AMP when AMP was enabled (2026-09-30).
+
+    **Measured: bit-identical, 0.0 deviation, with and without AMP.** The stated tolerance
+    is therefore not needed for *this* network and the test asserts the stronger result it
+    actually gets, while keeping the bound as the documented claim.
+
+    **What this does not show.** `tiny_model` is Linear/ReLU/Dropout: it contains no
+    convolution and no upsampling, which are exactly the operations whose CUDA kernels lack
+    deterministic implementations. Bit-identity here says nothing about the real UNet, and
+    `resume_tolerance("cuda")` stays non-zero for that reason rather than because anything
+    here needed it. **TC-121 is the evidence for the real network** -- it runs the shipped
+    model on the real fold and compares two runs byte for byte. Do not promote this result
+    into a claim about the GPU generally.
+
+    The scaler state is carried through the checkpoint: under AMP the loss scale is part of
+    the trajectory, so a resume that restored weights and not the scale would take a
+    differently scaled step and this test would see it.
+    """
     data = [[(x.cuda(), y.cuda()) for x, y in epoch] for epoch in batches(5)]
 
     request_determinism(SEED)
     straight = tiny_model().cuda()
     optimizer = torch.optim.Adam(straight.parameters(), lr=1e-3)
+    scaler = torch.cuda.amp.GradScaler(enabled=amp)
     for epoch in range(5):
-        train(straight, optimizer, data[epoch])
+        train_scaled(straight, optimizer, data[epoch], scaler, amp)
     expected = weights(straight)
 
     request_determinism(SEED)
     interrupted = tiny_model().cuda()
     optimizer = torch.optim.Adam(interrupted.parameters(), lr=1e-3)
+    scaler = torch.cuda.amp.GradScaler(enabled=amp)
     for epoch in range(3):
-        train(interrupted, optimizer, data[epoch])
-    save_checkpoint(tmp_path / CHECKPOINT_NAME, epoch=2, model=interrupted, optimizer=optimizer)
+        train_scaled(interrupted, optimizer, data[epoch], scaler, amp)
+    save_checkpoint(
+        tmp_path / CHECKPOINT_NAME,
+        epoch=2,
+        model=interrupted,
+        optimizer=optimizer,
+        scaler=scaler,
+    )
 
     resumed = tiny_model().cuda()
     resumed_optimizer = torch.optim.Adam(resumed.parameters(), lr=1e-3)
+    resumed_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     load_checkpoint(
         tmp_path / CHECKPOINT_NAME,
         model=resumed,
         optimizer=resumed_optimizer,
+        scaler=resumed_scaler,
         map_location="cuda",
     )
     for epoch in range(3, 5):
-        train(resumed, resumed_optimizer, data[epoch])
+        train_scaled(resumed, resumed_optimizer, data[epoch], resumed_scaler, amp)
 
     tolerance = resume_tolerance("cuda")
-    for a, b in zip(expected, weights(resumed), strict=True):
-        assert torch.allclose(a, b, atol=tolerance, rtol=0), (
-            f"resumed GPU run diverged by more than the stated tolerance {tolerance}. "
-            f"Kernel non-determinism explains a small difference; exceeding the bound "
-            f"means something else is wrong."
-        )
+    actual = weights(resumed)
+    worst = max(float((a - b).abs().max()) for a, b in zip(expected, actual, strict=True))
+    assert worst <= tolerance, (
+        f"resumed GPU run diverged by {worst:.3e}, beyond the stated tolerance "
+        f"{tolerance}. Kernel non-determinism explains a small difference; exceeding the "
+        f"bound means something else is wrong."
+    )
+    assert worst == 0.0, (
+        f"this network resumed bit-identically on GPU when measured on 2026-09-30, at "
+        f"both precisions, and now deviates by {worst:.3e}. That is within the stated "
+        f"tolerance and is still a change worth explaining: it means an operation here "
+        f"became order-dependent. Investigate before widening anything."
+    )
 
 
 # TC-039 lives in tests/test_frame_cache.py.
