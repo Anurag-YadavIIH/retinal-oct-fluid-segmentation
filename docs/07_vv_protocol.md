@@ -394,6 +394,7 @@ about each other and about the code, and nothing else checks them.
 | TC-108 | Cited commit SHAs resolve | NFR-008 | D | Every commit SHA cited in `docs/`, `scripts/`, `CLAUDE.md` or `.pre-commit-config.yaml` resolves to a commit reachable from `main` | yes |
 | TC-097 | **The shipped config matches the recorded hardware decisions** | SRS-031; `docs/13` 2026-09-26 | D | `configs/train_seg.yaml` has `train.amp: false`, matching the measured AMP decision and the run conditions pre-registered in §15; `micro_batch_size` divides `batch_size`; `cache_dir` is not on the system volume. A decision recorded only in prose is one nothing enforces — §3 rule 8 | yes |
 | TC-098 | **Every module under  imports** | NFR-001, NFR-008 | U | Walking the package and importing every module succeeds. A module that cannot be imported is not covered by any test that never imports it, so a green suite says nothing about it — §3 rule 8 | yes |
+| TC-099 | **The installed environment matches `requirements.lock`** | NFR-002, NFR-001 | D | Every applicable locked entry is installed at the locked version and nothing installed is absent from the lock; the lock carries no local build label on torch; Windows-only entries carry platform markers; and where the installed torch build differs from the lock, the build variant is **recorded** in `docs/04` and the README rather than tolerated | yes |
 
 TC-107 is marked partial deliberately: it can check that a change control entry exists,
 not that what was written there is true. That is a review activity, not a test, and
@@ -698,3 +699,64 @@ A failed criterion stops Stage 2. It does not get the criterion rewritten. The f
 its investigation and its resolution go into `docs/13` in the ordinary way, and Stage 2
 begins only once the cause is understood — which may legitimately conclude that the
 criterion was wrong, but that conclusion is a recorded argument, not an edit.
+
+---
+
+## 16. Standing decisions — what enforces each one
+
+**Why this audit exists.** On 2026-09-28 a Stage 1 run was launched under conditions
+contradicting a standing decision, because the AMP decision lived only in `docs/13` and
+`CLAUDE.md` and nothing compared it against the configuration that drives the run. That
+is §3 rule 8, and it prompted the obvious question of every *other* standing decision:
+is this enforced, or does it survive only because someone remembers it?
+
+The answer for five of them was "nobody checks". Those now have tests. Four cannot be
+enforced by a test at all, and saying so explicitly is the point of the table — **a
+decision known to be unenforceable is a different thing from one assumed to be safe.**
+
+### 16.1 Enforced
+
+| Standing decision | Enforced by |
+|---|---|
+| Refuse, or omit — never fill (RC-029) | TC-026, TC-027 — the strict path refuses, and every omission is counted and recorded |
+| Fluid classes use the declared private scheme `99OCUVAL` | TC-074, TC-076 — the scheme is declared in the object whenever its codes are used |
+| **The UID root stays an unregistered placeholder, declared** | **TC-088 (new)** — the configured root appears in `docs/11` and that document describes it as unregistered |
+| HD95 is max-of-directed, not pooled | TC-120 — independent cross-check against MONAI, which is how the defect was found |
+| Per-vendor spacing ranges are the only control that sees an axis transposition | TC-015 — a transposed pair is rejected per vendor and accepted by the physical bound alone |
+| Intensity normalisation is a per-volume percentile window computed at ingestion | TC-044, TC-045 — the window is a property of the volume, inherited by every frame, and the transform refuses to compute one |
+| Axial resampling targets a declared coarsest common spacing | TC-046 — the target comes from the configuration, is identical across folds, and is at or above every measured axial spacing |
+| B-scan separation is not used by the transform chain | TC-047 — two samples differing only in separation produce identical frames |
+| **Training reads the archive's native MetaImage, not the DICOM** | **TC-088 (new)** — `data/datamodule.py` references no `pydicom` |
+| Splits are keyed on the source subject, never the SOP Instance UID | TC-041, and **TC-088 (new)** checks the persisted split files themselves, not only the constructor |
+| **Training reads `train.batch_size` and nowhere else** | **TC-088 (new)** — a second `data.batch_size` fails it |
+| Resume equivalence is claimed per platform | TC-059 — bit-identical on CPU, within a stated tolerance on GPU, and negative-tested by discarding the RNG state |
+| Resume is detected from the run directory; `last` is written every epoch | TC-059, TC-079 |
+| AMP is not used on this GPU | TC-097 — added 2026-09-28 after the aborted launch; negative-tested |
+| Gradient accumulation rests on instance norm, not batch norm | TC-078 — the structural precondition is asserted before the equivalence |
+| `LoadFrame` is a `Transform` and chains stay flat | TC-039 — the cache artefact is opened and decodes are counted |
+| **Commits carry no Claude Code attribution** | **TC-088 (new)** — history was rewritten once to remove these and nothing stopped them returning |
+| Accuracy alone is never reported | TC-002, and **TC-088 (new)** as a second check |
+| The environment is the one recorded | TC-099 — installed packages against `requirements.lock`, with the torch build treated as a recorded variant |
+
+### 16.2 Partially enforced
+
+| Standing decision | What is checked, and what is not |
+|---|---|
+| Pre-registered criteria are not edited after seeing results | **TC-088 (new)** asserts §15 still states its three measured baselines, the AMP-off condition and the 10% threshold — so silently deleting or altering the numbers fails. It is **not** a content hash of the whole section, which would be stronger and is what TC-105 does for `docs/01` §2. Presence was chosen because §15 is prose-heavy and a hash would fail on a typo fix, training everyone to update it reflexively; that habit is how a hash gate stops meaning anything. The trade is recorded rather than hidden |
+
+### 16.3 Not enforceable by a test, and why
+
+| Standing decision | Why no test can enforce it |
+|---|---|
+| **URS-011's research-use designation mechanism is still open** | This is the *absence* of a decision. A test asserting it stays open would have to fail the moment it is resolved, which would make resolving it look like a regression. It belongs in `docs/11`'s open items, where it is |
+| **A fixture written in the consuming code's convention cannot test a conversion** (§3 rule 7) | A rule about how tests are written, not a property of the system. No assertion can distinguish a fixture in the source convention from one in the target convention without knowing the author's intent. It is enforced by review, and by the two tests it produced — TC-017 and TC-043 — carrying the reasoning in their docstrings |
+| **A test for a mechanism must inspect the mechanism** (§3 rule 8) | Same shape, one level up: a meta-rule about test design. A test cannot assert that other tests are well designed. Its enforcement is that every instance found so far is recorded in `docs/13` with the shape named, so the pattern is recognisable the seventh time |
+| **Training runs locally; the dataset never leaves this workstation** | An operational commitment about what is *not* done. No test can prove an upload did not happen. The nearest mechanical control is TC-100, which asserts nothing under `data/` is tracked by git — that closes the one vector this repository controls, and the rest rests on `docs/06` §7.1 and on the author |
+
+### 16.4 What this audit changed
+
+Five decisions moved from prose to enforced, one was recorded as partial with its
+trade-off stated, and four were confirmed unenforceable with reasons. The count that
+matters is the middle one: before 2026-09-28 the AMP decision would have been listed in
+§16.1 by anyone reading `docs/13`, because it *looked* settled. It was in §16.3 and
+nobody had asked.

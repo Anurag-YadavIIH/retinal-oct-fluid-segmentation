@@ -211,6 +211,25 @@ It now runs and passes. That case is the reason the build is recorded here: a te
 skips for an environmental reason is indistinguishable, in a bare pass count, from one
 that never existed.
 
+**The lock file cannot carry this build.** `requirements.lock` pins `torch==2.3.1`,
+because `2.3.1+cu121` does not exist on PyPI and a Linux CI must be able to install from
+the lock. The build variant is therefore recorded in three places instead: here, in the
+README's install steps — which give the explicit `--index-url` command and the
+`--force-reinstall --no-deps` flags it needs, since pip treats an installed `+cpu` build
+as already satisfying `torch==2.3.1` — and in every training run's `run.json`, alongside
+the lock's SHA-256.
+
+Two builds are therefore in use and both are legitimate:
+
+| Environment | Build | Why |
+|---|---|---|
+| This workstation | `2.3.1+cu121` | Training. Installed from the cu121 index; `sm_61` verified present so kernels are not JIT-compiled from PTX |
+| CI (Linux) | `2.3.1+cpu` | Tests only, no GPU on the runner. Installed from the PyTorch **CPU** index rather than PyPI, whose Linux wheel would pull the CUDA build and eleven `nvidia-*-cu12` packages the lock does not carry |
+
+TC-099 treats a differing local build label as a **recorded variant** rather than a
+mismatch, and asserts the variant is recorded in this document — which is what stops
+"the lock pins the version" from quietly becoming "the build is unspecified".
+
 **Training runs on this workstation, not on Kaggle** (`docs/06` §7). The Kaggle path
 remains documented as an alternative.
 

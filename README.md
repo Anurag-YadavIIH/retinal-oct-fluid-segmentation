@@ -53,11 +53,67 @@ The dataset requires registration and is **not** downloaded automatically. See
 ## Setup
 
 ```bash
-git clone https://github.com/Anurag-YadavIIH/ocuval.git
-cd ocuval
-python3.11 -m venv .venv && source .venv/bin/activate
-make install
-make test-fast
+git clone https://github.com/Anurag-YadavIIH/retinal-oct-fluid-segmentation.git
+cd retinal-oct-fluid-segmentation
+python3.11 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+
+pip install -r requirements.lock   # the exact environment, transitives included
+pip install -e ".[dev]" --no-deps  # the package itself, without re-resolving
+```
+
+**Install from the lock, not from `pyproject.toml` alone.** `pyproject.toml` pins direct
+dependencies only; every transitive dependency floats. That is how this project's CI and
+its development workstation came to differ without either changing — CI installed with
+dependencies while the local virtual environment had been built with `--no-deps` and was
+missing six of fourteen runtime pins (`docs/13`, 2026-09-28). `requirements.lock` is the
+environment results were produced in, and `tests/test_environment_lock.py` (TC-099)
+fails if the installed environment drifts from it.
+
+`--no-deps` on the editable install is deliberate: the lock has already resolved
+everything, and letting pip re-resolve would defeat the point of having a lock.
+
+### The CUDA build of PyTorch
+
+**The lock cannot express it.** Training uses `torch==2.3.1+cu121`, and no such build
+exists on PyPI. The lock pins `torch==2.3.1`, which from PyPI resolves to a build that
+**satisfies the lock while being unable to train on a GPU**. The build is therefore
+recorded separately — in `docs/04` §4.1 and in every training run's `run.json` — and
+installed explicitly:
+
+```bash
+pip install --index-url https://download.pytorch.org/whl/cu121 \
+    --force-reinstall --no-deps "torch==2.3.1"
+```
+
+`--force-reinstall --no-deps` is required, not decorative: pip treats an already
+installed `2.3.1+cpu` as satisfying `torch==2.3.1` and will otherwise silently leave it
+in place. Verify afterwards:
+
+```bash
+python -c "import torch; print(torch.__version__, torch.cuda.is_available(), 'sm_61' in torch.cuda.get_arch_list())"
+# 2.3.1+cu121 True True
+```
+
+`sm_61` matters on the GTX 1050 this project trains on (compute capability 6.1): a wheel
+without that architecture still runs, via PTX JIT, with a different kernel-selection
+path — a silent difference between machines that NFR-002 cannot tolerate.
+
+**CI installs the CPU build deliberately**, from the PyTorch CPU index rather than PyPI.
+It runs tests, not training, and the runner has no GPU; the PyPI Linux wheel would pull
+the CUDA build and eleven `nvidia-*-cu12` packages the lock does not carry. TC-099
+treats both `+cu121` and `+cpu` as recorded build variants of the locked `2.3.1` rather
+than as mismatches.
+
+### Per-machine paths
+
+Nothing machine-specific belongs in a committed config. The frame cache defaults to a
+relative `artifacts/cache`; point it elsewhere with `OCUVAL_CACHE_DIR` or `--cache-dir`,
+and the resolved location is written into `run.json`.
+
+```bash
+export OCUVAL_CACHE_DIR=/mnt/fast/ocuval_cache   # Windows: set it to a non-system drive
+export OCUVAL_DEID_SALT=...                      # never committed; see docs/06 §5.1
 ```
 
 Local PACS (requires Docker):
@@ -114,7 +170,7 @@ The UID root in `configs/data.yaml` is **not registered** to this project or to 
 else. UIDs generated under it are structurally valid but carry no claim of global
 uniqueness, so DICOM objects produced here must not be sent anywhere but the local
 Orthanc instance — not to a shared or institutional PACS, and not published as files.
-This is a declared limitation rather than an oversight; see `docs/06` §7.1 and
+This is a declared limitation rather than an oversight; see `docs/06` §7.2 and
 `docs/11` §7. Substituting a different-looking root would be worse, not better.
 
 ---

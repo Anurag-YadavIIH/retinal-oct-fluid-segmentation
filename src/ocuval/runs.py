@@ -20,6 +20,7 @@ SRS-031 exists to prevent. See docs/13, 2026-09-25.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import platform
 import sys
@@ -85,6 +86,41 @@ def resolve(config_path: Path, output_root: Path) -> StageConfig:
     return StageConfig(Path(config_path), config, Path(output_root))
 
 
+def environment_record() -> dict[str, Any]:
+    """Identify the environment a run executed in (NFR-002).
+
+    Two things, because neither alone is enough:
+
+    - **The lock's SHA-256.** `requirements.lock` is the committed environment. Its
+      digest ties a result to an exact dependency set without copying 73 lines into
+      every run directory, and changes if any pin does.
+    - **The torch build.** The lock pins `torch==2.3.1` and cannot carry `+cu121`,
+      because that build does not exist on PyPI and CI must be able to install from the
+      lock. A machine satisfying the lock may therefore be running the CPU build. The
+      build is the one part of the environment the lock cannot express, so it is
+      recorded per run instead. See `docs/04` §4.1.
+    """
+    record: dict[str, Any] = {"lock_sha256": None, "lock_path": None, "torch_build": None}
+
+    lock = Path(__file__).resolve().parents[2] / "requirements.lock"
+    if lock.is_file():
+        record["lock_sha256"] = hashlib.sha256(lock.read_bytes()).hexdigest()
+        record["lock_path"] = str(lock)
+
+    try:
+        import torch
+    except ImportError:
+        pass
+    else:
+        record["torch_build"] = torch.__version__
+        record["cuda_runtime"] = torch.version.cuda
+        record["cuda_available"] = bool(torch.cuda.is_available())
+        if torch.cuda.is_available():
+            record["gpu_name"] = torch.cuda.get_device_name(0)
+            record["gpu_capability"] = "%d.%d" % torch.cuda.get_device_capability(0)
+    return record
+
+
 def write_provenance(
     stage: str, resolved: StageConfig, extra: dict[str, Any] | None = None
 ) -> Path:
@@ -103,6 +139,7 @@ def write_provenance(
         "platform": platform.platform(),
         "config_path": str(resolved.config_path),
         "seed": resolved.config.get("seed"),
+        "environment": environment_record(),
         "resolved_config": resolved.config,
     }
     if extra:
@@ -136,6 +173,32 @@ def load_manifest(path: Path) -> list[dict[str, Any]]:
     if not isinstance(rows, list):
         raise ValueError(f"{path} does not contain a list of manifest rows")
     return rows
+
+
+CACHE_DIR_ENV = "OCUVAL_CACHE_DIR"
+
+
+def resolve_cache_dir(config: dict[str, Any], override: Path | None = None) -> Path:
+    """Where the frame cache lives, resolved at run time rather than committed.
+
+    Precedence: an explicit `--cache-dir`, then the `OCUVAL_CACHE_DIR` environment
+    variable, then `data.cache_dir` from the configuration.
+
+    **The committed configuration holds a relative path deliberately.** It is shared by
+    every machine that checks out this repository, so an absolute path in it would be
+    one laptop's filesystem asserted as everyone's — and on any other machine it would
+    either fail or, worse, silently write gigabytes somewhere unintended. The per-machine
+    choice belongs to the machine; SRS-031 writes the resolved path into `run.json`, so
+    the run still records exactly where its cache was.
+    """
+    data_cfg = config.get("data", config)
+    if override is not None:
+        return Path(override)
+    from os import environ
+
+    if environ.get(CACHE_DIR_ENV):
+        return Path(environ[CACHE_DIR_ENV])
+    return Path(data_cfg.get("cache_dir", "artifacts/cache"))
 
 
 def manifest_path(config: dict[str, Any]) -> Path:
