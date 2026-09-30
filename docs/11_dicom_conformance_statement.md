@@ -40,13 +40,31 @@ Change history: docs/13_change_control_log.md
 > statement as a whole is drafted.
 
 Study, series and SOP Instance UIDs are generated under the root configured in
-`configs/data.yaml` (`dicom.uid_root`). **That root is not registered** — see
-`docs/06` §7.1 for the full statement and its consequences.
+`configs/data.yaml` (`dicom.uid_root`), which is:
+
+```
+1.2.826.0.1.3680043.10.9999
+```
+
+**That root is not registered** to this project, to its author, or to any organisation —
+see `docs/06` §7.2 for the full statement and its consequences.
+
+**The value is stated here, and not only referenced.** A conformance statement that says
+"the root is an unregistered placeholder" without naming it cannot be checked: a reader
+holding an object from this implementation has no way to confirm its UIDs came from the
+root being declared, which is the one thing this section exists to let them do. The
+omission was found on 2026-09-28 by TC-088, which asserts that the configured root
+appears in this document.
 
 The decision taken is to document the placeholder rather than to register a root,
 and not to substitute a different-looking value. In consequence this implementation
 makes **no claim of global UID uniqueness**, and objects it creates are confined to
 the local Orthanc instance.
+
+`1.2.826.0.1.3680043.10` is a real, allocated arc; `.9999` beneath it is **not**
+allocated to this project. The prefix therefore looks legitimate on inspection, which is
+precisely why the absence of a registration has to be declared rather than left for a
+reader to discover.
 
 ## 8. De-identification profile and options
 
