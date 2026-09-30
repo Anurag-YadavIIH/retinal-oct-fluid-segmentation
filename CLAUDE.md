@@ -331,9 +331,17 @@ criterion stops Stage 2 and does not get rewritten.
   AMP on, for **zero** fallbacks. The Dice term stays MONAI's, untouched.
 - **Zero fallbacks is not determinism.** It means no operation *announced*
   non-determinism; it is not the claim that two runs agree, and an operation that never
-  warns can still be order-dependent. **Rule 4 is claimed achieved on GPU only on TC-121's
-  evidence** — two runs compared byte for byte on weights, optimiser state and the loss
-  log. Never infer the second claim from the first.
+  warns can still be order-dependent. Never infer the second claim from the first.
+- **Rule 4 IS achieved on GPU, and TC-121 is the whole of its evidence** (measured
+  2026-09-30). Two runs of `cirrus_holdout` under the committed configuration produced
+  **byte-identical** model weights, optimiser state and epoch logs — `train_loss 2.264524`
+  then `1.236142`, `val_dice 0.021399` then `0.153961`, per-class Dice identical — with
+  zero recorded fallbacks. Wall time differed (247.9 s against 234.5 s) and is excluded,
+  being the one thing that legitimately varies. **The claim is exactly as wide as the
+  test:** this network, this fold, this configuration, two epochs, on a GTX 1050. It is
+  not a claim about CUDA, about other networks, or about other cards. If the network, the
+  loss or the torch build changes, TC-121 is the thing to re-run, and until it passes again
+  rule 4 is unproven rather than assumed.
 - **Gradient accumulation is implemented but not needed here** (micro-batch 8 peaks at
   1.00 GiB of 4 under AMP). Its equivalence rests on the network having **instance norm
   and no batch norm**; under batch norm it is invalid and the response is to stop
