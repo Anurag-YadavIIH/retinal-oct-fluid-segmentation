@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import os
 import random
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -42,7 +43,18 @@ BEST_NAME = "best.pt"
 
 @dataclass
 class DeterminismReport:
-    """What was asked for, what was granted, and what fell back."""
+    """What was asked for, what was granted, and what fell back.
+
+    **The record cannot contradict itself** (SRS-085). The Stage 1 run wrote
+    `deterministic_algorithms: true` above 1308 fallback lines saying the loss function
+    had no deterministic implementation. Both statements were accurate in isolation --
+    the flag *was* set -- and together they were misleading, because a reader takes the
+    first as the answer and never reaches the 1308th line of the second.
+
+    `as_dict` therefore reports `deterministic_algorithms` as what was **achieved**, not
+    what was requested, and keeps `requested` and `granted` separately so nothing is
+    lost. A run with fallbacks reports `deterministic_algorithms: false`.
+    """
 
     requested: bool
     deterministic_algorithms: bool
@@ -51,13 +63,36 @@ class DeterminismReport:
     fallbacks: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
+        achieved = self.deterministic_algorithms and not self.fallbacks
         return {
             "requested": self.requested,
-            "deterministic_algorithms": self.deterministic_algorithms,
+            # What was actually achieved. False whenever anything fell back.
+            "deterministic_algorithms": achieved,
+            # Kept so the distinction survives: the flag was accepted by torch, and
+            # individual operations ignored it anyway.
+            "deterministic_algorithms_granted": self.deterministic_algorithms,
             "cudnn_deterministic": self.cudnn_deterministic,
             "cublas_workspace_config": self.cublas_workspace_config,
-            "fallbacks": sorted(self.fallbacks),
+            "fallback_count": len(self.fallbacks),
+            "fallbacks": summarise_fallbacks(self.fallbacks),
         }
+
+
+def summarise_fallbacks(messages: list[str]) -> list[dict[str, Any]]:
+    """Fold repeated warnings into one row per operation (SRS-085).
+
+    The Stage 1 run stored 1308 near-identical copies of a single sentence -- 465 KB of
+    a 466 KB file -- which is both wasteful and actively unhelpful: the one fact a
+    reader needs, that exactly one operation is responsible, is invisible behind the
+    repetition.
+    """
+    operations: dict[str, dict[str, Any]] = {}
+    for message in messages:
+        match = re.match(r"\s*(\S+) does not have a deterministic implementation", message)
+        name = match.group(1) if match else message.strip().splitlines()[0][:80]
+        entry = operations.setdefault(name, {"op": name, "count": 0, "first_seen": message.strip()})
+        entry["count"] += 1
+    return sorted(operations.values(), key=lambda e: (-e["count"], e["op"]))
 
 
 def request_determinism(seed: int, *, warn_only: bool = True) -> DeterminismReport:

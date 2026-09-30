@@ -227,8 +227,18 @@ def test_TC_059_a_nondeterministic_fallback_is_recorded_not_swallowed():
             "an unrelated warning that must not be collected",
         ],
     )
+    # Fallbacks are deduplicated to {op, count, first_seen} since SRS-085 -- the Stage 1
+    # run stored 1308 copies of one sentence. The unrelated warning must still be
+    # excluded: this collects determinism fallbacks, not every warning of the run.
     assert len(recorded["fallbacks"]) == 1
-    assert "upsample_bilinear2d_backward" in recorded["fallbacks"][0]
+    entry = recorded["fallbacks"][0]
+    assert entry["op"] == "upsample_bilinear2d_backward_out_cuda"
+    assert entry["count"] == 1
+    assert "upsample_bilinear2d_backward" in entry["first_seen"]
+    assert recorded["fallback_count"] == 1
+    assert (
+        recorded["deterministic_algorithms"] is False
+    ), "a report listing a fallback must not also claim deterministic algorithms"
 
 
 def test_TC_059_gpu_tolerance_is_stated_and_nonzero():
