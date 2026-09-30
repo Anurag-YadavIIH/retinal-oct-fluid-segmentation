@@ -261,6 +261,107 @@ rewritten. The best checkpoint is **epoch 16**, validation mean Dice **0.6812** 
 
 ---
 
+## 5b. Stage 1b — the same criteria under the final configuration
+
+Run 2026-09-30 against the criteria committed in `docs/07` §15.6 **before it started**.
+Full record: `artifacts/runs/cirrus_holdout_stage1b/stage1_evaluation.json`.
+
+### 5b.1 What was run
+
+| Field | Value | Source |
+|---|---|---|
+| Fold, epochs, seed | `cirrus_holdout`, 20, 20260916 | measured, `run.json` |
+| Loss | `dice_ce_deterministic` | measured, resolved config |
+| AMP | **on** | measured, `amp_enabled: true` in both session records |
+| Sessions | **2** — epochs 0–2, then 3–19, stopped by `session_epoch_limit` | measured, session boundaries |
+| Wall clock | 16:58:26 → 18:15:55 UTC | measured |
+| Per-epoch time | **228.3 s min, 238.3 s max, 231.2 s mean**; 1.28 h total | measured, all 20 `seconds` fields |
+| Peak GPU memory | **2895 MiB of 4096** (70.7%) | measured, 157 telemetry samples |
+| Temperature range | 43–65 °C | measured, same samples |
+
+**The configuration change is worth 1.58× on this fold, measured.** 231.2 s mean against
+Stage 1's 365.1 s, for the same fold, epochs and seed. The projection that justified the
+change said 249 s/epoch, so it was 8% conservative — derived from 60 s benchmark windows
+and checked here against a 20-epoch run that did not inform it. Peak memory fell from
+**3993 MiB (97.5% of the card) to 2895 MiB (70.7%)**, which matters independently of speed:
+Stage 1 had no headroom.
+
+### 5b.2 The resume crossed the warmup boundary
+
+`optim.warmup_epochs` is 5 and the session split is after epoch 2, so **epoch 3 — the
+first resumed epoch — is inside the warmup window**. This is the case `SequentialLR`'s
+position in its own sequence has to survive, and no run had exercised it on GPU.
+
+Measured learning rate per epoch, from `epochs.jsonl`:
+
+| Epoch | 0 | 1 | 2 | **3 (resumed)** | 4 | 5 | 6 |
+|---|---|---|---|---|---|---|---|
+| lr | 8.40e-05 | 1.38e-04 | 1.92e-04 | **2.46e-04** | 3.00e-04 | 2.9672e-04 | 2.8703e-04 |
+
+The ramp continues across the session boundary at its correct increment, reaches the full
+`3.00e-04` at epoch 4 where warmup ends, and then decays under cosine. A resume that had
+lost the scheduler's position would have restarted the ramp or jumped to full rate at epoch
+3; neither happened. **`--max-epochs-this-session 3` rather than `STOP`**, so the boundary
+landed where it was asked to — the correction from deviation D1.
+
+### 5b.3 Evaluation against the pre-registered criteria
+
+Recomputed by `scripts/evaluate_stage1.py --stage 1b`, using the same metric function that
+produced the baselines.
+
+| Criterion | Result |
+|---|---|
+| **1** — loss falls ≥10% | mean first three **1.648121**, last three **0.843333**, reduction **48.83%** — **PASS** |
+| **2** — beats both baselines, per class | see below — **PASS** |
+| **3** — no class collapses | see below — **PASS** |
+| **4** — the run's records exist | all artefacts present — **PASS** |
+| **5** — determinism measured | 0 fallbacks, achieved `true`; bit-identity by TC-121 — **PASS** |
+
+| Class | Measured Dice | Baseline A | Baseline B | Result |
+|---|---|---|---|---|
+| IRF | **0.3539** | 0.0000 | 0.0451 | **PASS** |
+| SRF | **0.5629** | 0.0000 | 0.0428 | **PASS** |
+| PED | **0.2971** | 0.0000 | 0.0384 | **PASS** |
+
+| Class | Frames predicted | Frames with the class in truth | Result |
+|---|---|---|---|
+| IRF | 443 / 580 | 236 | **PASS** |
+| SRF | 240 / 580 | 173 | **PASS** |
+| PED | 256 / 580 | 126 | **PASS** |
+
+**Overall: Stage 1b PASS.** Best checkpoint **epoch 15**, mean validation Dice **0.683435**.
+
+### 5b.4 Two observations, neither a criterion
+
+**Per-class Dice moved in both directions against Stage 1**, and §15.6 is explicit that
+Stage 1's values are **not** the bar — a criterion of "at least as good as Stage 1" would be
+one invented after seeing a result. For the record: IRF 0.4198 → 0.3539, SRF 0.5450 →
+0.5629, PED 0.3211 → 0.2971, and the selected checkpoint's mean Dice 0.6812 → 0.6834. Two
+classes down, one up, the selection metric marginally up. At twenty epochs on 2610 frames
+this is not a converged comparison of configurations and should not be read as one; the
+loss-reduction figures are near-identical (48.81% against 48.83%).
+
+**Validation Dice collapsed at epoch 1 and recovered**: 0.021399 → **0.000855** → 0.144526
+→ 0.287870 → 0.544777. A single early epoch near zero while the loss fell monotonically
+(2.264524 → 1.529642 → 1.150198). No criterion addresses it and none is added after the
+fact. Recorded because it is the kind of transient that, seen for the first time during a
+150-epoch fold, would otherwise prompt an unnecessary investigation mid-run.
+
+### 5b.5 What Stage 1b changes for Stage 2
+
+| Was | Now |
+|---|---|
+| Resume equivalence unverified (D2) | Verified, and exercised across the warmup boundary on GPU |
+| Determinism claimed from zero fallbacks | Measured: TC-121, two runs byte-identical |
+| 365 s/epoch, 97.5% of GPU memory | 231 s/epoch, 70.7% |
+| Three folds ≈57.7 h (derived) | ≈**36.6 h** (derived from 231.2 s/epoch measured) |
+| **D4 still open** | `run.json` still records no commit SHA, and still carries a duplicate `seed: null` |
+
+D4 is the one item this stage did not clear, because it was found after Stage 1b had
+started and changing code mid-run is not a thing this project does (`docs/13`).
+
+---
+
 ## 6. Conclusion
 
 **Not drafted.** The validation conclusion requires the cross-vendor result, which is
