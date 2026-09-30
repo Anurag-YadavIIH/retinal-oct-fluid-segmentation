@@ -931,3 +931,115 @@ trade-off stated, and four were confirmed unenforceable with reasons. The count 
 matters is the middle one: before 2026-09-28 the AMP decision would have been listed in
 §16.1 by anyone reading `docs/13`, because it *looked* settled. It was in §16.3 and
 nobody had asked.
+
+---
+
+## 17. Stage 2 evaluation protocol — pre-registered
+
+**Committed before any Stage 2 training starts.** The cross-vendor number is the result
+this project exists to report, and it is reportable exactly once. Everything below is
+fixed now, while no result is visible, because every choice here — which checkpoint,
+which split, how many resamples, what the resampling unit is — moves the headline figure,
+and a choice made after seeing the figure is a choice made *because of* it.
+
+Stage 1 and Stage 1b established that training works. Nothing here has been run.
+
+### 17.1 What is evaluated, and when
+
+| Step | Rule |
+|---|---|
+| **Checkpoint selection** | `best.pt`, selected on **in-domain validation only** — unseen patients from the two training vendors. The held-out vendor plays no part in selecting anything: not the epoch, not the threshold, not the architecture |
+| **Test evaluation** | The held-out vendor's test set is evaluated **exactly once**, after training has ended and after the evaluation code is committed |
+| **Order** | Evaluation code finished, tested and committed **before the test set is touched**. A pipeline written while its output is visible is a pipeline tuned on the test set, however honestly |
+| **Re-running** | If the evaluation errors, it may be re-run. If it *succeeds*, its output stands. A second execution to "check something" after seeing a number is a second look at the test set |
+
+**No retraining against the test set after seeing results.** Not a different epoch, not a
+different threshold, not a different architecture, not "one more fold". If a change is
+warranted after seeing the cross-vendor result, it is a **new experiment, pre-registered
+as such in this document with its own section and its own date**, and the first result is
+reported alongside it rather than replaced by it. The record must make it possible to
+count how many times the test set was consulted.
+
+### 17.2 Metrics
+
+Per **fluid class** (IRF, SRF, PED) and per **vendor**, never pooled across either:
+
+| Metric | Source | Requirement |
+|---|---|---|
+| Dice | `eval/metrics.py`, numpy | SRS-032 |
+| HD95, **max-of-directed** | `eval/metrics.py`, numpy | SRS-032, `docs/13` |
+| Sensitivity, specificity | derived from the segmentation, SRS-050 | SRS-053 |
+| AUROC | MC-dropout mean probability, numpy | SRS-052, SRS-053 |
+
+Every figure carries a **bootstrap 95% confidence interval and its n** (SRS-033). A bare
+point estimate is not a result anywhere in this repository. **Accuracy is not reported**,
+the classes being imbalanced enough to make it misleading.
+
+`n` is stated as the number of units the interval was computed over, **and the unit is
+named** — a "n = 420" that silently means frames when the reader assumes patients is a
+misreported result rather than an imprecise one.
+
+### 17.3 Bootstrap
+
+| Parameter | Value |
+|---|---|
+| **Resampling unit** | the **patient** — a cluster bootstrap, resampling patients with replacement and taking all of each sampled patient's volumes and frames |
+| Resamples | **2000** |
+| Interval | percentile, **95%** (α = 0.05) |
+| Seed | `run.seed` from the evaluation configuration, recorded in the output |
+
+**Why the patient and not the frame.** B-scans within a volume and volumes within a
+patient are strongly correlated: neighbouring frames of one eye are close to repeated
+measurements of the same thing. Resampling frames treats them as independent evidence and
+**understates the interval**, by roughly the square root of the cluster size — which is
+the direction that makes a result look more certain than it is. `eval/metrics.py`'s
+current `bootstrap_ci` resamples elements, so a **grouped variant is required** and is
+part of the evaluation code that must be committed before the test set is touched.
+
+The seed is recorded and the resampling reproduces exactly on re-execution (SRS-034).
+2000 resamples and α are fixed here so that neither can be chosen to move an interval
+across a boundary.
+
+### 17.4 Geometry
+
+**Predictions are inverted to the acquisition's native grid before any metric is
+computed** (SRS-074), and the spacing used is asserted bit-identical to the spacing
+recorded at ingestion (**SRS-057**, TC-073); any difference aborts before a number is
+emitted. `invert_axial_resample` exists for this.
+
+A Dice computed at the resampled spacing is a Dice on a different object from the one
+clinicians measure, and HD95 in particular is a **distance** — reporting it on a resampled
+grid would report millimetres that are not the acquisition's millimetres. Since the
+vendors' native axial spacings differ (cirrus 0.001955, spectralis 0.003872, topcon
+0.0026–0.0035 mm), measuring on the common resampled grid would also make the *per-vendor
+comparison itself* an artefact of preprocessing — which would corrupt precisely the
+headline the project reports.
+
+### 17.5 What the output must contain
+
+| Item | Why |
+|---|---|
+| Per class × per vendor: metric, CI, n, and the **unit of n** | SRS-032, SRS-033 |
+| The vendor held out, and the vendors trained on | the result is meaningless without it |
+| Checkpoint identity: path, epoch, SHA-256 | which model produced this |
+| `source.commit` and `source.dirty` of the evaluation run | SRS-086 |
+| Bootstrap seed, resample count, resampling unit | SRS-034 |
+| The in-domain validation figures **beside** the held-out ones | the degradation *is* the contribution; a held-out figure alone cannot show it |
+| Count of test-set evaluations performed | §17.1 is only checkable if this is recorded |
+
+### 17.6 What would make Stage 2 invalid
+
+Stated now, so that none of it can be reasoned away later:
+
+- The held-out vendor influencing **any** selection.
+- Any metric computed on the resampled grid.
+- A confidence interval resampled at frame or volume level and reported as though at
+  patient level.
+- A second evaluation of the test set after a first succeeded, without recording both.
+- A pooled figure substituted for a per-class or per-vendor one.
+- Evaluation code changed after the test set was seen, and the result re-generated
+  without both versions being reported.
+
+**A degraded cross-vendor result is a result.** The headline is the degradation, and a
+large drop faithfully measured is the finding this project exists to produce — it is not a
+failure to be recovered from by adjusting the protocol.

@@ -81,6 +81,7 @@ def test_TC_088_batch_size_has_exactly_one_home():
 # the change visible, which is all a hash can do. docs/07 section 15.5 states that a
 # failed criterion stops the next stage rather than getting rewritten.
 STAGE1_SECTION = "15. Stage 1 smoke run — acceptance criteria, pre-registered"
+STAGE2_SECTION = "17. Stage 2 evaluation protocol — pre-registered"
 
 
 def stage1_criteria_text() -> str:
@@ -113,6 +114,61 @@ def test_TC_088_the_stage1_criteria_still_state_their_measured_baselines():
         "docs/07 §15 does not pre-register Stage 1b under the reversed AMP decision. A "
         "run whose conditions differ from §15's needs its own committed criteria before "
         "it starts, or it has none."
+    )
+
+
+def section_text(heading: str) -> str:
+    """One section of `docs/07`, with whitespace collapsed.
+
+    Collapsed because these guards assert *content*, and a phrase in this document
+    routinely spans a line break. Matching raw text would make the guard fail on a
+    rewrap that changed nothing, which trains everyone to edit the assertion instead of
+    reading it — the failure mode §16.2 records for hashing a prose section.
+    """
+    text = read("docs", "07_vv_protocol.md").replace("\r\n", "\n")
+    match = re.search(rf"^## {re.escape(heading)}\s*$(.*?)(?=^## |\Z)", text, re.M | re.S)
+    assert match, f"docs/07 section {heading!r} not found"
+    return re.sub(r"\s+", " ", match.group(0))
+
+
+def test_TC_088_the_stage2_protocol_still_fixes_its_parameters():
+    """§17 is pre-registration for a result that can be reported once.
+
+    Every number in it moves the headline figure, so each is asserted individually rather
+    than the section merely being asserted to exist. The bootstrap parameters are the
+    sharpest: 2000 resamples and α = 0.05 are fixed *now* precisely so that neither can
+    later be chosen to move an interval across a boundary.
+    """
+    section = section_text(STAGE2_SECTION)
+    for phrase, why in [
+        ("in-domain validation only", "checkpoint selection must exclude the held-out vendor"),
+        ("exactly once", "the test set is evaluated once"),
+        ("2000", "the bootstrap resample count is fixed"),
+        ("0.05", "the interval's alpha is fixed"),
+        ("patient", "the resampling unit is the patient, not the frame"),
+        ("SRS-057", "native-geometry inversion is asserted against ingestion spacing"),
+        ("SRS-074", "metrics are computed in native geometry"),
+        ("before the test set is touched", "the evaluation code is committed first"),
+    ]:
+        assert phrase in section, f"docs/07 §17 no longer states {phrase!r} — {why}"
+
+
+def test_TC_088_the_stage2_protocol_forbids_retraining_on_the_test_set():
+    """The prohibition, and its one permitted exception, must both survive.
+
+    An absolute ban with no stated route for a legitimate follow-up invites the ban to be
+    quietly ignored; the route is "a new experiment, pre-registered as such", and it is
+    only a control if it stays written down.
+    """
+    section = section_text(STAGE2_SECTION)
+    assert "No retraining against the test set" in section
+    assert "new experiment" in section and "pre-registered as such" in section, (
+        "docs/07 §17 no longer states the one permitted route for acting on a "
+        "cross-vendor result, so the prohibition has no legitimate alternative"
+    )
+    assert "A degraded cross-vendor result is a result" in section, (
+        "docs/07 §17 no longer states that the degradation is the contribution. Without "
+        "it, a poor held-out figure reads as a failure to be recovered from"
     )
 
 
