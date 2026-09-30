@@ -24,10 +24,13 @@ import yaml
 
 from ocuval.data.splits import load as load_split
 from ocuval.runs import (
+    DirtyWorkingTreeError,
     load_manifest,
     manifest_path,
+    require_clean_tree,
     resolve,
     resolve_cache_dir,
+    source_record,
     write_provenance,
 )
 
@@ -58,6 +61,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--device", default=None)
     parser.add_argument("--no-prepass", action="store_true", help="skip the cache pre-pass")
+    parser.add_argument(
+        "--allow-dirty",
+        action="store_true",
+        help=(
+            "start even though the working tree has uncommitted changes (SRS-086). The "
+            "run is then not reproducible from any commit, and run.json records that."
+        ),
+    )
     parser.add_argument(
         "--cache-dir",
         type=Path,
@@ -97,6 +108,24 @@ def main(argv: list[str] | None = None) -> int:
     run_dir = args.run_dir or Path("artifacts/runs") / fold_id
     run_dir.mkdir(parents=True, exist_ok=True)
 
+    # SRS-086: a fold run is meant to be cited, so it refuses to start against
+    # uncommitted changes. The check lives here and not in `train_fold`, because tests
+    # and exploratory runs must stay runnable from a tree that is being worked in.
+    # Checked BEFORE the provenance is written, so a refused run leaves no record
+    # suggesting it began.
+    origin = source_record()
+    try:
+        require_clean_tree(origin, allow_dirty=args.allow_dirty)
+    except DirtyWorkingTreeError as refusal:
+        print(f"!! {refusal}", file=sys.stderr)
+        return 3
+    if args.allow_dirty and origin.get("dirty"):
+        print(
+            "!! --allow-dirty: this run cannot be reproduced from any commit, and "
+            "run.json records that (SRS-086).",
+            file=sys.stderr,
+        )
+
     # SRS-031: provenance before training starts, so an aborted run still records what
     # it was attempting.
     resolved = resolve(args.config, run_dir)
@@ -113,6 +142,9 @@ def main(argv: list[str] | None = None) -> int:
             "resolved_cache_dir": str(resolve_cache_dir(cfg, args.cache_dir).resolve()),
             "epochs_requested": args.epochs,
             "max_epochs_this_session": args.max_epochs_this_session,
+            # Recorded even when false: an override nobody can see in the output is
+            # indistinguishable from no check at all.
+            "allow_dirty": bool(args.allow_dirty),
         },
     )
 

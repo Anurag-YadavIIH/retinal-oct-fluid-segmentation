@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-085 and NFR-001..NFR-008. Every requirement here derives
+Allocates SRS-001..SRS-086 and NFR-001..NFR-008. Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -128,6 +128,7 @@ measurement, and that gap is HAZ-012.
 | SRS-083 | The learning-rate schedule shall honour `optim.warmup_epochs`: the rate shall rise linearly from a fraction of the configured rate to the configured rate across that many epochs, then follow the declared decay. A configured warmup that the schedule ignores is a run that did not do what its configuration says. | URS-010 | TC-079 |
 | SRS-084 | The training loss shall have a deterministic implementation on the training accelerator. Where a term of the reference loss does not, it shall be replaced by an equivalent formulation that does, and the replacement shall be verified **back to back against the reference** on random inputs within a tolerance stated in `docs/07`. A run shall record zero determinism fallbacks, or record why it does not. | URS-010, NFR-002 | TC-089 |
 | SRS-085 | The run record shall not be able to contradict itself: `run.json` shall not report deterministic algorithms as active while `determinism.json` records a fallback. Fallbacks shall be stored deduplicated as operation, count and first occurrence, not as one line per occurrence. | URS-010, NFR-008 | TC-109 |
+| SRS-086 | The run record shall identify **the code that produced the run**, not only its configuration: `run.json` shall carry the commit identifier and whether the working tree was clean at the moment the run started. A run whose results will be reported shall **refuse to start on a dirty tree** unless the caller explicitly overrides, and the override shall itself be recorded. A configuration pinned against unidentified code is not reproducible, and a commit identifier recorded beside uncommitted edits names code that was not run. Each value shall have exactly one home in the record. | URS-010, NFR-002, NFR-008 | TC-122 |
 
 ### 3.5 Training
 
@@ -217,6 +218,7 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `training/loop.py` | SRS-024, SRS-031, SRS-075..SRS-077, SRS-079, SRS-080, SRS-081, SRS-083 |
 | `training/telemetry.py` | SRS-082 |
 | `training/losses.py` | SRS-084 |
+| `runs.py` | SRS-031, SRS-086 |
 | `scripts/benchmark_device.py` | SRS-031 |
 | `data/datamodule.py` | SRS-024 |
 | `data/transforms.py` | SRS-025, SRS-026 |

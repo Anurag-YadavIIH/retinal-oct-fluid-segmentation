@@ -23,6 +23,7 @@ import argparse
 import hashlib
 import json
 import platform
+import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -121,6 +122,80 @@ def environment_record() -> dict[str, Any]:
     return record
 
 
+class DirtyWorkingTreeError(RuntimeError):
+    """A reportable run was started against uncommitted changes (SRS-086)."""
+
+
+def source_record(repo_root: Path | None = None) -> dict[str, Any]:
+    """Identify the code a run executed, not only its configuration (SRS-086).
+
+    `run.json` already pinned the configuration, the seed, the platform, the torch build
+    and the lock's digest — everything except the project's own source. A configuration
+    pinned against unidentified code is not reproducible, which is the gap `docs/08` D4
+    recorded after Stage 1.
+
+    **`dirty` is recorded because the commit alone would be misleading.** A commit
+    identifier written beside uncommitted edits names code that was not the code that
+    ran, which is worse than recording nothing: it looks precise. So the two travel
+    together and `commit` is never reported without it.
+
+    Every field is `None` when git is unavailable or this is not a repository — recorded
+    as unknown rather than omitted, so a reader can tell "no git here" from "nobody
+    looked".
+    """
+    root = Path(repo_root) if repo_root else Path(__file__).resolve().parents[2]
+    record: dict[str, Any] = {"commit": None, "dirty": None, "branch": None}
+
+    def git(*args: str) -> str | None:
+        try:
+            done = subprocess.run(
+                ["git", "-C", str(root), *args],
+                capture_output=True,
+                text=True,
+                check=False,
+                encoding="utf-8",
+                errors="replace",
+            )
+        except (OSError, ValueError):
+            return None
+        return done.stdout.strip() if done.returncode == 0 else None
+
+    record["commit"] = git("rev-parse", "HEAD")
+    record["branch"] = git("rev-parse", "--abbrev-ref", "HEAD")
+    # `--porcelain` covers staged, unstaged and untracked alike. Untracked files count:
+    # the script that produced the Stage 1 result was untracked at the time, so a check
+    # that ignored them would have passed on exactly the case that motivated this.
+    status = git("status", "--porcelain")
+    if status is not None:
+        record["dirty"] = bool(status)
+    return record
+
+
+def require_clean_tree(record: dict[str, Any] | None = None, *, allow_dirty: bool = False) -> None:
+    """Refuse to start a reportable run against uncommitted changes (SRS-086).
+
+    Called by the stages whose output is meant to be cited, not by `train_fold` itself:
+    tests and exploratory runs construct their own configurations and must stay runnable
+    from a working tree that is, by definition, being worked in.
+
+    `allow_dirty` is deliberately an explicit caller decision rather than a fallback, and
+    the override is recorded in `run.json` — an escape hatch nobody can see in the output
+    is indistinguishable from no check at all.
+    """
+    record = record if record is not None else source_record()
+    if record.get("dirty") and not allow_dirty:
+        raise DirtyWorkingTreeError(
+            "the working tree has uncommitted changes, so this run could not be "
+            "reproduced from any commit (SRS-086). Commit them, or pass --allow-dirty "
+            "to record the run as unreproducible on purpose."
+        )
+    if record.get("commit") is None and not allow_dirty:
+        raise DirtyWorkingTreeError(
+            "no commit identifier is available, so this run would not record which code "
+            "produced it (SRS-086). Run inside a git repository, or pass --allow-dirty."
+        )
+
+
 def write_provenance(
     stage: str, resolved: StageConfig, extra: dict[str, Any] | None = None
 ) -> Path:
@@ -129,6 +204,12 @@ def write_provenance(
     Written at the START of the stage (SRS-031), so a run that aborts halfway still
     leaves evidence of what it was attempting. A provenance file written on success
     would be absent exactly when it is most needed.
+
+    **There is no top-level `seed` field.** There was one, and it read `null` on every
+    training run while `resolved_config.run.seed` held the seed the run used — two homes
+    for one value, one of them wrong, which is the defect `docs/08` D4 records and the
+    same shape as the `batch_size` duplication CLAUDE.md already forbids. The seed lives
+    in the resolved configuration, where the run read it from.
     """
     resolved.output_root.mkdir(parents=True, exist_ok=True)
     record = {
@@ -138,7 +219,7 @@ def write_provenance(
         "python": sys.version.split()[0],
         "platform": platform.platform(),
         "config_path": str(resolved.config_path),
-        "seed": resolved.config.get("seed"),
+        "source": source_record(),
         "environment": environment_record(),
         "resolved_config": resolved.config,
     }

@@ -27,6 +27,7 @@ A stale matrix is worse than no matrix (CLAUDE.md rule 5).
 | — | — | — | — | TC-000 | `src/ocuval/__init__.py` — smoke test, allocated to no requirement (`docs/02` §3) |
 | URS-001 | SRS-002 | HAZ-003 | RC-020 | TC-001 | `configs/data.yaml` |
 | URS-007 | SRS-019, SRS-020, SRS-021 | HAZ-008 | RC-002, RC-003, RC-005 | TC-004 | `src/ocuval/data/splits.py` |
+| URS-010 | SRS-031, SRS-086 | HAZ-009 | RC-028 | TC-122 | `src/ocuval/runs.py`, `scripts/04_train.py` — the run record identifies the code, and a fold run refuses a dirty tree |
 | URS-010 | SRS-076, SRS-077, SRS-084, SRS-085 | HAZ-009 | RC-028 | TC-121 | `src/ocuval/training/{loop,losses,checkpoint}.py`, `src/ocuval/data/datamodule.py` — two GPU runs compared byte for byte; the evidence for CLAUDE.md rule 4 on GPU |
 
 The eleven `URS` rows carry their software requirements from `docs/02` §3, and their
@@ -63,9 +64,9 @@ implemented.
   `docs/01` derives at least one SRS or NFR in `docs/02`.
 - Software requirements with a verifying test case **allocated**: **66 of 66**
   SRS and **8 of 8** NFR. Every SRS, NFR and RC names one.
-- Test cases **registered** in `docs/07` §6: **107**.
-  Test cases **written**: **76**. Of those,
-  **73 are executed** by the suite and
+- Test cases **registered** in `docs/07` §6: **108**.
+  Test cases **written**: **77**. Of those,
+  **74 are executed** by the suite and
   **3 have never been run** (TC-080, TC-081, TC-082) because
   they need a PACS, which is not available here. A written test that nobody has executed is not
   verification, and is not counted as such here. The remaining
