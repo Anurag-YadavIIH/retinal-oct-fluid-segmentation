@@ -53,6 +53,7 @@ import json
 import platform
 import sys
 import time
+import warnings
 from pathlib import Path
 
 import torch
@@ -348,11 +349,11 @@ def main(argv: list[str] | None = None) -> int:
 
     # Requested exactly as train_fold requests it (loop.py:224), and before any model or
     # loader is built. A benchmark that omits this measures kernels the run never selects.
-    determinism = None
+    report = None
     if args.determinism:
         from ocuval.training.checkpoint import request_determinism
 
-        determinism = request_determinism(int(cfg.get("run", {}).get("seed", 0))).as_dict()
+        report = request_determinism(int(cfg.get("run", {}).get("seed", 0)))
 
     hardware = describe_device()
     print(json.dumps(hardware, indent=2), flush=True)
@@ -366,49 +367,67 @@ def main(argv: list[str] | None = None) -> int:
             flush=True,
         )
 
+    # Fallbacks are warnings raised *during* compute, so a determinism record snapshotted
+    # before the first step necessarily reports zero of them -- which reads as "none
+    # occurred" and is exactly the self-contradicting record SRS-085 exists to forbid.
+    # They are collected across the whole measurement and resolved afterwards, as
+    # `train_fold` does it.
     rows = []
-    for micro in args.micro_batches:
-        if effective % micro:
-            print(f"skipping micro-batch {micro}: does not divide {effective}", flush=True)
-            continue
-        accumulation = effective // micro
-        for amp in (False, True) if device == "cuda" else (False,):
-            label = f"micro={micro} accum={accumulation} amp={'on' if amp else 'off'}"
-            row = {"micro_batch": micro, "accumulation": accumulation, "amp": amp}
-            if not args.skip_synthetic:
-                try:
-                    row["synthetic"] = synthetic_rate(
-                        cfg, micro, accumulation, amp, device, args.iters, args.warmup
-                    )
-                    print(f"  synthetic  {label}: {row['synthetic']}", flush=True)
-                except torch.cuda.OutOfMemoryError:
-                    torch.cuda.empty_cache()
-                    row["synthetic"] = {"error": "out of memory"}
-                    print(f"  synthetic  {label}: OUT OF MEMORY", flush=True)
-                    rows.append(row)
-                    continue
+    with warnings.catch_warnings(record=True) as captured:
+        warnings.simplefilter("always")
+        for micro in args.micro_batches:
+            if effective % micro:
+                print(f"skipping micro-batch {micro}: does not divide {effective}", flush=True)
+                continue
+            accumulation = effective // micro
+            for amp in (False, True) if device == "cuda" else (False,):
+                label = f"micro={micro} accum={accumulation} amp={'on' if amp else 'off'}"
+                row = {"micro_batch": micro, "accumulation": accumulation, "amp": amp}
+                if not args.skip_synthetic:
+                    try:
+                        row["synthetic"] = synthetic_rate(
+                            cfg, micro, accumulation, amp, device, args.iters, args.warmup
+                        )
+                        print(f"  synthetic  {label}: {row['synthetic']}", flush=True)
+                    except torch.cuda.OutOfMemoryError:
+                        torch.cuda.empty_cache()
+                        row["synthetic"] = {"error": "out of memory"}
+                        print(f"  synthetic  {label}: OUT OF MEMORY", flush=True)
+                        rows.append(row)
+                        continue
 
-            if not args.skip_real:
-                try:
-                    row["real_loader"] = real_rate(
-                        cfg,
-                        data_cfg,
-                        args.fold,
-                        micro,
-                        accumulation,
-                        amp,
-                        device,
-                        args.iters,
-                        args.warmup,
-                        min_seconds=args.min_seconds,
-                        loss_choice=args.loss,
-                    )
-                    print(f"  real       {label}: {row['real_loader']}", flush=True)
-                except torch.cuda.OutOfMemoryError:
-                    torch.cuda.empty_cache()
-                    row["real_loader"] = {"error": "out of memory"}
-                    print(f"  real       {label}: OUT OF MEMORY", flush=True)
-            rows.append(row)
+                if not args.skip_real:
+                    try:
+                        row["real_loader"] = real_rate(
+                            cfg,
+                            data_cfg,
+                            args.fold,
+                            micro,
+                            accumulation,
+                            amp,
+                            device,
+                            args.iters,
+                            args.warmup,
+                            min_seconds=args.min_seconds,
+                            loss_choice=args.loss,
+                        )
+                        print(f"  real       {label}: {row['real_loader']}", flush=True)
+                    except torch.cuda.OutOfMemoryError:
+                        torch.cuda.empty_cache()
+                        row["real_loader"] = {"error": "out of memory"}
+                        print(f"  real       {label}: OUT OF MEMORY", flush=True)
+                rows.append(row)
+
+    determinism = None
+    if report is not None:
+        from ocuval.training.checkpoint import describe_determinism
+
+        determinism = describe_determinism(report, [str(w.message) for w in captured])
+        print(
+            f"determinism achieved: {determinism['deterministic_algorithms']} "
+            f"({determinism['fallback_count']} operation(s) fell back)",
+            flush=True,
+        )
 
     record = {
         "hardware": hardware,
