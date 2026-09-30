@@ -1043,3 +1043,63 @@ Stated now, so that none of it can be reasoned away later:
 **A degraded cross-vendor result is a result.** The headline is the degradation, and a
 large drop faithfully measured is the finding this project exists to produce — it is not a
 failure to be recovered from by adjusting the protocol.
+
+---
+
+## 18. Stage 2 session plan
+
+**110 epochs per night per fold**, resuming the next night, until the fold's 150 epochs
+are done or early stopping ends it.
+
+### 18.1 The number, and where it comes from
+
+| Quantity | Value | Measured or derived |
+|---|---|---|
+| Per-epoch time, `cirrus_holdout` | **231.2 s** mean (228.3–238.3) | **measured**, all 20 epochs of Stage 1b |
+| 110 epochs | **7.06 h** | derived from the above |
+| 150 epochs | 9.63 h | derived |
+| Night 2 remainder | 40 epochs, **2.57 h** | derived |
+
+110 epochs is **7.06 h of a night**, which is the constraint the number exists to respect:
+the workstation is the author's and the run has to be finished by morning. It is not a
+property of the model and carries no scientific meaning — it is a wall-clock bound, and it
+is recorded as one so that nobody later reads "110" as an epoch budget that was tuned.
+
+`cirrus_holdout` is the **smallest** fold (2610 training frames). `spectralis_holdout`
+(4032) and `topcon_holdout` (3088) will take proportionally longer per epoch, so 110
+epochs will not fit one night for those; their session sizes are derived from their own
+measured per-epoch times once each has run one night, not assumed from this one. **Do not
+copy 110 to the other folds.**
+
+### 18.2 How the nights compose
+
+- `--epochs 150` is the **fold total** and never changes between sessions. It is the
+  experiment.
+- `--max-epochs-this-session 110` bounds **this invocation only** (SRS-080).
+- The second night is the same command **without** `--max-epochs-this-session`, which
+  lets the fold run to its 150 or to early stopping, whichever comes first.
+- Resume is detected from the run directory, never requested by a flag. The second night
+  is not told that it is a resume; it discovers it.
+- `--max-epochs-this-session` rather than `STOP`, because `STOP` is a race against a 30 s
+  poll and landed thirteen epochs late on Stage 1 (`docs/08` D1). `STOP` remains for an
+  *unplanned* stop, which is what it is for.
+
+**Early stopping may end the fold before 150** — `early_stopping_patience` is 25. If it
+does, the fold is complete and the next night starts the next fold rather than continuing
+this one. A resumed session carries the complete early-stopping state, so patience does
+not restart at a session boundary (SRS-075, TC-059).
+
+### 18.3 What the night's evidence must show afterwards
+
+Checked the next morning, before the following session is launched:
+
+| Check | Where |
+|---|---|
+| The epoch log continued rather than restarted, with both session boundaries | `epochs.jsonl` |
+| `determinism.json` records **zero** fallbacks | run directory |
+| `source.dirty` is `false` and `source.commit` names a pushed commit | `run.json`, SRS-086 |
+| Telemetry covers the whole session, with no thermal excursion | `gpu_telemetry.csv` |
+| `last.pt` is current for its own epoch, and `best.pt` is not behind it | `checkpoints.sha256` |
+
+A night that fails any of these is investigated before the next is launched. Training
+through an unexplained anomaly to save a night costs the fold.
