@@ -9,6 +9,7 @@ it learns anything. Training happens on Kaggle (CLAUDE.md §6).
 
 from __future__ import annotations
 
+import hashlib
 import json
 
 import numpy as np
@@ -53,6 +54,17 @@ CFG = {
 }
 
 
+def stable_seed(key: str) -> int:
+    """A seed that is the same in every process, unlike `hash()`.
+
+    Python salts str hashing per process (PYTHONHASHSEED), so a fixture seeded from
+    `hash()` builds different data on every run. Found 2026-10-01 when a vacuity guard
+    failed 1 run in 20 because that run's trajectory never entered a patience window
+    (`docs/13`). A fixture for a determinism test must itself be deterministic.
+    """
+    return int.from_bytes(hashlib.sha256(key.encode()).digest()[:4], "big")
+
+
 def manifest_rows(n_per_vendor=2, frames=2):
     rows = []
     n = 0
@@ -80,7 +92,7 @@ def synthetic(monkeypatch):
     """Frames that never touch the filesystem, with fluid present so Dice is defined."""
 
     def fake_call(self, record):
-        rng = np.random.default_rng(abs(hash(record["frame_id"])) % (2**32))
+        rng = np.random.default_rng(stable_seed(record["frame_id"]))
         out = dict(record)
         out["image"] = rng.integers(0, 200, tuple(ROI)).astype(np.uint8)
         label = np.zeros(tuple(ROI), dtype=np.uint8)

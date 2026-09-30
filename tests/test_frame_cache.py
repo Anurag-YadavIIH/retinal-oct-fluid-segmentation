@@ -9,6 +9,8 @@ count decodes. See docs/13.
 
 from __future__ import annotations
 
+import hashlib
+
 import numpy as np
 import torch
 from monai.transforms import (
@@ -21,6 +23,17 @@ from monai.transforms import (
 
 from ocuval.data.datamodule import LoadFrame, flat_chain, prepare_cache
 from ocuval.data.transforms import ApplyStoredIntensityWindowd
+
+
+def stable_seed(key: str) -> int:
+    """A seed that is the same in every process, unlike `hash()`.
+
+    Python salts str hashing per process (PYTHONHASHSEED), so a fixture seeded from
+    `hash()` builds different data on every run. Found 2026-10-01 when a vacuity guard
+    failed 1 run in 20 because that run's trajectory never entered a patience window
+    (`docs/13`). A fixture for a determinism test must itself be deterministic.
+    """
+    return int.from_bytes(hashlib.sha256(key.encode()).digest()[:4], "big")
 
 
 def synthetic_records(volumes: int = 3, frames: int = 4) -> list[dict]:
@@ -57,7 +70,7 @@ class CountingLoader(Transform):
     def __call__(self, record: dict) -> dict:
         path = record["source_path"]
         if self._path != path:
-            rng = np.random.default_rng(abs(hash(path)) % (2**32))
+            rng = np.random.default_rng(stable_seed(str(path)))
             self._volume = rng.integers(0, 200, (self.frames, *self.size)).astype(np.uint8)
             self._path = path
             self.decodes += 1

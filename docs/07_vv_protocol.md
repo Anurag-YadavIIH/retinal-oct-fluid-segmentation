@@ -167,6 +167,38 @@ Required for Class B. This section is the process; §4 is the criteria.
    was inside a patience window at all, rather than passing on a trajectory that never
    exercised the thing.
 
+10. **A fixture for a determinism test must itself be deterministic — across processes,
+    not merely within one.** Added 2026-10-01.
+
+    Three fixtures seeded their synthetic images from `abs(hash(frame_id))`. Python salts
+    `str` hashing per process (`PYTHONHASHSEED`), so **every test process trained on
+    different data**. Measured: the same key hashed to 768840219, 640343991 and 2869603707
+    in three consecutive interpreters.
+
+    Nothing about the resume invariant broke — a resumed run still matched an uninterrupted
+    one in each process, because both halves saw the same data *within* that process. What
+    broke was rule 9's **vacuity guard**: the patience test asserts that the reference run
+    entered a patience window at all, and on 1 run in 40 that process's trajectory improved
+    on every epoch, so the precondition genuinely did not hold and the test correctly said
+    so.
+
+    **The failure was in the fixture, not in either assertion**, which is why it took two
+    rewrites and a 40-run capture loop to see: the test was rewritten twice for asserting
+    the wrong thing, and then failed for a third reason neither rewrite touched. The
+    diagnosis needed the actual assertion text, which was lost on the first two failures
+    because the output was not kept — **capture the failure before theorising about it.**
+
+    The fix is the one `epoch_seed` already uses: derive from a stable function.
+    `hashlib.sha256(key.encode())` gives the same seed in every process, so the trajectory
+    is now a fixed property of the test rather than a per-process draw, and the guard's
+    outcome is decided once instead of sampled.
+
+    The general form: **a test that asserts reproducibility cannot rest on anything the
+    runtime randomises per process** — `hash()` of a str, `set` or `dict` iteration order
+    derived from one, `id()`, address-dependent ordering, or an unseeded temporary path. A
+    pass count over such a fixture measures how often the precondition held, not whether
+    the property does.
+
 ## 4. Unit acceptance criteria — IEC 62304 §5.5.3
 
 A unit is accepted when **all** of the following hold:
