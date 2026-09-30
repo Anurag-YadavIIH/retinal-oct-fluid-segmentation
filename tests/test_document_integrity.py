@@ -345,12 +345,32 @@ def train_config() -> dict:
     return yaml.safe_load((REPO_ROOT / "configs" / "train_seg.yaml").read_text(encoding="utf-8"))
 
 
-def test_TC_097_amp_is_off_as_the_measurement_concluded():
-    """docs/13, 2026-09-26: AMP cost throughput at every micro-batch on this GPU."""
-    assert train_config()["train"]["amp"] is False, (
-        "configs/train_seg.yaml has AMP enabled, contradicting the measured decision in "
-        "docs/13 (2026-09-26) and the run conditions pre-registered in docs/07 section "
-        "15. The config is what drives the run; the prose is not."
+def test_TC_097_amp_is_on_as_the_measurement_under_determinism_concluded():
+    """docs/13, 2026-09-30: the 2026-09-26 AMP-off decision was **wrong**, not outdated.
+
+    It was measured without the determinism `train_fold` requests, so it priced kernels no
+    run selects. Under determinism AMP is 1.86x faster (17.1 against 9.2 img/s) and uses
+    less than half the peak memory (1.00 against 2.30 GiB).
+
+    This assertion is reversed rather than deleted, and deliberately so: the mechanism
+    that caught the original contradiction is the mechanism that must now hold the new
+    decision, or the next reversal goes unnoticed the same way.
+    """
+    assert train_config()["train"]["amp"] is True, (
+        "configs/train_seg.yaml has AMP disabled, contradicting the measured decision in "
+        "docs/13 (2026-09-30) and the Stage 1b conditions pre-registered in docs/07 "
+        "section 15.6. The config is what drives the run; the prose is not."
+    )
+
+
+def test_TC_097_the_config_names_the_deterministic_loss():
+    """SRS-084. MONAI's `DiceCELoss` reaches the one operation on this network with no
+    deterministic CUDA implementation, so a config naming it cannot satisfy CLAUDE.md
+    rule 4 on GPU however the run is seeded -- see docs/13, 2026-09-30."""
+    assert train_config()["loss"]["name"] == "dice_ce_deterministic", (
+        "configs/train_seg.yaml does not name the deterministic loss. Adoption was the "
+        "decision recorded in docs/13 on 2026-09-30, on measured cost of -8.1% "
+        "throughput for zero non-deterministic fallbacks."
     )
 
 

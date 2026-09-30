@@ -305,13 +305,31 @@ criterion stops Stage 2 and does not get rewritten.
   A private Kaggle dataset is still third-party storage: private controls who can read
   it, not where it is held, and the Agreement speaks to custody. DMP-C1 applied. The
   Kaggle path stays documented and marked not used.
-- **AMP is not used on this GPU.** Consumer Pascal has no tensor cores; measured, AMP
-  cut peak memory 1.29 to 0.81 GiB and cost throughput at every micro-batch. Memory was
-  never the binding constraint, so the trade is all cost.
+- **AMP IS used on this GPU** (reversed 2026-09-30). The 2026-09-26 decision to disable it
+  was **wrong, not merely outdated**: the benchmark that produced it never called
+  `request_determinism`, so it priced kernels no run selects — a correct measurement of a
+  configuration that does not exist. Measured under determinism: **AMP off 9.2 img/s at
+  2.30 GiB peak, AMP on 17.1 img/s at 1.00 GiB.** Without determinism the two are within
+  3%, which is what the original measurement saw. Three folds at 150 epochs: 37.4 h with
+  AMP against 57.7 h without (derived from those rates plus 39 s/epoch measured overhead).
+  *Why* fp16 wins on a card with no tensor cores is an **unmeasured hypothesis** —
+  probably the deterministic fp32 conv-backward kernels being far slower than the fp16
+  ones. Kernel selection has not been profiled; the decision rests on the throughput
+  number, not on the explanation.
+- **The training loss is `dice_ce_deterministic`** (SRS-084). MONAI's `DiceCELoss` reaches
+  `nll_loss2d_forward_out_cuda_template`, the one operation on this network with no
+  deterministic CUDA kernel, so under `warn_only=True` torch used the non-deterministic one
+  and warned 1308 times in Stage 1. Measured cost of the substitution: −8.1% throughput at
+  AMP on, for **zero** fallbacks. The Dice term stays MONAI's, untouched.
+- **Zero fallbacks is not determinism.** It means no operation *announced*
+  non-determinism; it is not the claim that two runs agree, and an operation that never
+  warns can still be order-dependent. **Rule 4 is claimed achieved on GPU only on TC-121's
+  evidence** — two runs compared byte for byte on weights, optimiser state and the loss
+  log. Never infer the second claim from the first.
 - **Gradient accumulation is implemented but not needed here** (micro-batch 8 peaks at
-  1.29 GiB of 4). Its equivalence rests on the network having **instance norm and no
-  batch norm**; under batch norm it is invalid and the response is to stop accumulating,
-  never to widen the tolerance (`docs/07` §14).
+  1.00 GiB of 4 under AMP). Its equivalence rests on the network having **instance norm
+  and no batch norm**; under batch norm it is invalid and the response is to stop
+  accumulating, never to widen the tolerance (`docs/07` §14).
 - **`LoadFrame` must remain a `monai.transforms.Transform`, and transform chains must
   stay flat.** `PersistentDataset` caches only up to the first transform that is
   Randomizable *or not a Transform*, and `Compose` is itself Randomizable — so a plain

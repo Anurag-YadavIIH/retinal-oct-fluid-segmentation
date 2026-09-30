@@ -63,14 +63,28 @@ class EpochResult:
 
 
 def build_loss(cfg: dict):
+    """The loss named in the configuration (SRS-084).
+
+    `dice_ce_deterministic` is the default for GPU runs and the one the committed config
+    names: MONAI's `DiceCELoss` reaches `nll_loss2d_forward_out_cuda_template`, the one
+    operation on this network with no deterministic CUDA implementation, so under
+    `warn_only=True` torch uses the non-deterministic kernel and warns. `dice_ce` is kept
+    because TC-089 compares the two back to back and the cross-check needs both.
+    """
     from monai.losses import DiceCELoss
 
+    from ocuval.training.losses import DeterministicDiceCELoss
+
     loss_cfg = cfg["loss"]
-    if str(loss_cfg.get("name", "dice_ce")).lower() != "dice_ce":
-        raise ValueError(f"unsupported loss {loss_cfg['name']!r}; only 'dice_ce' is provided")
+    builders = {"dice_ce": DiceCELoss, "dice_ce_deterministic": DeterministicDiceCELoss}
+    name = str(loss_cfg.get("name", "dice_ce_deterministic")).lower()
+    if name not in builders:
+        raise ValueError(
+            f"unsupported loss {loss_cfg['name']!r}; choose one of {sorted(builders)}"
+        )
     # include_background False: the classes are imbalanced and background dominates every
     # B-scan, so including it would let a model that predicts nothing score well.
-    return DiceCELoss(
+    return builders[name](
         include_background=bool(loss_cfg.get("include_background", False)),
         to_onehot_y=bool(loss_cfg.get("to_onehot_y", True)),
         softmax=bool(loss_cfg.get("softmax", True)),

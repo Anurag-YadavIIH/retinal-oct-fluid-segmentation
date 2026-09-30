@@ -99,8 +99,37 @@ def test_TC_088_the_stage1_criteria_still_state_their_measured_baselines():
             f"baseline {value} is missing from docs/07 section 15. The spatial-prior "
             f"figures are the pre-registered bar; without them the criterion is a wish."
         )
-    assert "AMP off" in section, "the run conditions no longer state AMP off"
     assert "10%" in section, "the loss-reduction threshold is no longer stated"
+    # Stage 1 ran with AMP off and its pre-registration says so. AMP was reversed on
+    # 2026-09-30 and Stage 1b runs with it on, but §15's record of the conditions Stage 1
+    # actually ran under is NOT edited to match -- that is the whole point of
+    # pre-registration. Both strings must be present, in their own subsections.
+    assert "AMP off" in section, (
+        "docs/07 §15 no longer states the AMP-off conditions Stage 1 ran under. A "
+        "pre-registration records what was committed before the run; a later decision to "
+        "reverse AMP is a new subsection, never an edit to this one."
+    )
+    assert "15.6" in section and "AMP on" in section, (
+        "docs/07 §15 does not pre-register Stage 1b under the reversed AMP decision. A "
+        "run whose conditions differ from §15's needs its own committed criteria before "
+        "it starts, or it has none."
+    )
+
+
+def test_TC_088_the_stage1b_thresholds_are_the_stage1_thresholds():
+    """Stage 1b changes the *conditions*, not the bar.
+
+    Re-running under a faster configuration is only informative if the thresholds are the
+    ones committed before any result was seen. A new stage that quietly relaxed them would
+    be a description of the new run, which is what `docs/07` §15.5 forbids.
+    """
+    section = stage1_criteria_text()
+    stage1b = section[section.index("15.6") :]
+    for value in ("0.0451", "0.0428", "0.0384", "10%"):
+        assert value in stage1b, (
+            f"Stage 1b's pre-registration does not restate {value}. The thresholds carry "
+            f"over unchanged; stating them here is what makes that checkable."
+        )
 
 
 # --- "Commits carry no Claude Code attribution" ----------------------------------------

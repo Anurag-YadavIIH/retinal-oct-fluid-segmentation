@@ -66,7 +66,22 @@ model:
   dropout: 0.2          # non-zero: required for MC-dropout at inference
 
 loss:
-  name: dice_ce
+  # SRS-084. The Dice term is MONAI's, untouched -- it never appeared in a fallback list,
+  # and replacing working code would mean more to verify for nothing. The cross-entropy
+  # term is written as log_softmax -> gather -> mean, each a deterministic CUDA kernel,
+  # because MONAI's DiceCELoss reaches `nll_loss2d_forward_out_cuda_template`, the ONE
+  # operation on this network with no deterministic implementation. Under
+  # `use_deterministic_algorithms(True, warn_only=True)` torch quietly used the
+  # non-deterministic kernel and warned 1308 times in the Stage 1 run (docs/13).
+  #
+  # It is a substitution, not an approximation: algebraically the same function as
+  # nn.CrossEntropyLoss with mean reduction, no class weights and no ignored index,
+  # differing only in floating-point summation order. TC-089 verifies it against the
+  # reference for value and gradient, and asserts the reference warns where this does not.
+  #
+  # Measured cost of the substitution (2026-09-30, cirrus_holdout, 60 s windows):
+  # -5.2% throughput at AMP off, -8.1% at AMP on. It buys ZERO fallbacks.
+  name: dice_ce_deterministic
   include_background: false
   to_onehot_y: true
   softmax: true
@@ -93,12 +108,30 @@ train:
   #
   # 8 means no accumulation. Lower it to fit a smaller card.
   micro_batch_size: 8
-  # OFF, and measured rather than assumed (docs/13, 2026-09-26). This GPU is consumer
-  # Pascal with no tensor cores: AMP cut peak memory 1.29 -> 0.81 GiB and cost
-  # throughput at every micro-batch (25.6 -> 25.0 img/s at micro-batch 8, 24.5 -> 17.2
-  # at micro-batch 2). Memory was never the binding constraint at 1.29 GiB of 4.0, so
-  # the trade is all cost. docs/07 section 15 pre-registers the Stage 1 run as AMP off.
-  amp: false
+  # ON since 2026-09-30, REVERSING the 2026-09-26 decision. That decision was not merely
+  # outdated -- it was WRONG, because it was measured without the determinism the loop
+  # requests, and so priced kernels no run selects (docs/13). The benchmark did not call
+  # `request_determinism`; it does now.
+  #
+  # Measured under determinism (cirrus_holdout, 60 s windows, micro-batch 8):
+  #   AMP off  9.2 img/s, peak 2.30 GiB      AMP on  17.1 img/s, peak 1.00 GiB
+  # Without determinism the two are within 3% of each other (25.0 vs 24.3), which is what
+  # the 2026-09-26 measurement saw and correctly reported for the run it measured.
+  #
+  # So AMP is 1.86x FASTER here and uses less than half the memory. Three folds at 150
+  # epochs: 37.4 h with AMP against 57.7 h without (derived from the rates above plus the
+  # 39 s/epoch overhead measured in Stage 1).
+  #
+  # WHY fp16 is faster on a card with no tensor cores is an UNMEASURED HYPOTHESIS: the
+  # deterministic fp32 convolution-backward kernels appear to be far slower than their
+  # fp16 counterparts, so determinism costs more in fp32 than the fp16 arithmetic penalty
+  # costs. Kernel selection has not been profiled and this explanation is not evidence.
+  # The decision rests on the throughput measurement, which does not depend on the reason.
+  #
+  # docs/07 section 15.6 pre-registers Stage 1b under these conditions; section 15
+  # records Stage 1's own AMP-off conditions unchanged, because a pre-registration is not
+  # edited after the fact.
+  amp: true
   grad_clip: 1.0
   early_stopping_patience: 25
   val_interval: 1

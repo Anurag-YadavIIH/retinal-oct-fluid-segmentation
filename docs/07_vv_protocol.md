@@ -481,6 +481,7 @@ passes every fixture written by the same person who wrote the code, and is wrong
 | ID | Title | Verifies | Method | Acceptance criterion | Auto |
 |---|---|---|---|---|---|
 | TC-120 | Dice and HD95 agree with MONAI back to back | SRS-032, RC-006 | U | Over randomly generated mask pairs, `ocuval.eval.metrics` and the corresponding MONAI metric agree within tolerance for both Dice and HD95 | yes (`slow`) |
+| TC-121 | **Two GPU runs of one configuration agree bit-for-bit** | SRS-076, SRS-077, SRS-084, SRS-085; CLAUDE.md rule 4 | U | Two independent runs of the same fold, seed and configuration produce **byte-identical** model weights, optimiser state and per-epoch loss log, and `determinism.json` records **zero fallbacks**. Both halves are required: zero fallbacks means no operation announced non-determinism, which is not the same claim as two runs agreeing — §3 rule 8. Marked `requires_data` and `slow`; it is the evidence for rule 4 on GPU and rule 4 is not claimed achieved there without it | yes (`slow`, `requires_data`) |
 
 TC-120 is marked `slow` because it imports the torch stack, which the rest of the metric
 suite deliberately does not need (CLAUDE.md §4). It does **not** need `requires_data`: the
@@ -741,6 +742,81 @@ A failed criterion stops Stage 2. It does not get the criterion rewritten. The f
 its investigation and its resolution go into `docs/13` in the ordinary way, and Stage 2
 begins only once the cause is understood — which may legitimately conclude that the
 criterion was wrong, but that conclusion is a recorded argument, not an edit.
+
+### 15.6 Stage 1b — the same criteria under the final configuration
+
+**Committed before the run, as §15 was.** Stage 1 passed (`docs/08` §5), and then three
+things changed underneath it: resume equivalence was fixed, the deterministic loss was
+adopted, and **AMP was reversed from off to on** because the AMP-off decision had been
+priced without the determinism the loop requests (`docs/13`, 2026-09-30). Stage 1's result
+was therefore produced under conditions Stage 2 will not use, and `docs/08` D2 records
+that it is not reproducible by the current code at all.
+
+Stage 1b re-establishes the smoke result under the configuration Stage 2 will actually
+run: **`dice_ce_deterministic`, determinism requested, and AMP on**. It costs ≈1.4 h,
+which is cheap against the ≈37 h the three folds need.
+
+**§15's conditions are not edited to match.** A pre-registration records what was
+committed before a run; Stage 1 ran with **AMP off** and §15 says so permanently. TC-088
+asserts both strings are present, in their own subsections.
+
+#### Conditions
+
+| Field | Stage 1 | **Stage 1b** |
+|---|---|---|
+| Fold | `cirrus_holdout` | `cirrus_holdout` — unchanged |
+| Epochs | ~20 | **20** |
+| Loss | MONAI `DiceCELoss` | **`dice_ce_deterministic`** (SRS-084) |
+| AMP | **off** | **on** |
+| Micro-batch / effective | 8 / 8 | 8 / 8 — unchanged |
+| Determinism | requested; **1 op fell back** | requested; **0 fallbacks expected** |
+| Sessions | 2, stopped by `STOP` at epoch 16 | **2, stopped by `--max-epochs-this-session 3`** |
+| Evaluation split | in-domain validation | in-domain validation — unchanged |
+
+**The session split is deliberate and does double duty.** Stopping after epoch 2 and
+relaunching puts the resume boundary **inside the warmup window** (`optim.warmup_epochs:
+5`), which is the case `SequentialLR`'s position in its own sequence has to survive, and
+which no run has yet exercised on GPU. `--max-epochs-this-session` rather than `STOP`,
+because `STOP` is a race against a 30 s poll and landed thirteen epochs late on Stage 1
+(`docs/08` D1).
+
+#### Criteria — the four §15 thresholds, unchanged
+
+1. **Loss decreases materially.** Mean training loss of the last three epochs at least
+   **10%** below the mean of the first three.
+2. **Validation Dice beats both baselines, per class.** Baseline A, the all-background
+   predictor, **0.000**. Baseline B, the spatial prior measured before Stage 1 and not
+   recomputed: **IRF 0.0451, SRF 0.0428, PED 0.0384**.
+3. **No class collapses to always-empty.** Each fluid class predicted on more than zero
+   validation frames.
+4. **The run's own records exist**, per the §15.4 table.
+
+**No threshold is relaxed, and none is tightened either.** Tightening would be as much a
+rewrite as relaxing: the comparison Stage 1b exists to make is between configurations, and
+it is only a comparison if the bar is the same. Stage 1's measured values are **not** the
+bar — a criterion of "at least as good as Stage 1" would be a criterion invented after
+seeing a result.
+
+#### Criterion 5, new and specific to this stage — determinism is measured, not inferred
+
+`determinism.json` shall record **zero fallbacks**, and, separately, **two runs of two
+epochs under this configuration shall agree bit-for-bit** on model weights, optimiser
+state and the per-epoch loss log.
+
+The second half is the load-bearing one. Zero fallbacks means no operation *announced*
+non-determinism; it does not establish that two runs agree, and the two are not the same
+claim — an operation with no warning can still be order-dependent. This is `docs/07` §3
+rule 8: the observable output of a deterministic run and a nearly deterministic one is
+identical until you compare two of them. **TC-121** performs the comparison.
+
+If TC-121 fails, CLAUDE.md rule 4 is **not** achieved on GPU, and the disposition is
+recorded rather than the claim softened.
+
+#### What a Stage 1b failure means
+
+As §15.5. A failed criterion stops Stage 2 and goes into `docs/13`. Stage 1 having passed
+does not license Stage 1b to be re-interpreted: if a criterion Stage 1 met is missed under
+the faster configuration, that is a finding about the configuration.
 
 ---
 
