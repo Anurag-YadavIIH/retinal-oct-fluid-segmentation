@@ -106,7 +106,7 @@ Required for Class B. This section is the process; §4 is the criteria.
    The test must therefore reach the artefact: open the cache file, run the hook,
    read the recorded state, count the calls.
 
-   **Four instances of this in this project, all found by something other than the
+   **Six instances of this in this project, all found by something other than the
    test that should have caught them:**
 
    | Mechanism | What the test asserted | Why it passed while broken | Found by |
@@ -115,6 +115,8 @@ Required for Class B. This section is the process; §4 is the criteria.
    | Coverage figures in `docs/09` | A hand-maintained number | Nothing recomputed it, so it drifted in both directions at once | Reading it against pytest |
    | Frame cache (TC-039) | Cached and uncached values matched | They match when the cache is empty and the transform simply re-runs | Benchmarking, when entries turned out to be 4 KB of metadata |
    | `optim.warmup_epochs` | Nothing — the key was read by no code at all | A configured warmup that never happens looks exactly like no warmup | Writing a test that had to cross a warmup boundary |
+   | Per-epoch shuffle seeding (TC-059) | Which epoch scored best after a resume | Sample order changes *which* epoch is best only sometimes; it passed 2 times in 3 with the defect present | Asking why a passing test was flaky |
+   | Per-epoch augmentation seeding (TC-059) | The sequence of frame **ids** each epoch served | The ids were right and the pixels were not — the transform chain's own RNG is in neither global generator | The order test passing while the run was still not reproducible |
 
    The common shape: **the observable output is identical whether the mechanism works
    or is missing entirely.** That is precisely when a black-box assertion is worthless,
@@ -128,6 +130,42 @@ Required for Class B. This section is the process; §4 is the criteria.
    - **Assert the mechanism can fail.** If disabling it does not break the test, the
      test was not testing it. TC-039 checks that a nested `Compose` truncates the cached
      prefix; TC-059 checks that discarding the RNG state makes a resumed run diverge.
+
+9. **Assert the invariant, not a consequence the trajectory happens to produce.** A
+   corollary of rule 8, added 2026-09-30 because two tests in one file broke this way and
+   the second broke it while being rewritten to fix the first.
+
+   Both were resume tests. One asserted *which epoch scored best* after a resume; the
+   other asserted that the patience counter at the first resumed epoch was not lower than
+   at the interruption. Each is a real consequence of the invariant, and each also depends
+   on what the metric happened to do:
+
+   | Test | The consequence it asserted | Why it was not the invariant |
+   |---|---|---|
+   | `..._preserves_the_best` | `best_metric` after a resume equals the uninterrupted value | A different sample order changes which epoch wins only when two epochs are close. 7 passes in 20 with the defect present |
+   | `..._mid_patience_carries_the_counter` | `since_improvement >= before` at the first resumed epoch | When that epoch *improves*, the counter resets to 0 and the run is correct. 17 passes in 20 on correct code — it failed the code for behaving as specified |
+
+   **A flaky test is not a test that needs rerunning; it is a test asserting something
+   that is not always true.** The second case is the instructive one: the flakiness was in
+   the assertion, not the system, so rerunning until green would have hidden nothing and
+   still taught nothing.
+
+   The invariant behind both is one sentence — *a resumed run is the same run* — and it is
+   assertable directly: compare the resumed run's whole epoch log against an uninterrupted
+   run's, field by field, and interrupt at **every** epoch rather than one chosen epoch,
+   because which boundary lands mid-patience depends on the trajectory and so cannot be
+   fixed in advance. Both rewritten tests now pass 20 times in 20.
+
+   Two practical tests of an assertion, before writing it:
+
+   - **Could this fail while the system is correct?** If yes, it is a consequence.
+   - **Does it depend on a number the run produced?** Then compare it against the same
+     number from a reference run, not against a bound chosen by hand.
+
+   And the vacuity guard that belongs with it: assert the run was *in* the state the test
+   is named for. The rewritten patience test fails loudly if no epoch of the reference run
+   was inside a patience window at all, rather than passing on a trajectory that never
+   exercised the thing.
 
 ## 4. Unit acceptance criteria — IEC 62304 §5.5.3
 
@@ -733,7 +771,8 @@ decision known to be unenforceable is a different thing from one assumed to be s
 | **Training reads the archive's native MetaImage, not the DICOM** | **TC-088 (new)** — `data/datamodule.py` references no `pydicom` |
 | Splits are keyed on the source subject, never the SOP Instance UID | TC-041, and **TC-088 (new)** checks the persisted split files themselves, not only the constructor |
 | **Training reads `train.batch_size` and nowhere else** | **TC-088 (new)** — a second `data.batch_size` fails it |
-| Resume equivalence is claimed per platform | TC-059 — bit-identical on CPU, within a stated tolerance on GPU, and negative-tested by discarding the RNG state |
+| Resume equivalence is claimed per platform | TC-059 — bit-identical on CPU, within a stated tolerance on GPU, and negative-tested three ways: by discarding the RNG state, and by removing each half of the per-epoch reseed in turn |
+| **Sample order and augmentation are pure functions of `(seed, epoch)`** | **TC-059 (extended 2026-09-30)** — the served order and the served *pixels* are each compared against an uninterrupted run at every epoch. Deriving the seed rather than saving generator state is what makes this assertable: there is no restore step that can be omitted |
 | Resume is detected from the run directory; `last` is written every epoch | TC-059, TC-079 |
 | AMP is not used on this GPU | TC-097 — added 2026-09-28 after the aborted launch; negative-tested |
 | Gradient accumulation rests on instance norm, not batch norm | TC-078 — the structural precondition is asserted before the equivalence |
@@ -755,6 +794,7 @@ decision known to be unenforceable is a different thing from one assumed to be s
 | **URS-011's research-use designation mechanism is still open** | This is the *absence* of a decision. A test asserting it stays open would have to fail the moment it is resolved, which would make resolving it look like a regression. It belongs in `docs/11`'s open items, where it is |
 | **A fixture written in the consuming code's convention cannot test a conversion** (§3 rule 7) | A rule about how tests are written, not a property of the system. No assertion can distinguish a fixture in the source convention from one in the target convention without knowing the author's intent. It is enforced by review, and by the two tests it produced — TC-017 and TC-043 — carrying the reasoning in their docstrings |
 | **A test for a mechanism must inspect the mechanism** (§3 rule 8) | Same shape, one level up: a meta-rule about test design. A test cannot assert that other tests are well designed. Its enforcement is that every instance found so far is recorded in `docs/13` with the shape named, so the pattern is recognisable the seventh time |
+| **Assert the invariant, not a lucky consequence** (§3 rule 9) | Same shape again. The nearest mechanical control is not a test but a habit: a test suspected of flakiness is run 20 times and the count recorded, because a single green run is exactly the evidence a consequence-asserting test is best at producing. Both instances were found that way and both counts are in §3 rule 9 |
 | **Training runs locally; the dataset never leaves this workstation** | An operational commitment about what is *not* done. No test can prove an upload did not happen. The nearest mechanical control is TC-100, which asserts nothing under `data/` is tracked by git — that closes the one vector this repository controls, and the rest rests on `docs/06` §7.1 and on the author |
 
 ### 16.4 What this audit changed

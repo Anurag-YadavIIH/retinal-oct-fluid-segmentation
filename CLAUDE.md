@@ -125,8 +125,23 @@ Accuracy alone is never reported. The classes are imbalanced and it is misleadin
   what it does and why this approach over the alternatives — then write the code.
   Do not produce large blocks of unexplained scaffolding.
 - **Small commits, one concern each.** Conventional commit style.
-- **Do not train models in-session.** Training runs on Kaggle. Claude Code's job is the
-  pipeline, the tests, the DICOM layer, the service, and the documents.
+- **Every number in a report states whether it was measured or derived, and from what.**
+  A projection and a measurement are the same shape — a number with units — so nothing
+  distinguishes them unless the text does. On 2026-09-30 a benchmark *projection* was
+  reported as an observed throughput and two false claims followed from it, one of which
+  nearly became the top blocker for Stage 2 (`docs/13`). Write "measured, 25 telemetry
+  samples" or "derived from the 150-epoch budget at 30 img/s", never a bare figure.
+- **Any statement about what code does cites the file and line it was read from.**
+  Three errors in one session came from describing code from memory rather than opening
+  it. `datamodule.py:472`, `torch sampler.py:167`. If it was not read this session, it is
+  a guess, and it is labelled one.
+- **A flaky test is a test asserting something that is not always true** (`docs/07` §3
+  rule 9). Do not rerun it until green — that is the evidence such a test is best at
+  producing. Run it 20 times, report the count, then fix the assertion.
+- **Training runs locally on this workstation's GTX 1050, in-session when asked.** The
+  dataset never leaves this machine (`docs/06` §7.1); the Kaggle path stays documented
+  and marked not used. Claude Code's job is also the pipeline, the tests, the DICOM
+  layer, the service, and the documents.
 - **Do not download datasets.** `scripts/00_fetch_data.py` documents the manual steps;
   RETOUCH requires registration and is fetched by hand.
 - **Ask before adding a dependency.** Every new package means a SOUP entry and a
@@ -265,8 +280,27 @@ criterion stops Stage 2 and does not get rewritten.
   within a stated tolerance on GPU, because several CUDA kernels here have no
   deterministic implementation. Never claim bit-exactness on GPU.
 - **Resume is detected from the run directory, never requested by a flag**, and `last`
-  is written every epoch before any early-stopping decision. `best` selects a model;
-  `last` continues a trajectory.
+  is written every epoch, unconditionally — including the epoch that triggers early
+  stopping. `best` selects a model; `last` continues a trajectory. **Corrected
+  2026-09-30:** this previously read "before any early-stopping decision", which is what
+  the code did and was the defect. `last` is written *after* the best-check, so the
+  early-stopping state it carries belongs to its own epoch. Written before, it recorded
+  the *previous* epoch's best, and a resumed run could overwrite `best.pt` with a worse
+  model. Unconditional and current are both required; they are not in tension.
+- **Per-epoch randomness is derived, never saved and restored** (SRS-076). Sample order
+  and augmentation are seeded from `(seed, epoch, stream)` at the top of every epoch, so
+  a resume reproduces them by construction with nothing to restore. The reason is not
+  elegance: a save-and-restore guarantee is bounded by the inventory of generators
+  someone remembered, and that inventory is unbounded — **every MONAI `Randomizable`
+  holds its own `np.random.RandomState` (monai `transform.py:186`) that no checkpoint can
+  see**, which is how the augmentation stream stayed broken after the sampler was fixed.
+  Do not answer a future divergence by saving more state.
+- **`persistent_workers` is not used**, and the throughput cost is accepted. Persistent
+  workers draw `_base_seed` once per process (torch `dataloader.py:602`, not redrawn by
+  `_reset` at `:610`, and `__iter__` reuses the live iterator at `:433-437`), so their
+  augmentation would again depend on how many epochs the process had run. No
+  `worker_init_fn` is added either: torch already seeds `random`, `torch` and `numpy` per
+  worker from `_base_seed` (`worker.py:223-229`).
 - **Training runs locally; the dataset never leaves this workstation** (`docs/06` §7.1).
   A private Kaggle dataset is still third-party storage: private controls who can read
   it, not where it is held, and the Agreement speaks to custody. DMP-C1 applied. The
