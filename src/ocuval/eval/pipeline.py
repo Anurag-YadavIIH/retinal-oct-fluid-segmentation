@@ -249,9 +249,7 @@ def evaluate(
     is the part that must be auditable without a GPU, so it takes measurements rather than
     tensors.
     """
-    sealed.require_unsealed(
-        plan.bucket, plan.unlock, fold_id=plan.fold_id, root=artifacts_root
-    )
+    sealed.require_unsealed(plan.bucket, plan.unlock, fold_id=plan.fold_id, root=artifacts_root)
 
     seg_rows, det_rows = [], []
     for volume in volumes:
@@ -266,9 +264,7 @@ def evaluate(
                 }
             )
         for row in volume.get("detection", []):
-            det_rows.append(
-                {**row, "patient_id": volume["patient_id"], "vendor": volume["vendor"]}
-            )
+            det_rows.append({**row, "patient_id": volume["patient_id"], "vendor": volume["vendor"]})
 
     reportable = [r for r in seg_rows if r["metric"] in SEGMENTATION_METRICS]
     segmentation = subgroup.by_vendor(reportable)

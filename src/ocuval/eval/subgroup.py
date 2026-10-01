@@ -141,9 +141,7 @@ def generalisation_gap(in_domain: dict, held_out: dict) -> dict:
                 "in_domain": a,
                 "held_out": b,
                 "gap": a["value"] - b["value"],
-                "intervals_overlap": not (
-                    a["ci_low"] > b["ci_high"] or b["ci_low"] > a["ci_high"]
-                ),
+                "intervals_overlap": not (a["ci_low"] > b["ci_high"] or b["ci_low"] > a["ci_high"]),
             }
     return out
 
