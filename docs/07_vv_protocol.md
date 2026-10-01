@@ -1139,6 +1139,23 @@ comparison across two occasions rather than one, and would give two chances to l
 Each bucket is unlocked separately and each access is logged separately, so the count
 remains per bucket and "exactly once" stays checkable for each.
 
+### 17.8 How an evaluation run is launched
+
+**Added 2026-10-01 after the first `test` access was killed mid-run** (`docs/08` D5).
+
+An evaluation run is launched **from the author's own terminal, or as a detached background
+process**. It is never launched as a single tool call that a time limit can terminate.
+
+The first access to the held-out split was stopped by a harness background limit after 10 of
+24 volumes. It produced no record and no results — the output file is written only at the end
+— but it **consumed an unlock and left an entry in the access log**, so a protocol that
+permits one evaluation now has a history showing two. Nothing was lost except the clarity of
+the count, and that is exactly the thing the seal exists to provide.
+
+The rule is about where the run's lifetime is owned. A run that outlives the thing that
+started it cannot be ended by that thing's timeout, and an evaluation of a sealed split is the
+last place to discover that a wrapper had an opinion about how long work may take.
+
 ---
 
 ## 18. Stage 2 session plan

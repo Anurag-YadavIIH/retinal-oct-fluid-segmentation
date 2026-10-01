@@ -466,6 +466,140 @@ would show throttling.
 
 ---
 
+## 5d. Stage 2 — the one-time evaluation of the held-out vendor
+
+Run 2026-10-01 under the protocol pre-registered in `docs/07` §17 and amended in §17.7
+**before any sealed split was accessed**. Records:
+`artifacts/runs/cirrus_holdout_stage2/evaluation_test.json` and
+`evaluation_in_domain_ref.json`.
+
+### 5d.1 Provenance
+
+| Field | Value |
+|---|---|
+| Evaluation code | **`767c8e571dc00b9db1907f569f15548c8399a358`**, branch `main`, `dirty: false` |
+| Model | `best.pt`, **epoch 33**, trained from `a6d6edb` |
+| Held-out vendor | **cirrus** — trained on spectralis + topcon |
+| Presence threshold | **10 voxels**, as configured (SRS-051, §17.7a) |
+| MC-dropout passes | 20 (SRS-029) |
+| Bootstrap | 2000 resamples, α = 0.05, seed 20260916, **resampling unit: patients** (SRS-087) |
+| Geometry | predictions inverted to native grid before measurement; spacing asserted bit-identical to ingestion (SRS-074, SRS-057) |
+| Elapsed | 101.4 min (`test`, 24 volumes), 8.5 min (`in_domain_ref`, 7 volumes) |
+
+### 5d.2 Segmentation — per class, native geometry, patient-level 95% intervals
+
+| Class | Metric | Held-out cirrus | In-domain reference | Gap |
+|---|---|---|---|---|
+| IRF | Dice | **0.3452** [0.2461, 0.4433] n=24 | **0.5543** [0.3370, 0.7272] n=7 | +0.2091 |
+| IRF | HD95 | 1.5191 [0.3766, 3.1149] n=18 | 1.0296 [0.0471, 2.2165] n=6 | −0.4895 |
+| SRF | Dice | **0.2481** [0.1431, 0.3632] n=24 | **0.2707** [0.0048, 0.5727] n=7 | +0.0226 |
+| SRF | HD95 | 1.1525 [0.2735, 2.1690] n=12 | 5.8591 [0.0176, 13.1262] n=4 | +4.7066 |
+| PED | Dice | **0.1916** [0.0956, 0.2987] n=24 | **0.2740** [0.0387, 0.5598] n=7 | +0.0825 |
+| PED | HD95 | 1.5771 [0.6368, 2.8785] n=12 | 0.0869 [0.0000, 0.2216] n=3 | −1.4901 |
+
+**`n` is patients throughout** (SRS-087, §17.2). Dice `n` is the full 24 and 7. HD95 `n` is
+lower — 18, 12, 6, 4, 3 — because HD95 is undefined where exactly one of prediction and
+reference is empty and those volumes are dropped before resampling rather than counted as
+evidence. **Gap = in-domain − held-out**, so positive means lower performance on the unseen
+vendor.
+
+### 5d.3 Detection — at the pre-registered threshold, AUROC primary
+
+AUROC is the primary detection metric because it is threshold-free (§17.7a). Sensitivity and
+specificity are reported at the fixed threshold of 10 voxels **as-is**.
+
+| Class | Metric | Held-out cirrus | In-domain reference | Gap |
+|---|---|---|---|---|
+| IRF | **AUROC** | **1.0000** n=24 (+18/−6) | **1.0000** n=7 (+6/−1) | 0.0000 |
+| IRF | sensitivity | 1.0000 n=18 | 1.0000 n=6 | 0.0000 |
+| IRF | specificity | 0.0000 n=6 | 0.0000 n=1 | 0.0000 |
+| SRF | **AUROC** | **1.0000** n=24 (+12/−12) | **0.9167** n=7 (+3/−4) | −0.0833 |
+| SRF | sensitivity | 1.0000 n=12 | 1.0000 n=3 | 0.0000 |
+| SRF | specificity | 0.0833 n=12 | 0.2500 n=4 | +0.1667 |
+| PED | **AUROC** | **0.9514** n=24 (+12/−12) | **1.0000** n=7 (+2/−5) | +0.0486 |
+| PED | sensitivity | 1.0000 n=12 | 1.0000 n=2 | 0.0000 |
+| PED | specificity | 0.0000 n=12 | 0.2000 n=5 | +0.2000 |
+
+Sensitivity `n` is the count of truly-present volumes and specificity `n` the truly-absent
+ones — the denominators each rate is defined over. AUROC `n` is patients, with the
+positive/negative volume split given.
+
+### 5d.4 What these figures do and do not establish
+
+**No per-class Dice difference is established at 95%.** Five of the six segmentation
+comparisons have **overlapping** intervals between the two arms — IRF Dice, SRF Dice, PED
+Dice, IRF HD95 and SRF HD95. IRF's gap of +0.2091 is the largest and its arms still overlap,
+[0.2461, 0.4433] against [0.3370, 0.7272]. All three Dice point estimates are lower on the
+unseen vendor, and that is the direction the project expected, but the intervals do not
+separate them.
+
+The one non-overlapping comparison is **PED HD95**, whose in-domain arm rests on **3
+patients**. Nothing is concluded from it.
+
+**The in-domain arm has 7 patients**, which is why its intervals are wide — SRF Dice spans
+[0.0048, 0.5727] and SRF HD95 [0.0176, 13.1262]. Several HD95 figures rest on 3 or 4
+patients and carry almost no information at that width.
+
+**The gap figures carry no confidence intervals, by design** (§17.2, `eval/subgroup.py`). A
+difference of two independently bootstrapped intervals is not a confidence interval: a
+correct interval for a difference requires resampling both arms jointly under one patient
+draw. Both arms' intervals are given so a reader can see the overlap, and the gap is a point
+difference labelled as such. A joint-resample estimator is a separate, pre-registered change.
+
+**Specificity is near zero at the fixed threshold in both arms** — 0.0000, 0.0833, 0.0000 on
+held-out and 0.0000, 0.2500, 0.2000 in-domain — while sensitivity is 1.0000 throughout. At 10
+voxels the model predicts every class present in nearly every volume. That is a measured fact
+about this operating point, reported unchanged per §17.7a. **AUROC is nonetheless 0.95–1.00**,
+which is consistent with the ranking being informative while that particular threshold is not
+discriminative; the two are not in conflict. No threshold has been re-selected.
+
+### 5d.5 Deviations
+
+#### D5 — the `test` bucket was unlocked twice
+
+**What happened.** The first access, 12:58:29 UTC, was **terminated by a harness background
+time limit** after measuring **10 of 24 volumes**. It produced **no `evaluation_test.json`**
+— the record is written only at the end of a run — and therefore **no results were produced
+or seen**. The second access, 13:29:32 UTC, ran to completion and is the record reported
+above.
+
+**No change to the model, checkpoint, threshold or metric definitions was made between the
+two runs** (§17.7b). The restart's logged `reason` states the timeout, the 10-of-24 progress,
+that no JSON was produced, and that nothing was changed.
+
+**Disposition: recorded, not reasoned away.** `docs/07` §17.1 permits the test split to be
+evaluated once, and the access log shows more than one unlock. The author's reading is that
+the pre-registered concern — looking at results more than once — is not breached, because the
+first access yielded no results to look at. That is a reading of the protocol, not a fact the
+log establishes, which is precisely why SRS-088 records the count instead of letting the
+operator decide the question.
+
+**Corrective action, §17.7's successor rule:** evaluation runs are launched from the author's
+own terminal or as a detached background process, never as a single tool call a time limit can
+kill (`docs/07` §17.8).
+
+#### D6 — the access count counted gate calls, not evaluation runs
+
+The logged counts read `test=3` and `in_domain_ref=2`, against two and one actual runs. The
+seal is checked **twice per completed run** — once in `scripts/05_evaluate.py` before the
+split is read, once in `eval/pipeline.py` at aggregation — so a completed run logged two
+entries and the killed run logged one. 3 = 1 + 2 and 2 = 2.
+
+**No reported figure depends on this**; it is an accounting defect, and the `reason` fields
+distinguish the entries so no information was lost. But the headline number did not answer the
+question §17.5 asks. SRS-088 is corrected and the accounting fixed so that each run counts
+once. **The raw access log is kept exactly as written** — it is the primary evidence, and
+rewriting it to make the count tidy is the one thing that would destroy its value.
+
+#### D7 — per-volume measurements were not persisted
+
+The evaluation record carries aggregates only. No secondary analysis — including the
+present/absent Dice decomposition — can be computed from it without re-running inference on
+the sealed splits. §17.5's field list did not require per-volume rows, and should have. Open
+at the time of writing.
+
+---
+
 ## 6. Conclusion
 
 **Not drafted.** The validation conclusion requires the cross-vendor result, which is
