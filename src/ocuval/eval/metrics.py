@@ -218,6 +218,108 @@ def volume_mm3(mask: np.ndarray, spacing: tuple[float, ...]) -> tuple[float, int
     return count * voxel_volume, count, voxel_volume
 
 
+def auroc(scores: np.ndarray, labels: np.ndarray) -> float:
+    """Area under the ROC curve, in numpy, with ties handled by midrank (SRS-052).
+
+    **Computed here rather than taken from scikit-learn** for the reason the module
+    docstring gives: `docs/10`'s figures must be independently recomputable without a
+    torch or scikit-learn runtime. scikit-learn is the *cross-check*, back to back, on the
+    arrangement TC-120 already uses for MONAI — never the source of a reported number.
+
+    Implemented through the Mann-Whitney identity, AUROC = P(score of a positive exceeds
+    score of a negative), with ties counting a half. That form is exact, needs no
+    threshold sweep and no trapezoid, and is where tie handling becomes explicit instead of
+    being an artefact of how the curve was sampled. MC-dropout mean probabilities tie
+    readily -- a class absent from every pass scores exactly 0.0 on many volumes -- so
+    midrank is a correctness requirement here, not a refinement.
+
+    Undefined with only one class present, and returns NaN rather than 0.5: a single-class
+    subgroup has no discrimination to measure, and 0.5 would read as a measured coin flip.
+    That case is expected per vendor on the rarer classes.
+    """
+    s = np.asarray(scores, dtype=float).ravel()
+    y = _as_bool(np.asarray(labels)).ravel()
+    if s.size != y.size:
+        raise ValueError(f"scores and labels differ in length: {s.size} vs {y.size}")
+    keep = ~np.isnan(s)
+    s, y = s[keep], y[keep]
+    positives, negatives = int(y.sum()), int((~y).sum())
+    if positives == 0 or negatives == 0:
+        return float("nan")
+
+    # Midrank: tied scores all receive the mean of the ranks they span, which is what makes
+    # a tie worth half a comparison rather than a whole one or none.
+    order = np.argsort(s, kind="mergesort")
+    ranks = np.empty(s.size, dtype=float)
+    sorted_scores = s[order]
+    start = 0
+    for index in range(1, s.size + 1):
+        if index == s.size or sorted_scores[index] != sorted_scores[start]:
+            ranks[order[start:index]] = 0.5 * (start + index - 1) + 1.0
+            start = index
+    return float((ranks[y].sum() - positives * (positives + 1) / 2) / (positives * negatives))
+
+
+def bootstrap_ci_grouped(
+    values: np.ndarray,
+    groups: np.ndarray,
+    *,
+    seed: int,
+    n_resamples: int = 2000,
+    alpha: float = 0.05,
+) -> Estimate:
+    """Cluster bootstrap: resample **patients**, not measurements (SRS-087, `docs/07` §17.3).
+
+    **Why this exists alongside `bootstrap_ci`.** B-scans within a volume and volumes
+    within a patient are close to repeated measurements of one eye. Resampling individual
+    values treats them as independent evidence and **narrows the interval by roughly the
+    square root of the cluster size** -- in the direction that makes a result look more
+    certain than it is. For a project whose headline is a per-vendor comparison, that is
+    the one error that would flatter the conclusion.
+
+    So each resample draws `n_groups` patients with replacement and takes **all** of each
+    drawn patient's values, then averages. A patient sampled twice contributes twice, which
+    is the point: the variability being estimated is variability between patients.
+
+    `n` is reported as **the number of patients**, not the number of values, because that
+    is the unit the interval describes. `docs/07` §17.2 requires the unit to be named
+    wherever `n` is reported, for exactly this reason -- an `n` of 420 frames read as 420
+    patients overstates the evidence by two orders of magnitude.
+
+    NaN values are dropped first, and a patient left with no finite values is dropped from
+    the resampling population rather than contributing an empty mean.
+    """
+    v = np.asarray(values, dtype=float).ravel()
+    g = np.asarray(groups).ravel()
+    if v.size != g.size:
+        raise ValueError(f"values and groups differ in length: {v.size} vs {g.size}")
+
+    finite = ~np.isnan(v)
+    v, g = v[finite], g[finite]
+    if v.size == 0:
+        nan = float("nan")
+        return Estimate(value=nan, ci_low=nan, ci_high=nan, n=0)
+
+    labels, inverse = np.unique(g, return_inverse=True)
+    buckets = [v[inverse == index] for index in range(labels.size)]
+    n_groups = len(buckets)
+
+    # The point estimate is the mean over VALUES, not the mean of per-patient means. The
+    # two differ whenever patients contribute unequal counts, and SRS-032's Dice is defined
+    # per evaluated unit; changing that here would silently redefine the reported metric.
+    point = float(v.mean())
+    if n_groups == 1:
+        return Estimate(value=point, ci_low=point, ci_high=point, n=1)
+
+    rng = np.random.default_rng(seed)
+    draws = rng.integers(0, n_groups, size=(n_resamples, n_groups))
+    sums = np.array([bucket.sum() for bucket in buckets], dtype=float)
+    counts = np.array([bucket.size for bucket in buckets], dtype=float)
+    means = sums[draws].sum(axis=1) / counts[draws].sum(axis=1)
+    low, high = np.percentile(means, [100 * alpha / 2, 100 * (1 - alpha / 2)])
+    return Estimate(value=point, ci_low=float(low), ci_high=float(high), n=n_groups)
+
+
 def bootstrap_ci(
     values: np.ndarray,
     *,

@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-086 and NFR-001..NFR-008. Every requirement here derives
+Allocates SRS-001..SRS-088 and NFR-001..NFR-008. Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -129,6 +129,8 @@ measurement, and that gap is HAZ-012.
 | SRS-084 | The training loss shall have a deterministic implementation on the training accelerator. Where a term of the reference loss does not, it shall be replaced by an equivalent formulation that does, and the replacement shall be verified **back to back against the reference** on random inputs within a tolerance stated in `docs/07`. A run shall record zero determinism fallbacks, or record why it does not. | URS-010, NFR-002 | TC-089 |
 | SRS-085 | The run record shall not be able to contradict itself: `run.json` shall not report deterministic algorithms as active while `determinism.json` records a fallback. Fallbacks shall be stored deduplicated as operation, count and first occurrence, not as one line per occurrence. | URS-010, NFR-008 | TC-109 |
 | SRS-086 | The run record shall identify **the code that produced the run**, not only its configuration: `run.json` shall carry the commit identifier and whether the working tree was clean at the moment the run started. A run whose results will be reported shall **refuse to start on a dirty tree** unless the caller explicitly overrides, and the override shall itself be recorded. A configuration pinned against unidentified code is not reproducible, and a commit identifier recorded beside uncommitted edits names code that was not run. Each value shall have exactly one home in the record. | URS-010, NFR-002, NFR-008 | TC-122 |
+| SRS-087 | Every reported confidence interval shall be a **cluster bootstrap resampled at the patient level**, taking all of a drawn patient's measurements, and the reported `n` shall be the **number of patients** with its unit named. Frames within a volume and volumes within a patient are near-repeated measurements, so resampling measurements independently narrows the interval by roughly the square root of the cluster size — in the direction that overstates certainty. The resample count, alpha and seed shall be recorded with the result. | URS-007, URS-010 | TC-124 |
+| SRS-088 | The held-out-vendor **test** split and the **in-domain reference** split shall be sealed: any code path that would read either shall refuse unless an explicit unlock is supplied, the unlock shall name a reason, and every access shall be appended to a durable access log recording the time, the bucket and the reason. `docs/07` §17.1 permits exactly one evaluation of the test set, and a limit nobody counts is not a limit. | URS-007, URS-010, NFR-008 | TC-125 |
 
 ### 3.5 Training
 
@@ -219,6 +221,11 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `training/telemetry.py` | SRS-082 |
 | `training/losses.py` | SRS-084 |
 | `runs.py` | SRS-031, SRS-086 |
+| `eval/metrics.py` | SRS-032..SRS-035, SRS-052, SRS-053, SRS-087 |
+| `eval/sealed.py` | SRS-088 |
+| `eval/pipeline.py` | SRS-050..SRS-053, SRS-074, SRS-087, SRS-088 |
+| `eval/subgroup.py` | SRS-087 |
+| `models/uncertainty.py` | SRS-029, SRS-030 |
 | `scripts/benchmark_device.py` | SRS-031 |
 | `data/datamodule.py` | SRS-024 |
 | `data/transforms.py` | SRS-025, SRS-026 |

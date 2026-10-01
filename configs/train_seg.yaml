@@ -140,4 +140,16 @@ train:
 
 inference:
   mc_dropout_passes: 20
+
+  # SRS-051: a fluid class counts as PRESENT in a volume when its predicted voxel count
+  # exceeds this. Declared here and read by nothing else, because a threshold hard-coded in
+  # the evaluator is a threshold nobody can see in the run record -- and this one moves
+  # sensitivity and specificity directly, so it is exactly the kind of number that must be
+  # fixed before results are visible (docs/07 section 17).
+  #
+  # 10 voxels. Chosen as a floor on "the model predicted something rather than nothing",
+  # not tuned: at the native spacings here 10 voxels is ~1e-5 mm3, far below any clinically
+  # meaningful volume, so it separates a handful of stray voxels from a genuine prediction
+  # without being a decision about how much fluid matters. It is NOT selected on any split.
+  presence_voxel_threshold: 10
   sliding_window_overlap: 0.25

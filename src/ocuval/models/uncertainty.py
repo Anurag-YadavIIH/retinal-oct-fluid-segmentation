@@ -4,18 +4,101 @@ Traces to: SRS-029, SRS-030 (uncertainty output)
 Implements risk control: RC-009 (routing low-confidence cases to human review)
 Verifies: TC-055, TC-056
 
-Dropout layers are kept active at inference and the forward pass is repeated;
-the per-voxel standard deviation across passes is the uncertainty map.
+Dropout layers are kept active at inference and the forward pass is repeated; the
+per-voxel standard deviation across passes is the uncertainty map.
+
+**Why dropout only, and not the whole model, is put into training mode.** `model.train()`
+would also switch the normalisation layers, and this network uses `InstanceNorm2d` --
+whose default `track_running_stats=False` means train mode makes it recompute statistics
+per sample rather than use stored ones. That would change the *prediction*, not just its
+spread, so the mean over passes would no longer be an estimate of the model's output. Only
+`nn.Dropout*` modules are enabled, which is what MC-dropout actually requires.
+
+**The mean, not a single pass, is the prediction.** SRS-052 takes the detection score from
+the mean class probability, so the mean has to be the thing that is also segmented and
+measured, or the detection arm and the segmentation arm would describe different outputs
+(SRS-050: one model, two views).
 """
 
 from __future__ import annotations
 
+import numpy as np
+
+
+def enable_dropout(model) -> int:
+    """Put every dropout layer into training mode, leaving everything else in eval.
+
+    Returns how many layers were switched, so a caller can assert the mechanism did
+    something. A model with no dropout would otherwise produce an uncertainty map of exact
+    zeros, which looks like perfect confidence rather than like a missing mechanism --
+    `docs/07` §3 rule 8.
+    """
+    import torch
+
+    switched = 0
+    for module in model.modules():
+        if isinstance(module, torch.nn.modules.dropout._DropoutNd):
+            module.train()
+            switched += 1
+    return switched
+
 
 def mc_dropout_predict(model, batch, passes: int):
-    """Return (mean_probabilities, per_voxel_std) over the given number of passes."""
-    raise NotImplementedError
+    """Return (mean_probabilities, per_voxel_std) over the given number of passes.
+
+    `batch` is a tensor of shape (N, C, H, W); the return is a pair of numpy arrays of
+    shape (N, classes, H, W). Softmax is applied per pass **before** averaging: averaging
+    logits and then normalising is a different quantity, and is not a probability.
+
+    `passes` must be at least 2 -- a standard deviation over one sample is 0 by definition,
+    which would report perfect confidence from a single forward pass.
+    """
+    import torch
+
+    if passes < 2:
+        raise ValueError(
+            f"passes={passes}: a standard deviation over one pass is identically zero, "
+            f"which would report perfect confidence. SRS-029 configures 20."
+        )
+
+    model.eval()
+    if enable_dropout(model) == 0:
+        raise ValueError(
+            "the model has no dropout layers, so repeated passes are identical and the "
+            "uncertainty map would be exactly zero. `model.dropout` must be non-zero "
+            "(configs/train_seg.yaml sets 0.2 for this reason)."
+        )
+
+    stack = []
+    with torch.no_grad():
+        for _ in range(passes):
+            stack.append(torch.softmax(model(batch), dim=1).detach().cpu().numpy())
+    draws = np.stack(stack, axis=0)
+    # ddof=0: this is the spread of the sample of passes actually drawn, not an estimate of
+    # a population variance. With `passes` fixed by configuration the distinction is a
+    # constant factor, and stating which one is reported matters more than the choice.
+    return draws.mean(axis=0), draws.std(axis=0, ddof=0)
 
 
 def scan_confidence(uncertainty_map) -> float:
-    """Reduce a per-voxel uncertainty map to one scan-level confidence score."""
-    raise NotImplementedError
+    """Reduce a per-voxel uncertainty map to one scan-level confidence score.
+
+    `1 - mean(std)` over the whole map, in [0, 1] and increasing with confidence.
+
+    **The mean rather than the max**, deliberately: the maximum per-voxel standard
+    deviation is almost always near its ceiling somewhere along a fluid boundary, where
+    disagreement between passes is expected and uninformative. A max would therefore be
+    nearly constant across scans and would rank none of them, which defeats RC-009's
+    purpose of routing the least confident cases to review.
+
+    The ceiling of a per-voxel standard deviation over softmax outputs is 0.5, so the score
+    is rescaled by 2 to span [0, 1]. Without that, a maximally uncertain scan would score
+    0.5 and read as middling rather than as the worst possible.
+    """
+    values = np.asarray(uncertainty_map, dtype=float)
+    if values.size == 0:
+        raise ValueError("an empty uncertainty map has no confidence to report")
+    return float(1.0 - 2.0 * np.nanmean(values))
+
+
+__all__ = ["enable_dropout", "mc_dropout_predict", "scan_confidence"]
