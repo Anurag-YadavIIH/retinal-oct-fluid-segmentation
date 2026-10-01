@@ -30,9 +30,15 @@ from __future__ import annotations
 
 import json
 import os
+import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+
+# One identifier per process. The seal is checked more than once in a run -- before the split
+# is read and again at aggregation -- and `access_count` counts distinct run identifiers so
+# that those checks are one access rather than two (`docs/08` D6).
+RUN_ID = uuid.uuid4().hex
 
 # The buckets a `Split` carries that must never be read casually. `train` and `val` are
 # deliberately absent: the pipeline is developed and validated against `val`, which is
@@ -81,24 +87,57 @@ def read_access_log(root: Path | None = None) -> list[dict]:
     if not path.is_file():
         return []
     return [
-        json.loads(line)
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
 
 
-def access_count(bucket: str, *, fold_id: str | None = None, root: Path | None = None) -> int:
-    """How many times this bucket has been read, from the durable log.
-
-    This is the number `docs/07` §17.5 requires in the evaluation output. It is read from
-    the log rather than tracked in memory, so it survives the process and cannot be reset
-    by restarting -- which is the only way a count of "exactly once" means anything.
-    """
+def gate_calls(bucket: str, *, fold_id: str | None = None, root: Path | None = None) -> int:
+    """Raw entries in the log for this bucket -- one per gate call, not per run."""
     return sum(
         1
         for entry in read_access_log(root)
         if entry.get("bucket") == bucket and (fold_id is None or entry.get("fold_id") == fold_id)
     )
+
+
+def access_count(bucket: str, *, fold_id: str | None = None, root: Path | None = None) -> int:
+    """How many **evaluation runs** have read this bucket, from the durable log.
+
+    This is the number `docs/07` §17.5 requires. It is derived from the log rather than
+    tracked in memory, so it survives the process and cannot be reset by restarting --
+    which is the only way a count of "exactly once" means anything.
+
+    **Corrected 2026-10-01 (`docs/08` D6).** It previously returned the number of *gate
+    calls*, and the seal is checked twice in a completed run -- once in
+    `scripts/05_evaluate.py` before the split is read, once in `eval/pipeline.py` at
+    aggregation. So one finished run logged two entries and the count read 3 for two runs of
+    `test` (one killed early, one complete) and 2 for one run of `in_domain_ref`. No reported
+    figure depended on it, but the number did not answer the question §17.5 asks.
+
+    **Runs are counted by `run_id`, not by dividing by two.** Dividing would assume every run
+    reaches both gates, which the killed run did not -- it logged one entry and would have
+    counted as half. Each process stamps its entries with one identifier and runs are the
+    number of distinct identifiers.
+
+    **Entries written before `run_id` existed are counted individually**, which deliberately
+    over-counts the two historical `test` runs as three. The alternative -- inferring runs
+    from timestamps -- would be a guess presented as a count, and the raw log is retained
+    precisely so that a reader can see the three entries and the reasons that distinguish
+    them. `docs/08` D6 states the true figure.
+    """
+    runs: set[str] = set()
+    legacy = 0
+    for entry in read_access_log(root):
+        if entry.get("bucket") != bucket:
+            continue
+        if fold_id is not None and entry.get("fold_id") != fold_id:
+            continue
+        identifier = entry.get("run_id")
+        if identifier is None:
+            legacy += 1
+        else:
+            runs.add(identifier)
+    return len(runs) + legacy
 
 
 def require_unsealed(
@@ -137,6 +176,11 @@ def require_unsealed(
         "utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "bucket": bucket,
         "fold_id": fold_id,
+        # One identifier per process, so the two gate calls a completed run makes are one
+        # run in the count (`docs/08` D6). Stamped here rather than passed in, because a
+        # caller that had to supply it could supply a fresh one per call and silently
+        # restore the defect.
+        "run_id": RUN_ID,
         "reason": unlock.reason,
         "approved_by": unlock.approved_by,
         # Recorded, not enforced. A second access is a fact for `docs/08` to explain, and
@@ -169,6 +213,7 @@ __all__ = [
     "SealedSplitError",
     "Unlock",
     "access_count",
+    "gate_calls",
     "access_log_path",
     "assert_only_unsealed",
     "read_access_log",

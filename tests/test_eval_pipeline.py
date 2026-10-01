@@ -160,13 +160,90 @@ def test_TC_125_access_is_logged_and_counted(tmp_path):
     assert entries[0]["reason"] == "pre-registered one-time run"
     assert entries[0]["approved_by"] == "AY"
     assert entries[0]["prior_accesses"] == 0
+    assert entries[0]["run_id"], "each entry must name the run that made it (SRS-088)"
 
+
+def test_TC_125_a_genuinely_second_run_is_recorded_as_one(monkeypatch, tmp_path):
+    """A second *run* must count and must say it was not the first.
+
+    The run identifier is substituted here because a test shares one process with the code it
+    exercises, so two runs cannot otherwise be simulated. That substitution is the only way to
+    distinguish "two gate calls" from "two runs" in a single interpreter -- which is precisely
+    the distinction the D6 defect failed to make.
+    """
+    unlock = sealed.Unlock(bucket="test", reason="first run", approved_by="AY")
+    monkeypatch.setattr(sealed, "RUN_ID", "run-one")
+    sealed.require_unsealed("test", unlock, fold_id="cirrus_holdout", root=tmp_path)
+    assert sealed.access_count("test", root=tmp_path) == 1
+
+    monkeypatch.setattr(sealed, "RUN_ID", "run-two")
     sealed.require_unsealed("test", unlock, fold_id="cirrus_holdout", root=tmp_path)
     assert sealed.access_count("test", root=tmp_path) == 2
     assert sealed.read_access_log(tmp_path)[1]["prior_accesses"] == 1, (
-        "a second access must record that it was not the first; that record is the only "
-        "thing that makes 'exactly once' checkable afterwards"
+        "a second run must record that it was not the first; that record is the only thing "
+        "that makes 'exactly once' checkable afterwards"
     )
+
+
+def test_TC_125_one_run_counts_once_however_many_times_it_checks_the_seal(tmp_path):
+    """SRS-088 as corrected (`docs/08` D6).
+
+    A completed run checks the seal twice -- in `05_evaluate.py` before the split is read and
+    in `pipeline.py` at aggregation -- and the count previously reported 2 for one run. The
+    raw log still records both calls, because it is the primary evidence; the *count* is runs.
+    """
+    unlock = sealed.Unlock(bucket="test", reason="one run, two gates", approved_by="AY")
+    sealed.require_unsealed("test", unlock, fold_id="f", root=tmp_path)
+    sealed.require_unsealed("test", unlock, fold_id="f", root=tmp_path)
+
+    assert sealed.gate_calls("test", root=tmp_path) == 2, "the raw log must keep both calls"
+    assert (
+        sealed.access_count("test", root=tmp_path) == 1
+    ), "two gate calls from one process counted as two runs; that is the D6 defect"
+
+
+def test_TC_125_a_count_is_not_gate_calls_halved(tmp_path):
+    """The killed run logged ONE entry, so dividing by two would have counted it as half.
+
+    This is why runs are identified rather than inferred from the number of calls.
+    """
+    unlock = sealed.Unlock(bucket="test", reason="r", approved_by="a")
+    sealed.require_unsealed("test", unlock, root=tmp_path)  # a run that stops after one gate
+    assert sealed.gate_calls("test", root=tmp_path) == 1
+    assert (
+        sealed.access_count("test", root=tmp_path) == 1
+    ), "a run that was killed between the two gates must still count as one access"
+
+
+def test_TC_125_entries_without_a_run_id_are_counted_individually(tmp_path):
+    """Historical entries predate `run_id` and are deliberately over-counted.
+
+    Inferring runs from timestamps would be a guess presented as a count. The raw log is kept
+    so a reader can see the entries and the reasons that distinguish them, and `docs/08` D6
+    states the true figure.
+    """
+    path = sealed.access_log_path(tmp_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"bucket": "test", "utc": "2026-10-01T12:58:29+00:00"})
+        + "\n"
+        + json.dumps({"bucket": "test", "utc": "2026-10-01T13:29:32+00:00"})
+        + "\n",
+        encoding="utf-8",
+    )
+    assert sealed.access_count("test", root=tmp_path) == 2
+
+
+def test_TC_125_the_raw_log_is_never_rewritten(tmp_path):
+    """SRS-088: correcting a count must never be done by editing the evidence."""
+    unlock = sealed.Unlock(bucket="test", reason="r", approved_by="a")
+    sealed.require_unsealed("test", unlock, root=tmp_path)
+    before = sealed.access_log_path(tmp_path).read_text(encoding="utf-8")
+    sealed.access_count("test", root=tmp_path)
+    sealed.gate_calls("test", root=tmp_path)
+    assert (
+        sealed.access_log_path(tmp_path).read_text(encoding="utf-8") == before
+    ), "reading the count altered the log; the log is evidence and is append-only"
 
 
 def test_TC_125_the_log_survives_the_process(tmp_path):
