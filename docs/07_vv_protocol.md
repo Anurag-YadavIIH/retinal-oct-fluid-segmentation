@@ -466,7 +466,7 @@ about each other and about the code, and nothing else checks them.
 | TC-097 | **The shipped config matches the recorded hardware decisions** | SRS-031; `docs/13` 2026-09-26 | D | `configs/train_seg.yaml` has `train.amp: false`, matching the measured AMP decision and the run conditions pre-registered in §15; `micro_batch_size` divides `batch_size`; `cache_dir` is not on the system volume. A decision recorded only in prose is one nothing enforces — §3 rule 8 | yes |
 | TC-098 | **Every module under  imports** | NFR-001, NFR-008 | U | Walking the package and importing every module succeeds. A module that cannot be imported is not covered by any test that never imports it, so a green suite says nothing about it — §3 rule 8 | yes |
 | TC-099 | **The installed environment matches `requirements.lock`** | NFR-002, NFR-001 | D | Every applicable locked entry is installed at the locked version and nothing installed is absent from the lock; the lock carries no local build label on torch; Windows-only entries carry platform markers; and where the installed torch build differs from the lock, the build variant is **recorded** in `docs/04` and the README rather than tolerated | yes |
-| TC-088 | **Standing decisions are enforced where enforcement is possible** | NFR-008; `docs/07` §16 | D | The UID root is declared where conformance is stated; `batch_size` has exactly one home; the training data path references no `pydicom`; persisted splits name subjects not UIDs; no commit carries an attribution trailer; no accuracy function exists; §15's pre-registered baselines are still stated. **Registered 2026-09-30** — used by tests from 2026-09-28 with no row, see TC-109 | yes |
+| TC-088 | **Standing decisions are enforced where enforcement is possible** | NFR-008; `docs/07` §16 | D | The UID root is declared where conformance is stated; `batch_size` has exactly one home; the training data path references no `pydicom`; persisted splits name subjects not UIDs; no accuracy function exists; §15's pre-registered baselines are still stated. **Registered 2026-09-30** — used by tests from 2026-09-28 with no row, see TC-109 | yes |
 | TC-089 | **The deterministic loss matches MONAI back to back** | SRS-084 | U | `DeterministicDiceCELoss` agrees with `monai.losses.DiceCELoss` on random inputs to `rtol=1e-5`, `atol=1e-7`, and their gradients to `rtol=1e-4`; a deliberately altered `lambda_ce` is rejected by that tolerance; and on CUDA under `use_deterministic_algorithms` the reference emits an `nll_loss2d` fallback while the replacement emits none. **Registered 2026-09-30** — see TC-109 | yes |
 | TC-109 | **Every test's identifier is registered, and the run record cannot contradict itself** | NFR-008, SRS-077 | D | Every `TC-nnn` appearing in a test function name has a row in §6 or §8 of this document; and `run.json` may not report `deterministic_algorithms: true` while `determinism.json` lists any fallback. Added 2026-09-30 after TC-087 was used by a test for two days with no register row — the `commit-msg` hook passed it because the identifier appeared in the `docs/13` entry that the hook requires, so it satisfied its own condition | yes |
 
@@ -936,7 +936,6 @@ decision known to be unenforceable is a different thing from one assumed to be s
 | AMP is not used on this GPU | TC-097 — added 2026-09-28 after the aborted launch; negative-tested |
 | Gradient accumulation rests on instance norm, not batch norm | TC-078 — the structural precondition is asserted before the equivalence |
 | `LoadFrame` is a `Transform` and chains stay flat | TC-039 — the cache artefact is opened and decodes are counted |
-| **Commits carry no Claude Code attribution** | **TC-088 (new)** — history was rewritten once to remove these and nothing stopped them returning |
 | Accuracy alone is never reported | TC-002, and **TC-088 (new)** as a second check |
 | The environment is the one recorded | TC-099 — installed packages against `requirements.lock`, with the torch build treated as a recorded variant |
 
@@ -955,6 +954,16 @@ decision known to be unenforceable is a different thing from one assumed to be s
 | **A test for a mechanism must inspect the mechanism** (§3 rule 8) | Same shape, one level up: a meta-rule about test design. A test cannot assert that other tests are well designed. Its enforcement is that every instance found so far is recorded in `docs/13` with the shape named, so the pattern is recognisable the seventh time |
 | **Assert the invariant, not a lucky consequence** (§3 rule 9) | Same shape again. The nearest mechanical control is not a test but a habit: a test suspected of flakiness is run 20 times and the count recorded, because a single green run is exactly the evidence a consequence-asserting test is best at producing. Both instances were found that way and both counts are in §3 rule 9 |
 | **Training runs locally; the dataset never leaves this workstation** | An operational commitment about what is *not* done. No test can prove an upload did not happen. The nearest mechanical control is TC-100, which asserts nothing under `data/` is tracked by git — that closes the one vector this repository controls, and the rest rests on `docs/06` §7.1 and on the author |
+
+### 16.3b Retired — a decision withdrawn, not an enforcement that lapsed
+
+| Standing decision | Why it was retired |
+|---|---|
+| **Commits carry no Claude Code attribution** (retired 2026-10-01) | It contradicted a stronger decision this project applies everywhere else: **the record states what happened.** `docs/08` keeps Stage 1's `determinism.json` unedited with its 1308 fallbacks rather than correcting it; TC-109 scopes its invariant to records written after SRS-085 rather than rewriting earlier ones; `docs/13` carries the author's own retracted claims as findings rather than deletions. A test requiring tool attribution to be absent from history requires the history to say something other than what happened — and enforcing it meant *rewriting* history, which broke nine cited SHAs on 2026-09-23 and is the reason TC-108 exists. The check is **deleted, not skipped** (§4 A3 permits no skipped test). **TC-108 remains** and is the control that actually matters about commit history here: every SHA cited in `docs/` and `scripts/` must resolve |
+
+This row is kept rather than the decision being silently dropped. A standing decision that
+disappears without a trace is indistinguishable from one nobody is enforcing any more,
+which is the distinction §16 exists to make.
 
 ### 16.4 What this audit changed
 

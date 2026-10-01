@@ -360,9 +360,17 @@ criterion stops Stage 2 and does not get rewritten.
 - **Pre-registered criteria are not edited after seeing results.** `docs/07` §15 was
   committed before any run. A failure stops the next stage and goes in `docs/13`;
   concluding a criterion was wrong is a recorded argument, never a quiet edit.
-- **Commits carry no Claude Code attribution.** History was rewritten 2026-09-23 to
-  strip the trailers and force-pushed; content was unchanged and all 51 tree hashes were
-  verified identical. Cited SHAs are checked by TC-108 because that rewrite broke nine
-  of them.
+- **Attribution trailers are allowed, and history is not rewritten to remove them**
+  (reversed 2026-10-01). The earlier decision — no Claude Code attribution in any commit —
+  contradicted the stronger one this project applies everywhere else: **the record states
+  what happened.** `docs/08` keeps Stage 1's `determinism.json` unedited with its 1308
+  fallbacks; TC-109 scopes its invariant to records written after SRS-085 rather than
+  rewriting earlier ones; `docs/13` carries retracted claims as findings rather than
+  deletions. Requiring the trailers to be absent required history to say something other
+  than what happened, and enforcing it meant rewriting history — which on 2026-09-23 broke
+  nine cited SHAs and is why **TC-108** exists. TC-088's trailer check is deleted, not
+  skipped. `4737b05` keeps its trailer. **TC-108 stays**, and is the control that actually
+  matters here: every SHA cited in `docs/` and `scripts/` must resolve. Do not rewrite
+  history to tidy trailers.
 
 Update this section at the end of each working session.

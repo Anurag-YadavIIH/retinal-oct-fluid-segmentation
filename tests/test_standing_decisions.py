@@ -14,7 +14,6 @@ assumed to be safe.
 from __future__ import annotations
 
 import re
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -188,26 +187,23 @@ def test_TC_088_the_stage1b_thresholds_are_the_stage1_thresholds():
         )
 
 
-# --- "Commits carry no Claude Code attribution" ----------------------------------------
-
-
-def test_TC_088_no_commit_carries_an_attribution_trailer():
-    """History was rewritten on 2026-09-23 to remove these. Nothing stopped them coming
-    back until now."""
-    result = subprocess.run(
-        ["git", "-C", str(REPO_ROOT), "log", "--format=%B", "-n", "400"],
-        capture_output=True,
-        text=True,
-        check=False,
-        encoding="utf-8",
-        errors="replace",
-    )
-    if result.returncode != 0:
-        pytest.skip("git unavailable or not a repository")
-    offenders = [
-        line.strip() for line in result.stdout.splitlines() if "co-authored-by" in line.lower()
-    ]
-    assert not offenders, f"attribution trailers present in history: {offenders[:3]}"
+# --- Attribution trailers: check removed 2026-10-01 ------------------------------------
+#
+# `test_TC_088_no_commit_carries_an_attribution_trailer` was here and asserted that no
+# commit message in the last 400 carried a `Co-Authored-By` line. It is **deliberately
+# deleted, not skipped or xfailed** (`docs/07` §4 A3 permits no skipped test).
+#
+# It was dropped because it enforced a decision that contradicts a stronger one. The rest
+# of this project holds that **the record states what happened**: `docs/08` keeps Stage 1's
+# `determinism.json` unedited with its 1308 fallbacks, TC-109 scopes its invariant to
+# records written after SRS-085 rather than rewriting earlier ones, and `docs/13` carries
+# the author's own retracted claims as findings. A test requiring tool attribution to be
+# absent from history requires the history to say something other than what happened, and
+# in practice it required rewriting history to enforce — which broke nine cited SHAs on
+# 2026-09-23 and is why TC-108 exists.
+#
+# See `docs/13`, 2026-10-01. TC-108 still checks that every SHA cited in `docs/` resolves,
+# which is the control that actually matters about commit history here.
 
 
 # --- "Training reads the archive's native MetaImage, not the DICOM" --------------------
