@@ -138,6 +138,14 @@ Accuracy alone is never reported. The classes are imbalanced and it is misleadin
 - **A flaky test is a test asserting something that is not always true** (`docs/07` §3
   rule 9). Do not rerun it until green — that is the evidence such a test is best at
   producing. Run it 20 times, report the count, then fix the assertion.
+- **Evaluation runs are launched from the author's terminal or as a detached background
+  process, never as a single tool call a time limit can kill** (`docs/07` §17.8). The first
+  access to the held-out split was terminated by a harness background limit after 10 of 24
+  volumes. It produced no record and no results, but it **consumed an unlock and left an
+  entry in the access log**, so a protocol permitting one evaluation now has a history
+  showing two (`docs/08` D5, D6). The rule is about who owns the run's lifetime: a process
+  that outlives whatever started it cannot be ended by that thing's timeout. The same
+  applies to any run measured in hours — training nights already follow it.
 - **Training runs locally on this workstation's GTX 1050, in-session when asked.** The
   dataset never leaves this machine (`docs/06` §7.1); the Kaggle path stays documented
   and marked not used. Claude Code's job is also the pipeline, the tests, the DICOM
