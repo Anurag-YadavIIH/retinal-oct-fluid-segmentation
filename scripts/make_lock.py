@@ -24,6 +24,20 @@ REPO = Path(r"C:\Users\rites_ljry4pu\Documents\Projects\ocuval")
 # under a Windows marker. See the dependency-marker scan in docs/13, 2026-09-28.
 WINDOWS_ONLY = {"mkl", "intel-openmp", "tbb", "colorama"}
 
+# The mirror problem, and the harder half: packages that are NOT installed here but ARE
+# installed on Linux, so `pip freeze` on this machine cannot see them. They must be carried
+# explicitly or every regeneration silently drops them, which is how CI came to install a
+# package the lock did not record (docs/13, 2026-10-01).
+#
+# Versions are taken from the CI install log, because this machine cannot resolve them --
+# and that is stated rather than hidden, since it is the one part of this file that is not
+# a reading of the local environment. Each needs re-checking when its parent pin moves.
+NOT_ON_WINDOWS = {
+    # fastapi 0.111.1 -> fastapi-cli[standard] -> uvicorn[standard] -> uvloop.
+    # No Windows wheel exists, so pip skips it here.
+    "uvloop": ("0.22.1", 'sys_platform != "win32"'),
+}
+
 TORCH_BUILD = "2.3.1+cu121"
 
 frozen = subprocess.run(
@@ -46,6 +60,13 @@ for line in sorted(frozen, key=str.lower):
         entries.append(f'{line} ; platform_system == "Windows"')
         continue
     entries.append(line)
+
+# Added after the freeze, since `pip freeze` here cannot see them, then the whole list is
+# re-sorted so the file stays in one order regardless of where an entry came from.
+for name, (version, marker) in NOT_ON_WINDOWS.items():
+    if name.lower() not in {e.split("==")[0].strip().lower() for e in entries}:
+        entries.append(f"{name}=={version} ; {marker}")
+entries.sort(key=str.lower)
 
 header = f"""# requirements.lock - the exact environment, for NFR-002.
 #

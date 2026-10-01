@@ -96,6 +96,13 @@ typing-inspection==0.4.4
 typing_extensions==4.16.0
 urllib3==2.8.0
 uvicorn==0.30.3
+# Non-Windows only, and the mirror of the colorama entry above. fastapi 0.111.1 pulls
+# fastapi-cli[standard] -> uvicorn[standard] -> uvloop, which publishes no Windows wheel,
+# so pip silently skips it here and installs it on Linux. This lock was generated on
+# Windows and therefore recorded colorama (Windows-only) while omitting uvloop: the lock
+# was a record of one platform's resolution presented as the environment. Version from
+# the CI install log, not from this machine, which cannot install it (docs/13 2026-10-01).
+uvloop==0.22.1 ; sys_platform != "win32"
 virtualenv==21.8.1
 watchfiles==1.3.0
 websockets==17.1

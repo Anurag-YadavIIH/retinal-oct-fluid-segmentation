@@ -79,9 +79,7 @@ def build_loss(cfg: dict):
     builders = {"dice_ce": DiceCELoss, "dice_ce_deterministic": DeterministicDiceCELoss}
     name = str(loss_cfg.get("name", "dice_ce_deterministic")).lower()
     if name not in builders:
-        raise ValueError(
-            f"unsupported loss {loss_cfg['name']!r}; choose one of {sorted(builders)}"
-        )
+        raise ValueError(f"unsupported loss {loss_cfg['name']!r}; choose one of {sorted(builders)}")
     # include_background False: the classes are imbalanced and background dominates every
     # B-scan, so including it would let a model that predicts nothing score well.
     return builders[name](

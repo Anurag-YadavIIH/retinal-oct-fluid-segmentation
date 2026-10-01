@@ -209,9 +209,14 @@ executed", understating the written count by 26. Corrected 2026-09-30 by countin
 looks identical whether anything computes them or not — and the durable fix is to write
 TC-104, not to recount by hand again.
 
-Suite: **515 passing, 1 skipped, 8 deselected** (`requires_pacs`), plus `requires_data` and
-`slow` cases. The skip is TC-109's, which scopes its determinism invariant to run records
-written since SRS-085. Risk controls: 31 allocated a test. CI is green on `main`.
+Suite, measured locally 2026-10-01: **496 passing, 0 failed, 42 deselected**
+(`requires_pacs` and `slow`). Risk controls: 31 allocated a test.
+
+**CI state is not asserted here.** The previous version of this line read "CI is green on
+`main`" and was **false**: the two most recent runs before 2026-10-01 both failed on TC-099,
+because `requirements.lock` was generated on Windows and omitted `uvloop`, which Linux
+installs (`docs/13`, 2026-10-01). A claim about CI that nothing recomputes goes stale exactly
+as the coverage counts did. **Read it from `gh run list`**, never from this file.
 
 ### Stage plan for training (agreed 2026-09-25)
 
