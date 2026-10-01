@@ -180,11 +180,13 @@ dataset arrives.**
    2026-09-25, closing `docs/07` item 6.
 4. ~~Splits and leakage gate.~~ **done** — 2026-09-17. TC-004 passes for real; its
    `strict` xfail was removed when `splits.py` landed.
-5. Training on Kaggle; evaluation and subgroup reporting. **Pipeline complete and
-   untrained, 2026-09-25.** Preprocessing, `models/seg_unet.py`, checkpoint-resume and
-   the training loop are implemented and exercised on CPU with synthetic frames. No
-   model has been trained. `models/uncertainty.py` (MC-dropout, SRS-029/030),
-   `eval/subgroup.py` and `eval/report.py` remain, plus the accelerator benchmark.
+5. ~~Training locally; evaluation and subgroup reporting.~~ **`cirrus_holdout` trained and
+   evaluated end to end, 2026-10-01.** The fold completed by **early stopping at epoch 58**
+   of 150 in one 3.75 h session, best epoch 33 (`docs/08` §5c). The one-time evaluation of
+   the held-out vendor and the in-domain reference is **done and recorded** (`docs/08` §5d):
+   **no per-class Dice difference is established at 95%**, five of six intervals overlapping.
+   `models/uncertainty.py`, `eval/subgroup.py`, `eval/pipeline.py` and `eval/sealed.py` are
+   implemented. **`eval/report.py` is still a stub** — `docs/10` is not written.
 6. SEG/SR output and Orthanc round-trip. **Objects done; round-trip blocked on Docker.**
 7. FastAPI service, Docker, full document set, GitHub Pages. **Not started.**
 
@@ -193,31 +195,29 @@ dataset arrives.**
 | Blocked on | What it blocks |
 |---|---|
 | ~~RETOUCH download~~ | **Unblocked 2026-09-21.** Training partition only; the test partition was deliberately not taken (`docs/06` §2.1) |
+| ~~Kaggle quota / a Kaggle session~~ | **Void since 2026-09-25.** Training runs locally; the Kaggle path stays documented and marked not used. The old budget figures in this file's "Measured on this workstation" note are superseded by the AMP reversal |
 | **Docker not installed** | TC-080, TC-081, TC-082 — written and **never executed**. The Orthanc round-trip is unverified |
-| **Kaggle quota** (30 h/week) | The three primary folds. Budget: **~7.3 h** total at 60 img/s with AMP, **~14.6 h** at 30 img/s, 150 epochs. No fold exceeds the 12-hour session cap — the largest, spectralis, is 3.0–6.0 h. The optional dtype-scaling comparison fold (`docs/10` §8.1) runs only if the three finish comfortably, and never before them |
-| **A Kaggle session** | `scripts/benchmark_device.py` — must be run on both P100 and T4×2 before the first real run, and the faster used. The budget rests on an assumed ~30% MFU, not a measurement, and the P100 has no tensor cores |
-| **Neither** — these are simply next | `models/uncertainty.py`, `eval/subgroup.py`, `eval/report.py`, `service/api.py` |
+| **An author decision** | **`docs/07` §19.1's present/absent decomposition for cirrus.** It needs per-volume rows, which the Stage 2 record did not persist (`docs/08` **D7**), so computing it means re-running inference and spending one more unlock on each sealed bucket. The figures would be identical — determinism is established by TC-121 and TC-123 — but the access count would rise. Deferring it to the two remaining folds costs nothing, and §19.4 already labels it post-hoc for cirrus alone |
+| **Neither** — these are simply next | Stage 3 (`spectralis_holdout`, then `topcon_holdout`), `eval/report.py`, `docs/10`, `service/api.py` |
 
-### Numbers, measured 2026-09-30
+### Numbers, measured 2026-10-01
 
-Identifiers: URS-001..011, SRS-001..085, NFR-001..008, HAZ-001..015, RC-001..031,
-SOUP-001..022, TC-000..TC-121 (**107 registered**).
+Identifiers: URS-001..011, **SRS-001..088**, NFR-001..008, HAZ-001..015, RC-001..031,
+SOUP-001..022, TC-000..TC-125 (**111 registered**).
 
-**107 test cases registered, 76 written, 73 executed, 3 written but never run.** Those
-three states are kept separate deliberately. A written test nobody has executed is not
-verification. The three are TC-080..082, blocked on Docker.
+**111 test cases registered, 87 written, 84 executed, 3 written but never run, 24
+registered and unwritten.** Those states are kept separate deliberately. A written test
+nobody has executed is not verification. The three are TC-080..082, blocked on Docker.
 
-**These figures are hand-maintained, and the previous version of this paragraph claimed
-otherwise.** It said `docs/09` "regenerates them from the documents and from pytest's own
-marker resolution — a hand-maintained figure drifted in both directions at once and was
-replaced". The replacement was *allocated* as **TC-104** and **never written**, so nothing
-regenerates anything, and the figures drifted again: `docs/09` read "50 of 85 written, 47
-executed", understating the written count by 26. Corrected 2026-09-30 by counting. This is
-`docs/07` §3 rule 8 for the second time on the same artefact — a document with numbers in it
-looks identical whether anything computes them or not — and the durable fix is to write
-TC-104, not to recount by hand again.
+**These figures are now recomputed by TC-104, not maintained by hand.** It parses what
+`docs/09` claims, recomputes it from `docs/02`, `docs/07` §6 and the `test_TC_nnn_` function
+names, and fails when the two disagree **in either direction**. It was written 2026-10-01
+after being registered and left unwritten long enough that the drift it was meant to prevent
+happened twice on the same artefact; on its first run it caught `docs/09` claiming 66 SRS
+against 88, plus two bugs of its own (`docs/13`, 2026-10-01). Do not recount by hand — run
+the test.
 
-Suite, measured locally 2026-10-01: **496 passing, 0 failed, 42 deselected**
+Suite, measured locally 2026-10-01: **558 passing, 0 failed, 42 deselected**
 (`requires_pacs` and `slow`). Risk controls: 31 allocated a test.
 
 **CI state is not asserted here.** The previous version of this line read "CI is green on
@@ -231,10 +231,11 @@ as the coverage counts did. **Read it from `gh run list`**, never from this file
 | Stage | Content | State |
 |---|---|---|
 | **0** | CUDA torch 2.3.1 (cu121, `sm_61` verified), AMP on/off benchmark, gradient accumulation with the norm-layer check, benchmark including the real loader | **done** |
-| **1** | Smoke run, `cirrus_holdout`, ~20 epochs. **Criteria pre-registered in `docs/07` §15 and committed 2026-09-26, before any run** | criteria committed; run not started — the author runs it |
-| **2** | `cirrus_holdout` trained fully **and evaluated end to end** before any other fold begins | not started |
-| **3** | `spectralis_holdout`, `topcon_holdout` | not started |
-| **4** | Uncertainty, subgroup analysis, `docs/10`. May proceed during Stage 3 | not started |
+| **1** | Smoke run, `cirrus_holdout`, ~20 epochs. **Criteria pre-registered in `docs/07` §15 and committed 2026-09-26, before any run** | **done** — PASS on all four criteria (`docs/08` §5) |
+| **1b** | Re-run under the final configuration after the AMP reversal and the loss adoption. **Criteria pre-registered in `docs/07` §15.6 before the run** | **done** — PASS on all five, resume crossed the warmup boundary (`docs/08` §5b) |
+| **2** | `cirrus_holdout` trained fully **and evaluated end to end** before any other fold begins | **done 2026-10-01.** Early stop at epoch 58, best epoch 33; one-time evaluation of `test` and `in_domain_ref` complete (`docs/08` §5c, §5d) |
+| **3** | `spectralis_holdout`, then `topcon_holdout` | **next.** Secondary analyses pre-registered in `docs/07` §19 before either trains. **Do not reuse 110 epochs per session** — spectralis is 4032 training frames against cirrus's 2610, so ~354 s/epoch is expected and 80 epochs ≈ 7.9 h; the real figure comes from its own first night (§18.1) |
+| **4** | Uncertainty, subgroup analysis, `docs/10` | `eval/` is implemented; **`eval/report.py` is still a stub and `docs/10` is unwritten** |
 
 **Owed before Stage 1 — all delivered 2026-09-26** (SRS-080..083, TC-079, TC-095):
 `--max-epochs-this-session`; a `STOP` file that ends the session after the current epoch
