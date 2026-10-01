@@ -337,7 +337,20 @@ criterion stops Stage 2 and does not get rewritten.
 - **Zero fallbacks is not determinism.** It means no operation *announced*
   non-determinism; it is not the claim that two runs agree, and an operation that never
   warns can still be order-dependent. Never infer the second claim from the first.
-- **Rule 4 IS achieved on GPU, and TC-121 is the whole of its evidence** (measured
+- **Rule 4's strongest evidence on GPU is TC-123, not TC-121** (measured 2026-10-01).
+  `cirrus_holdout_stage1b` (`--epochs 20`, two sessions, **resumed at epoch 3**, cosine
+  `T_max` 15) and `cirrus_holdout_stage2` (`--epochs 150`, one session, `T_max` 145),
+  launched nine hours apart, agree to **every recorded digit** on `train_loss`, `val_dice`
+  and `per_class_dice` for **epochs 0–5**, with epochs 0–2 mean loss 1.648121 in both.
+  Nothing was arranged to make them comparable. Stage 1b's epochs 3–5 came from a process
+  that rebuilt sample order and augmentation from `(seed, epoch)` with nothing restored;
+  Stage 2's from a process that never stopped. **Agreement runs to epoch 5, not 4**: the
+  `lr` logged at epoch N is the rate epoch N+1 uses (`scheduler.step()` at `loop.py:353`,
+  the log at `:399`), so epoch 5 trained under the shared warmup endpoint and epoch 6 is
+  the first to differ. TC-123 asserts the divergence at 6 as well as the agreement through
+  5 — identical runs throughout would mean the cosine horizon was ignored and SRS-083 was
+  broken.
+- **Rule 4 IS achieved on GPU, and TC-121 was its first evidence** (measured
   2026-09-30). Two runs of `cirrus_holdout` under the committed configuration produced
   **byte-identical** model weights, optimiser state and epoch logs — `train_loss 2.264524`
   then `1.236142`, `val_dice 0.021399` then `0.153961`, per-class Dice identical — with
