@@ -362,6 +362,110 @@ started and changing code mid-run is not a thing this project does (`docs/13`).
 
 ---
 
+## 5c. Stage 2 — `cirrus_holdout` training record
+
+> **This is a training record, not a result.** No number in this section is a performance
+> claim about OcuVal. Every figure here is **in-domain validation** — unseen patients from
+> the two *training* vendors — and the held-out vendor has not been touched. The
+> cross-vendor result, which is the one this project exists to report, does not exist yet
+> and is governed by the protocol pre-registered in `docs/07` §17.
+
+### 5c.1 The run
+
+| Field | Value | Source |
+|---|---|---|
+| Fold | `cirrus_holdout` — trained on spectralis + topcon | `run.json` |
+| Run directory | `artifacts/runs/cirrus_holdout_stage2` | — |
+| Epochs run | **59 (0–58)** of 150 configured, 110 bounded this session | measured, `epochs.jsonl` |
+| **Stopped by** | **`early_stopping`**, 11:31:46 UTC | measured, `session_end` |
+| Sessions | **1** — no resume was needed | measured, one `session_start` |
+| Seed | 20260916 | `resolved_config.run.seed` |
+| Loss | `dice_ce_deterministic` (SRS-084) | resolved config |
+| AMP | on | `amp_enabled: true` |
+| Micro-batch / effective | 8 / 8, accumulation 1 | resolved config |
+| **Source** | **`a6d6edb`, branch `main`, `dirty: false`, `allow_dirty: false`** | `run.json.source`, SRS-086 |
+| Determinism | `deterministic_algorithms: true`, **0 fallbacks** | `determinism.json` |
+
+`a6d6edb` is the first fold run to carry a commit identifier and a clean-tree flag, SRS-086
+having landed the same day. The run is therefore reproducible from a named commit, which is
+what `docs/08` D4 recorded as missing after Stage 1 — **D4 is closed.**
+
+### 5c.2 Early stopping — the fold is complete, not truncated
+
+`early_stopping_patience` is **25** and was configured before the run; `--epochs 150` was
+always an upper bound, not a target. Validation Dice last improved at **epoch 33**, so the
+counter reached 25 at epoch 58 and the fold ended.
+
+This matters for how the record reads: a fold that stops at 58 of 150 is **not** a fold
+that failed to finish. It is a fold whose own pre-set criterion decided that further
+epochs were not earning anything, and `best.pt` holds epoch 33 regardless of how many
+epochs followed it.
+
+### 5c.3 Metrics at the best checkpoint
+
+**Epoch 33**, selected on in-domain validation only (`docs/07` §17.1), 580 validation frames.
+
+| Class | In-domain validation Dice |
+|---|---|
+| IRF | **0.705869** |
+| SRF | **0.778664** |
+| PED | **0.647028** |
+| mean (foreground) | **0.710520** |
+
+Training loss fell from a first-three-epoch mean of **1.648121** to a last-three mean of
+**0.821170**, a 50.2% reduction. Learning rate at the best epoch was 2.7135e-04, decaying
+under cosine from the 3.0e-04 reached at the end of warmup.
+
+**These are point estimates with no confidence interval, and are therefore not reportable
+as results** (CLAUDE.md §5, SRS-033). They are recorded here as the training record. The
+bootstrap intervals, the per-vendor breakdown and the detection metrics come from the
+evaluation pipeline governed by §17, and no figure from this section may be cited in
+`docs/10` or anywhere else as a result.
+
+### 5c.4 Timing and thermals
+
+| Quantity | Value | Measured from |
+|---|---|---|
+| Wall clock | 07:46:21 → 11:31:46 UTC, **3.75 h** | session boundaries |
+| Seconds per epoch | **227.6 min, 238.5 max, 229.0 mean** | all 59 `seconds` fields |
+| GPU temperature | **37–68 °C** | 451 telemetry samples |
+| GPU memory | **69–2875 MiB of 4096** (70.2% peak) | same samples |
+
+229.0 s mean against Stage 1b's 231.2 s — the two agree to within 1%, on different fold
+lengths, which is a small independent confirmation that the throughput figure the §18
+budget rests on is stable rather than a one-off.
+
+No thermal excursion: 68 °C peak is 22 °C below the 90 °C intervention threshold, so no
+epoch's duration needs a thermal explanation. Peak memory of 70.2% leaves real headroom,
+against Stage 1's 97.5% before AMP was enabled.
+
+### 5c.5 Checkpoints
+
+| File | SHA-256 (from `checkpoints.sha256`) |
+|---|---|
+| `best.pt` (epoch 33) | `bf609e63a16f729143baf219ba3a13f5e670fdee456c216c0f62f980e4efc17f` |
+| `last.pt` (epoch 58) | `20410f4b9121c26c350d4f7e7e411e69f63574ebd5075f652f9a081f72622c15` |
+
+They differ, as they must: `best` selects a model, `last` continues a trajectory, and this
+fold's best was 25 epochs before its last.
+
+### 5c.6 Monitoring
+
+The run was monitored unattended at 20-minute intervals, 13:25 to 17:05 local, by a
+detached watcher writing `artifacts/monitor/night1.md` (gitignored). **No intervention
+occurred**: no non-finite metric at any epoch, and the GPU never reached 90 °C, so no STOP
+file was created. The longest falling-Dice streak was 2 against a reporting threshold of
+10, and no epoch exceeded 238.5 s against a threshold of 350.
+
+One observation from the night is worth carrying into the next fold's monitoring, because
+it would otherwise be re-discovered: **a single SM-clock sample is not a load measurement
+on this machine.** Samples of 1189, 696 and 139 MHz appeared while seconds-per-epoch never
+varied by more than 1.5 s, because the 30 s telemetry interval is uncorrelated with the
+compute phase and lands in the gap between epochs. Seconds-per-epoch is the figure that
+would show throttling.
+
+---
+
 ## 6. Conclusion
 
 **Not drafted.** The validation conclusion requires the cross-vendor result, which is

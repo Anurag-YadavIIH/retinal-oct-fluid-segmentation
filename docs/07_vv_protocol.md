@@ -1130,6 +1130,18 @@ does, the fold is complete and the next night starts the next fold rather than c
 this one. A resumed session carries the complete early-stopping state, so patience does
 not restart at a session boundary (SRS-075, TC-059).
 
+**What happened on `cirrus_holdout`, 2026-10-01: the second session was never needed.**
+The fold ended by `early_stopping` at **epoch 58**, inside the first session's 110-epoch
+bound, after 3.75 h. Validation Dice last improved at epoch 33 and the patience counter
+reached 25 twenty-five epochs later. So the two-night composition in §18.2 was exercised
+only in its first half, and there was no trajectory left to resume — night 2 was cancelled
+rather than skipped. `docs/08` §5c is the record.
+
+This is the plan working, not a deviation from it: §18.2 already said the fold is complete
+if early stopping ends it. It is noted here because the 110-epoch session size is a
+wall-clock bound and **a fold may well finish well inside it** — so the session size should
+not be read as an expected epoch count for the remaining folds either.
+
 ### 18.3 What the night's evidence must show afterwards
 
 Checked the next morning, before the following session is launched:
