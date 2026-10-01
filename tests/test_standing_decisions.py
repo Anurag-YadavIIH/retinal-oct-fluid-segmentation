@@ -171,6 +171,28 @@ def test_TC_088_the_stage2_protocol_forbids_retraining_on_the_test_set():
     )
 
 
+def test_TC_088_the_stage3_secondary_analyses_keep_their_declared_rule():
+    """§19 is pre-registration for analyses that have not run yet.
+
+    The threshold-selection rule is the sharpest part: a grid, an objective, the split it is
+    selected on and a tie-break, all fixed before any Stage 3 result exists. Each is asserted
+    individually, because a rule missing its tie-break is not a rule on a 7-patient split
+    where ties are likely.
+    """
+    section = section_text("19. Stage 3 secondary analyses — pre-registered")
+    for phrase, why in [
+        ("[1, 2, 5, 10, 20, 50, 100, 200, 500, 1000]", "the threshold grid is declared"),
+        ("Youden's J", "the selection objective is declared"),
+        ("smallest", "the tie-break is declared"),
+        ("`val`** split only", "selection is on validation only, never test or reference"),
+        ("remain primary", "the fixed-threshold figures stay primary"),
+        ("never instead", "a selected threshold never replaces the fixed one"),
+        ("about 21 patients", "the pooled analysis states the n it exists for"),
+        ("post-hoc for cirrus", "the same analysis has a different standing for cirrus"),
+    ]:
+        assert phrase in section, f"docs/07 §19 no longer states {phrase!r} — {why}"
+
+
 def test_TC_088_the_stage1b_thresholds_are_the_stage1_thresholds():
     """Stage 1b changes the *conditions*, not the bar.
 

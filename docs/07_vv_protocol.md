@@ -1227,3 +1227,97 @@ Checked the next morning, before the following session is launched:
 
 A night that fails any of these is investigated before the next is launched. Training
 through an unexplained anomaly to save a night costs the fold.
+
+---
+
+## 19. Stage 3 secondary analyses — pre-registered
+
+**Committed before `spectralis_holdout` or `topcon_holdout` trains or evaluates anything.**
+These are **secondary**. In every fold the **fixed-threshold, per-fold figures of §17 remain
+primary**, for consistency across folds and because they are the only ones chosen before any
+result was visible. Nothing here may replace a §17 figure, and every item below is labelled
+as a secondary analysis wherever it appears.
+
+The cirrus fold's §17 results are already recorded (`docs/08` §5d). Where an analysis here is
+also applied retrospectively to cirrus, it is labelled **post-hoc** for that fold and
+**pre-registered** for the other two — the same analysis having a different standing
+depending on when it was declared relative to the result.
+
+### 19.1 Present/absent decomposition of per-class Dice
+
+For each fold, each class and **both arms** (held-out and in-domain reference), per-class Dice
+is decomposed into:
+
+| Stratum | Definition | What it measures |
+|---|---|---|
+| **present** | volumes where the class **is** in the reference | agreement where there is something to agree about |
+| **absent** | volumes where the class is **not** in the reference | false-positive behaviour only |
+
+Reported with **n for each stratum**, in patients, and with the patient-level interval where
+n permits one. Also reported: **the share of the all-volume mean Dice attributable to the
+absent stratum**, since a Dice of 0.0 on an absent volume where the model predicts anything is
+arithmetically indistinguishable from poor overlap on a present one, and the two mean entirely
+different things.
+
+**This requires per-volume measurements to be persisted** — `docs/08` D7 records that the
+Stage 2 record carried aggregates only, so the decomposition could not be computed from it.
+The evaluator writes per-volume rows from now on.
+
+### 19.2 A threshold selected on each fold's own validation set
+
+**The rule is written here, before any Stage 3 result exists**, so that selection cannot be
+steered by what it produces:
+
+1. **Grid**, declared now: `[1, 2, 5, 10, 20, 50, 100, 200, 500, 1000]` predicted voxels.
+   Ten points spanning three orders of magnitude, the fixed threshold of 10 among them.
+2. **Objective**: maximise **Youden's J** = sensitivity + specificity − 1, per class.
+3. **Selected on**: that fold's **`val`** split only — never `test`, never `in_domain_ref`.
+   `val` is already used for checkpoint selection, so it costs no additional independence.
+4. **Ties**: the **smallest** threshold wins. Declared because ties are likely on a 7-patient
+   validation split, and a tie broken by whichever value an implementation happened to visit
+   first is not a rule.
+5. **Degenerate case**: if a class has no positive or no negative volume in `val`, J is
+   undefined and **the fixed threshold of 10 is used**, recorded as such.
+
+The selected threshold is **reported alongside the fixed-threshold figures, never instead**,
+and labelled as selected on validation. Sensitivity and specificity are given at both.
+**AUROC is unchanged by either** — it is threshold-free, which is why §17.7a made it primary
+and why this analysis cannot move the primary detection result at all.
+
+### 19.3 A pooled cross-fold comparison
+
+Across the three folds, held-out Dice against in-domain-reference Dice, **pooled over folds**,
+per class.
+
+**The motivation is n.** Each fold's in-domain reference arm holds 7 patients, which gave
+intervals as wide as [0.0048, 0.5727] in Stage 2 — wide enough that no per-class difference
+was established at 95% (`docs/08` §5d.4). Pooling the three folds' reference arms gives
+**about 21 patients**, and the held-out arms about 70 volumes in total.
+
+Three things fixed now, because each could otherwise be chosen to suit the answer:
+
+- **Resampling stays patient-level** (SRS-087), and the cluster is the patient. A patient
+  appears in the in-domain reference of at most one fold by construction, so pooling does not
+  double-count anyone — but this is **asserted** at pooling time rather than assumed, because
+  it is the property that makes the pooled interval meaningful.
+- **The pooled figure is a secondary analysis**, reported beside the three per-fold results,
+  never in place of them. A pooled number hides per-vendor variation, which is the thing this
+  project exists to report (SRS-032's reasoning, extended across folds).
+- **Folds are weighted equally by patient**, not by fold, and the per-fold n is reported with
+  the pooled figure so a reader can see the composition.
+
+**What a pooled result can and cannot settle.** It can narrow the interval on the *average*
+degradation across vendors. It cannot establish anything about a *particular* vendor, and a
+pooled difference that excludes zero does not imply any single fold's does.
+
+### 19.4 What remains primary
+
+| Report | Standing |
+|---|---|
+| §17 figures, fixed threshold, per fold | **primary**, in every fold |
+| §19.1 present/absent decomposition | secondary; **post-hoc for cirrus**, pre-registered for the other two |
+| §19.2 validation-selected threshold | secondary; reported alongside, never instead |
+| §19.3 pooled cross-fold comparison | secondary |
+
+A reader of `docs/10` must be able to tell which figures were fixed before the data was seen
+and which were not, without having to reconstruct the chronology from commit dates.
