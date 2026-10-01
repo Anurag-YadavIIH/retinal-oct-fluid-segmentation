@@ -1088,6 +1088,57 @@ Stated now, so that none of it can be reasoned away later:
 large drop faithfully measured is the finding this project exists to produce — it is not a
 failure to be recovered from by adjusting the protocol.
 
+### 17.7 Amendments, made 2026-10-01 **before any sealed split was accessed**
+
+Three clarifications, committed while `sealed.access_count("test")` and
+`access_count("in_domain_ref")` were both **0** — verifiable from
+`artifacts/sealed_access.jsonl`, which was empty, and from this section's position in the
+history relative to the first access. An amendment to a pre-registration is only worth
+anything if the record shows it preceded the result, so the ordering is the evidence and
+not the assurance.
+
+#### (a) The detection threshold stays as configured, and AUROC is primary
+
+`inference.presence_voxel_threshold` remains **10** as committed. Sensitivity and
+specificity are reported **at that threshold, as-is, whatever they show** — including a
+specificity of zero, which the validation run already produced for two classes on `val`.
+
+**AUROC is the primary detection metric, because it is threshold-free.** Sensitivity and
+specificity at a single pre-registered threshold describe one operating point chosen before
+any result was visible; AUROC describes the ranking across all of them and so cannot be
+improved by having picked a better point. Reporting both, with AUROC primary, is what keeps
+the threshold from becoming a free parameter after the fact.
+
+**Any later threshold selection is labelled post-hoc and never replaces these figures.** It
+may be reported *alongside* them, as a separate and clearly marked analysis, with the
+pre-registered numbers retained in full. A sensitivity/specificity pair chosen after seeing
+the test set is a description of that test set, not a measurement on it.
+
+#### (b) A defect in the evaluation code may be fixed; the model may not be touched
+
+If a defect in the **evaluation code** is found after unlocking, it may be fixed and the
+evaluation re-run. **Both results are recorded**, along with the defect, its diagnosis and
+which figures it changed. The access log already counts the accesses, so a re-run is visible
+whether or not anyone chooses to mention it.
+
+**No change to the model, the checkpoint, the threshold or any metric definition is
+permitted after unlocking.** That line is where the distinction sits: fixing a measuring
+instrument is legitimate and leaves both readings on the record; changing what is being
+measured, after seeing the measurement, is not an evaluation at all. `best.pt` is selected
+and fixed (§17.1), the threshold is fixed by (a), and the metric definitions are fixed by
+§17.2 and CLAUDE.md rule 6.
+
+#### (c) The one-time evaluation covers **both** sealed splits
+
+`test` **and** `in_domain_ref` are evaluated in this one pass, because the pre-registered
+headline is **the gap between them** (§17.5). A held-out figure alone cannot show
+degradation — it needs the same model's performance on unseen patients from the *training*
+vendors to be the comparison. Evaluating one now and the other later would make the gap a
+comparison across two occasions rather than one, and would give two chances to look.
+
+Each bucket is unlocked separately and each access is logged separately, so the count
+remains per bucket and "exactly once" stays checkable for each.
+
 ---
 
 ## 18. Stage 2 session plan
