@@ -1140,12 +1140,32 @@ comparison across two occasions rather than one, and would give two chances to l
 Each bucket is unlocked separately and each access is logged separately, so the count
 remains per bucket and "exactly once" stays checkable for each.
 
-### 17.8 How an evaluation run is launched
+### 17.8 How a long run is launched
 
 **Added 2026-10-01 after the first `test` access was killed mid-run** (`docs/08` D5).
+**Corrected 2026-10-03** after a run launched as "detached" died with a process it had not
+been known to depend on (`docs/08` D8). The rule covers every run measured in hours —
+training sessions as well as evaluations of a sealed split.
 
-An evaluation run is launched **from the author's own terminal, or as a detached background
-process**. It is never launched as a single tool call that a time limit can terminate.
+A long run is launched **from an interactive terminal the author keeps open** — a standalone
+PowerShell window, or the VS Code integrated terminal. **In the latter case VS Code must stay
+open for the whole run**, because the terminal is a child of it. It is never launched as a
+single tool call that a time limit can terminate, and Claude Code does not launch it at all.
+
+**A launch method may only be described as detached after verifying, from the process tree,
+what the process depends on** — its parent, and anything whose lifetime ends the parent's.
+"It no longer depends on X" is not "it depends on nothing". The 2026-10-01 wording permitted
+"a detached background process", and on 2026-10-03 a training run launched through
+`Win32_Process.Create` was described as surviving VS Code closing. It did survive that; it was
+also parented by a WMI provider host, and it died within the hour when that host was torn down
+(`docs/08` D8). The claim was checked against the risk it was meant to avoid and never against
+the process tree, which is the only place the real dependency was visible.
+
+Before a long run is left unattended, therefore, record its parent chain — the interpreter, its
+launcher, and the terminal or service above them — so the conditions under which it ends are
+known rather than assumed. And a remaining-time estimate is never given without first
+confirming the process is alive: an estimate from the epoch log alone describes a run that may
+already have stopped.
 
 The first access to the held-out split was stopped by a harness background limit after 10 of
 24 volumes. It produced no record and no results — the output file is written only at the end

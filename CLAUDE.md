@@ -138,14 +138,23 @@ Accuracy alone is never reported. The classes are imbalanced and it is misleadin
 - **A flaky test is a test asserting something that is not always true** (`docs/07` §3
   rule 9). Do not rerun it until green — that is the evidence such a test is best at
   producing. Run it 20 times, report the count, then fix the assertion.
-- **Evaluation runs are launched from the author's terminal or as a detached background
-  process, never as a single tool call a time limit can kill** (`docs/07` §17.8). The first
-  access to the held-out split was terminated by a harness background limit after 10 of 24
-  volumes. It produced no record and no results, but it **consumed an unlock and left an
-  entry in the access log**, so a protocol permitting one evaluation now has a history
-  showing two (`docs/08` D5, D6). The rule is about who owns the run's lifetime: a process
-  that outlives whatever started it cannot be ended by that thing's timeout. The same
-  applies to any run measured in hours — training nights already follow it.
+- **Long runs — training sessions and sealed evaluations — are launched by the author from
+  an interactive terminal kept open: a standalone PowerShell window, or the VS Code
+  integrated terminal, in which case VS Code must stay open for the whole run** (`docs/07`
+  §17.8, corrected 2026-10-03). Never as a tool call a time limit can kill, and not by
+  Claude Code. Two failures produced this rule. On 2026-10-01 a harness time limit killed
+  the first sealed `test` access after 10 of 24 volumes, costing an unlock (`docs/08` D5,
+  D6). On 2026-10-03 Claude Code launched spectralis night 1 through `Win32_Process.Create`
+  and **called it detached**; it was parented by a WMI provider host and died within the
+  hour when that host was torn down, along with the watcher launched the same way
+  (`docs/08` D8).
+- **A launch method may only be called detached after verifying, from the process tree,
+  what the process depends on.** "No longer depends on VS Code" was checked; "depends on
+  nothing" was assumed, and that assumption was the defect. Record the parent chain of
+  every unattended run.
+- **Never give a remaining-time estimate without first confirming the process is alive.**
+  On 2026-10-03 "6.7 more hours" was computed from `epochs.jsonl` a minute after the run
+  had died. The epoch log describes what a run did, not whether it is still doing it.
 - **Training runs locally on this workstation's GTX 1050, in-session when asked.** The
   dataset never leaves this machine (`docs/06` §7.1); the Kaggle path stays documented
   and marked not used. Claude Code's job is also the pipeline, the tests, the DICOM
@@ -235,7 +244,7 @@ as the coverage counts did. **Read it from `gh run list`**, never from this file
 | **1** | Smoke run, `cirrus_holdout`, ~20 epochs. **Criteria pre-registered in `docs/07` §15 and committed 2026-09-26, before any run** | **done** — PASS on all four criteria (`docs/08` §5) |
 | **1b** | Re-run under the final configuration after the AMP reversal and the loss adoption. **Criteria pre-registered in `docs/07` §15.6 before the run** | **done** — PASS on all five, resume crossed the warmup boundary (`docs/08` §5b) |
 | **2** | `cirrus_holdout` trained fully **and evaluated end to end** before any other fold begins | **done 2026-10-01.** Early stop at epoch 58, best epoch 33; one-time evaluation of `test` and `in_domain_ref` complete (`docs/08` §5c, §5d) |
-| **3** | `spectralis_holdout`, then `topcon_holdout` | **In progress.** `spectralis_holdout` night 1 launched 2026-10-03 19:56 local, detached via WMI, from `5f66359` clean; run dir `artifacts/runs/spectralis_holdout_stage3`. First epoch **343.2 s, measured**, against ~354 s derived, so 80 epochs ≈ 7.63 h. Secondary analyses pre-registered in `docs/07` §19 before it trained. **topcon not started** |
+| **3** | `spectralis_holdout`, then `topcon_holdout` | **In progress.** `spectralis_holdout` night 1, session 1: launched 2026-10-03 19:56 local by Claude Code through WMI from `5f66359`, **terminated externally after epoch 9** when its WMI provider host was torn down (`docs/08` D8); checkpoints verified intact. Session 2: resumed by the author at 21:03 from the VS Code integrated terminal, from `7be924f`, `--max-epochs-this-session 70`; training path unchanged between the two commits. Run dir `artifacts/runs/spectralis_holdout_stage3`. **342.5 s/epoch measured** over session 1's 10 epochs. Secondary analyses pre-registered in `docs/07` §19 before it trained. **topcon not started** |
 | **4** | Uncertainty, subgroup analysis, `docs/10` | `eval/` is implemented; **`eval/report.py` is still a stub and `docs/10` is unwritten** |
 
 ### Next session — the plan, written 2026-10-03 while spectralis night 1 trained

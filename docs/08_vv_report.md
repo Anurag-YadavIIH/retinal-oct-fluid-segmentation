@@ -595,8 +595,72 @@ rewriting it to make the count tidy is the one thing that would destroy its valu
 
 The evaluation record carries aggregates only. No secondary analysis — including the
 present/absent Dice decomposition — can be computed from it without re-running inference on
-the sealed splits. §17.5's field list did not require per-volume rows, and should have. Open
-at the time of writing.
+the sealed splits. §17.5's field list did not require per-volume rows, and should have.
+**Repaired 2026-10-03** in `6295bd0` (SRS-089, TC-126); the cirrus re-run that uses the rows
+is scheduled between training sessions.
+
+---
+
+## 5e. Stage 3 — `spectralis_holdout` training record (in progress)
+
+> **A training record, not a result.** The held-out vendor here is spectralis; it has not been
+> touched, and `docs/07` §17 and §19 govern its evaluation.
+
+### 5e.1 Session 1 — interrupted after epoch 9 by external termination
+
+| Field | Value | Source |
+|---|---|---|
+| Launched | 2026-10-03 19:56 local, **by Claude Code**, through `Win32_Process.Create` | — |
+| Source | `5f66359`, `dirty: false`, `allow_dirty: false` | `run.json`, SRS-086 |
+| Epochs completed | **10** (0–9) of 80 bounded this session | measured, `epochs.jsonl` |
+| Seconds per epoch | **339.0–352.7, mean 342.5** | measured, 10 epochs |
+| Best | epoch **8**, val Dice **0.643812** | measured |
+| Patience at end | 1 of 25 | measured |
+| GPU | 49–76 °C, peak memory 2875 MiB of 4096 | measured, telemetry |
+| **How it ended** | **terminated externally around 20:56 local, mid-epoch 10. No `session_end`, no traceback, no crash report, no reboot, no logoff** | log, Windows event logs |
+
+**Checkpoints verified read-only after the interruption.** `last.pt` (epoch 9) and `best.pt`
+(epoch 8) both match `checkpoints.sha256`, and `last.pt` carries the early-stopping state of
+its own epoch — best 8, one epoch since improvement, patience 25. Nothing was lost but the
+partial epoch 10, roughly five minutes of compute. The unterminated first session stays in
+`epochs.jsonl` as what happened.
+
+### 5e.2 Session 2 — resumed by the author
+
+Resumed 2026-10-03 21:03 local **by the author, from the VS Code integrated terminal**, into
+the same run directory: `run.json` records `7be924f`, `dirty: false`,
+`max_epochs_this_session: 70`, and `epochs.jsonl` records `session_start` from epoch 10 to 80
+with `resumed: true`. **No file on the training path differs between `5f66359` and
+`7be924f`** — the two commits between them changed only documents, `eval/pipeline.py` and its
+test — so both sessions run the same training code under different identifiers.
+
+### D8 — a run described as detached was not, and died with its WMI parent
+
+**What happened.** Session 1 and its watcher were launched by Claude Code through
+`Win32_Process.Create`, and **described to the author as detached and able to survive VS Code
+closing**. That part was true. But each was parented by a WMI provider host (`WmiPrvSE.exe`
+10200 and 18048), and both processes ended at the same moment around 20:56 local. Afterwards
+both hosts were gone; no crash, no Windows Error Reporting entry, no logoff (Explorer, Winlogon,
+VS Code and Claude Code all still running from before) and no reboot. A `Kernel-Power` 566
+session transition at 20:56:39 coincides, but an identical-looking transition at 20:01 caused
+nothing.
+
+**Most likely cause — inferred, not proven:** a process created through `Win32_Process.Create`
+lives in the WMI provider host's job object, and Windows tears idle provider hosts down. The
+launch escaped VS Code's job object and was placed in another.
+
+**The defect is in the claim, not only the method.** "It no longer depends on VS Code" was
+checked; "it depends on nothing" was assumed. The process tree showed the WMI parent at launch
+and was read only to confirm the absence of VS Code.
+
+**A second error from the same evening.** At 20:57, "about 6.7 more hours" was reported from
+`epochs.jsonl` **without confirming the process was alive**; it had died a minute earlier. The
+epoch log records what a run did, not whether it is still running.
+
+**Disposition.** Not relaunched by Claude Code; the author relaunched. `docs/07` §17.8 and
+CLAUDE.md are corrected: long runs are launched by the author from an interactive terminal kept
+open, a launch method is called detached only after verifying its dependencies from the process
+tree, and no remaining-time estimate is given without first confirming the process is alive.
 
 ---
 
