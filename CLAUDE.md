@@ -197,7 +197,8 @@ dataset arrives.**
 | ~~RETOUCH download~~ | **Unblocked 2026-09-21.** Training partition only; the test partition was deliberately not taken (`docs/06` §2.1) |
 | ~~Kaggle quota / a Kaggle session~~ | **Void since 2026-09-25.** Training runs locally; the Kaggle path stays documented and marked not used. The old budget figures in this file's "Measured on this workstation" note are superseded by the AMP reversal |
 | **Docker not installed** | TC-080, TC-081, TC-082 — written and **never executed**. The Orthanc round-trip is unverified |
-| **An author decision** | **`docs/07` §19.1's present/absent decomposition for cirrus.** It needs per-volume rows, which the Stage 2 record did not persist (`docs/08` **D7**), so computing it means re-running inference and spending one more unlock on each sealed bucket. The figures would be identical — determinism is established by TC-121 and TC-123 — but the access count would rise. Deferring it to the two remaining folds costs nothing, and §19.4 already labels it post-hoc for cirrus alone |
+| ~~An author decision~~ | **Decided 2026-10-03: approved.** One more unlock on each sealed cirrus bucket under §17.7b, with `docs/08` D7 as the defect. The code is done (`6295bd0`, SRS-089, TC-126); the re-run itself waits for a gap between spectralis sessions — see "Next session" below |
+| **The GPU being free** | The cirrus sealed re-run. **Never concurrently with training** — it would compete for a 4 GiB card the trainer peaks near 2.9 GiB on |
 | **Neither** — these are simply next | Stage 3 (`spectralis_holdout`, then `topcon_holdout`), `eval/report.py`, `docs/10`, `service/api.py` |
 
 ### Numbers, measured 2026-10-01
@@ -234,8 +235,57 @@ as the coverage counts did. **Read it from `gh run list`**, never from this file
 | **1** | Smoke run, `cirrus_holdout`, ~20 epochs. **Criteria pre-registered in `docs/07` §15 and committed 2026-09-26, before any run** | **done** — PASS on all four criteria (`docs/08` §5) |
 | **1b** | Re-run under the final configuration after the AMP reversal and the loss adoption. **Criteria pre-registered in `docs/07` §15.6 before the run** | **done** — PASS on all five, resume crossed the warmup boundary (`docs/08` §5b) |
 | **2** | `cirrus_holdout` trained fully **and evaluated end to end** before any other fold begins | **done 2026-10-01.** Early stop at epoch 58, best epoch 33; one-time evaluation of `test` and `in_domain_ref` complete (`docs/08` §5c, §5d) |
-| **3** | `spectralis_holdout`, then `topcon_holdout` | **next.** Secondary analyses pre-registered in `docs/07` §19 before either trains. **Do not reuse 110 epochs per session** — spectralis is 4032 training frames against cirrus's 2610, so ~354 s/epoch is expected and 80 epochs ≈ 7.9 h; the real figure comes from its own first night (§18.1) |
+| **3** | `spectralis_holdout`, then `topcon_holdout` | **In progress.** `spectralis_holdout` night 1 launched 2026-10-03 19:56 local, detached via WMI, from `5f66359` clean; run dir `artifacts/runs/spectralis_holdout_stage3`. First epoch **343.2 s, measured**, against ~354 s derived, so 80 epochs ≈ 7.63 h. Secondary analyses pre-registered in `docs/07` §19 before it trained. **topcon not started** |
 | **4** | Uncertainty, subgroup analysis, `docs/10` | `eval/` is implemented; **`eval/report.py` is still a stub and `docs/10` is unwritten** |
+
+### Next session — the plan, written 2026-10-03 while spectralis night 1 trained
+
+**First, read how night 1 ended.** `artifacts/monitor/stage3_night1.md` holds the status
+lines and a final summary written by the detached watcher — epochs completed, `stopped_by`,
+trajectory, best epoch, patience, peak temperature, any action taken. Confirm against
+`artifacts/runs/spectralis_holdout_stage3/epochs.jsonl` before acting on it.
+
+**1. Spectralis session 2 — only if night 1 hit the 80-epoch limit.** If `stopped_by` is
+`session_epoch_limit`, session 2 is **the same command without `--max-epochs-this-session`**,
+launched the next night, detached (§17.8). If `stopped_by` is `early_stopping`, the fold is
+complete and there is no session 2. Anything else is an anomaly to investigate, not a session
+to relaunch.
+
+```powershell
+.venv\Scripts\python.exe scripts\04_train.py --fold configs\folds\spectralis_holdout.yaml `
+  --run-dir artifacts\runs\spectralis_holdout_stage3 --epochs 150
+```
+
+Same `--run-dir`, so it resumes. It will record a newer commit than night 1's `5f66359`; the
+`docs/13` entry of 2026-10-03 shows no training-path file changed between them, so the two
+sessions run the same training code. Re-check that before launching if anything has been
+committed since `6295bd0`.
+
+**2. The cirrus sealed re-run — between sessions, in daytime, never concurrently with
+training.** Confirm no training process is alive and the GPU is idle first. Then re-run both
+sealed cirrus buckets from a **detached** process, reasons naming **D7** and **§17.7b**:
+
+- **Write to new files, not over the originals.** `scripts/05_evaluate.py` defaults to
+  `evaluation_{bucket}.json` in the run directory, which would overwrite the `767c8e5` records
+  the re-run is being compared against. Pass `--output` to a new path for both buckets.
+- **Every aggregate must reproduce the `767c8e5` results exactly** — every per-class,
+  per-vendor and pooled Dice, HD95, sensitivity, specificity and AUROC, value and interval.
+  TC-121 and TC-123 establish determinism and the evaluation path has changed only by adding
+  rows. **If any figure differs, stop and report before doing anything else**, including the
+  decomposition. A difference would mean the determinism claim does not cover evaluation.
+- **If all reproduce**, produce §19.1's present/absent decomposition for both arms from the
+  new `per_volume` rows — **labelled post-hoc everywhere**, never replacing a pre-registered
+  figure — with n per stratum and the share of the low mean Dice attributable to
+  false-positive predictions in class-absent volumes.
+- **Record in `docs/08`** that the decomposition came from a deterministic re-run made after
+  the Stage 3 analysis plan was already committed in **`cae1f36`**.
+
+Two things to carry into the decomposition. A class absent from the reference scores Dice
+**0.0** for even one predicted voxel and **1.0** only when nothing is predicted
+(`metrics.py:104-117`), while detection calls a class present only above **10** voxels — so
+the two can disagree on volumes with 1–10 predicted voxels, and that is expected rather than a
+defect. And the access log will show one more run per bucket; with `run_id` now recorded,
+each counts once.
 
 **Owed before Stage 1 — all delivered 2026-09-26** (SRS-080..083, TC-079, TC-095):
 `--max-epochs-this-session`; a `STOP` file that ends the session after the current epoch
