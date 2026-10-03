@@ -29,6 +29,7 @@ A stale matrix is worse than no matrix (CLAUDE.md rule 5).
 | URS-007 | SRS-019, SRS-020, SRS-021 | HAZ-008 | RC-002, RC-003, RC-005 | TC-004 | `src/ocuval/data/splits.py` |
 | URS-007 | SRS-087, SRS-033, SRS-034 | HAZ-008 | RC-006 | TC-124 | `src/ocuval/eval/metrics.py`, `eval/subgroup.py` — patient-level cluster bootstrap |
 | URS-007 | SRS-088 | HAZ-008 | RC-006 | TC-125 | `src/ocuval/eval/sealed.py` — the test split is read once, and the count is durable |
+| URS-007 | SRS-089 | HAZ-008 | RC-006 | TC-126 | `src/ocuval/eval/pipeline.py` — per-volume rows, from which every aggregate is recomputable |
 | URS-010 | SRS-076, SRS-077, SRS-083 | HAZ-009 | RC-028 | TC-123 | `artifacts/runs/cirrus_holdout_stage1b` against `_stage2` — two differently configured GPU runs agree exactly while their schedules coincide |
 | URS-010 | SRS-031, SRS-086 | HAZ-009 | RC-028 | TC-122 | `src/ocuval/runs.py`, `scripts/04_train.py` — the run record identifies the code, and a fold run refuses a dirty tree |
 | URS-010 | SRS-076, SRS-077, SRS-084, SRS-085 | HAZ-009 | RC-028 | TC-121 | `src/ocuval/training/{loop,losses,checkpoint}.py`, `src/ocuval/data/datamodule.py` — two GPU runs compared byte for byte; the evidence for CLAUDE.md rule 4 on GPU |
@@ -65,12 +66,12 @@ implemented.
 
 - User requirements with at least one software requirement: **11 of 11**. Every URS in
   `docs/01` derives at least one SRS or NFR in `docs/02`.
-- Software requirements with a verifying test case **allocated**: **88 of 88**
+- Software requirements with a verifying test case **allocated**: **89 of 89**
   SRS and **8 of 8** NFR. Every SRS names a test case in its own row; each NFR is named by
   at least one row of `docs/07` §6 instead, the allocation running in that direction.
-- Test cases **registered** in `docs/07` §6: **111**.
-  Test cases **written**: **87**. Of those,
-  **84 are executed** by the suite and
+- Test cases **registered** in `docs/07` §6: **112**.
+  Test cases **written**: **88**. Of those,
+  **85 are executed** by the suite and
   **3 have never been run** (TC-080, TC-081, TC-082) because
   they need a PACS, which is not available here. A written test that nobody has executed is not
   verification, and is not counted as such here. The remaining

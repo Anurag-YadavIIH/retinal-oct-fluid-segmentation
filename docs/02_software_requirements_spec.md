@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-088 and NFR-001..NFR-008. Every requirement here derives
+Allocates SRS-001..SRS-089 and NFR-001..NFR-008. Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -131,6 +131,7 @@ measurement, and that gap is HAZ-012.
 | SRS-086 | The run record shall identify **the code that produced the run**, not only its configuration: `run.json` shall carry the commit identifier and whether the working tree was clean at the moment the run started. A run whose results will be reported shall **refuse to start on a dirty tree** unless the caller explicitly overrides, and the override shall itself be recorded. A configuration pinned against unidentified code is not reproducible, and a commit identifier recorded beside uncommitted edits names code that was not run. Each value shall have exactly one home in the record. | URS-010, NFR-002, NFR-008 | TC-122 |
 | SRS-087 | Every reported confidence interval shall be a **cluster bootstrap resampled at the patient level**, taking all of a drawn patient's measurements, and the reported `n` shall be the **number of patients** with its unit named. Frames within a volume and volumes within a patient are near-repeated measurements, so resampling measurements independently narrows the interval by roughly the square root of the cluster size — in the direction that overstates certainty. The resample count, alpha and seed shall be recorded with the result. | URS-007, URS-010 | TC-124 |
 | SRS-088 | The held-out-vendor **test** split and the **in-domain reference** split shall be sealed: any code path that would read either shall refuse unless an explicit unlock is supplied, the unlock shall name a reason, and every access shall be appended to a durable access log recording the time, the bucket, the reason and an identifier for the run that made it. The reported access count shall be **the number of evaluation runs**, derived from those identifiers — not the number of times the gate was called, since a single run checks the seal more than once. The raw log shall never be rewritten to correct a count. `docs/07` §17.1 permits exactly one evaluation of the test set, and a limit nobody counts is not a limit; a limit counted in the wrong unit is not one either. **Corrected 2026-10-01**, see `docs/08` D6. | URS-007, URS-010, NFR-008 | TC-125 |
+| SRS-089 | The evaluation record shall persist **one row per volume per fluid class**, carrying the volume and patient identifiers, the vendor, Dice, HD95, whether the class is present in the reference, and the reference and predicted voxel counts. These rows shall be derived from the same measurements as the aggregate figures, and every aggregate shall be recomputable from them. A record holding aggregates only can answer only the questions asked before it was written, so every later question about a sealed split would spend another unlock. **Added 2026-10-03** as the repair of `docs/08` D7. | URS-007, URS-010, NFR-002 | TC-126 |
 
 ### 3.5 Training
 
@@ -223,7 +224,7 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `runs.py` | SRS-031, SRS-086 |
 | `eval/metrics.py` | SRS-032..SRS-035, SRS-052, SRS-053, SRS-087 |
 | `eval/sealed.py` | SRS-088 |
-| `eval/pipeline.py` | SRS-050..SRS-053, SRS-074, SRS-087, SRS-088 |
+| `eval/pipeline.py` | SRS-050..SRS-053, SRS-074, SRS-087, SRS-088, SRS-089 |
 | `eval/subgroup.py` | SRS-087 |
 | `models/uncertainty.py` | SRS-029, SRS-030 |
 | `scripts/benchmark_device.py` | SRS-031 |

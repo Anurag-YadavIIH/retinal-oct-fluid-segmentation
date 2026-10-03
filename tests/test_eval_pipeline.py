@@ -405,6 +405,186 @@ def synthetic_volumes(n_patients=6):
     return volumes
 
 
+# --- TC-126: per-volume rows, from which every aggregate is recomputable ---------------
+
+
+def varied_volumes(n_patients=10, seed=11):
+    """Volumes whose masks differ, including the case `docs/07` §19.1 exists for.
+
+    `synthetic_volumes` gives every volume identical masks, so an aggregate recomputed from
+    its rows would match trivially. Here overlap varies per volume, some classes are absent
+    from the reference, and some of those absent classes are predicted anyway -- the
+    false-positive case that scores Dice 0.0 (metrics.py:104-117) and that the present/absent
+    decomposition exists to separate out.
+    """
+    rng = np.random.default_rng(seed)
+    volumes = []
+    for index in range(n_patients):
+        vendor = ("spectralis", "topcon")[index % 2]
+        shape = (3, 16, 16)
+        prediction = np.zeros(shape, dtype=np.uint8)
+        reference = np.zeros(shape, dtype=np.uint8)
+        for label in (1, 2, 3):
+            if rng.random() < 0.6:  # class present in the reference
+                a, b = rng.integers(0, 10, 2)
+                reference[label - 1, a : a + 5, b : b + 5] = label
+                shift = rng.integers(0, 3)
+                prediction[label - 1, a + shift : a + shift + 5, b : b + 4] = label
+            elif rng.random() < 0.7:  # absent, but predicted: a false positive
+                prediction[label - 1, 0 : rng.integers(1, 4), 0:2] = label
+        seg = measure_volume(prediction, reference, (0.004, 0.0117, 0.047))
+        volumes.append(
+            {
+                "sample_id": f"uid-{index}",
+                "patient_id": f"TRAIN{index:03d}",
+                "vendor": vendor,
+                "segmentation": seg,
+                "detection": detection_rows(
+                    _voxels(seg, "volume_mm3_predicted"),
+                    _voxels(seg, "volume_mm3_reference"),
+                    {k: float(rng.random()) for k in ("IRF", "SRF", "PED")},
+                    threshold=10,
+                ),
+            }
+        )
+    return volumes
+
+
+def test_TC_126_one_row_per_volume_per_class_with_every_required_field(tmp_path):
+    volumes = varied_volumes()
+    plan = EvaluationPlan(fold_id="f", bucket="val", seed=SEED, n_resamples=200)
+    rows = evaluate(plan, volumes, artifacts_root=tmp_path)["per_volume"]
+    assert len(rows) == len(volumes) * 3
+    required = {
+        "sample_id",
+        "patient_id",
+        "vendor",
+        "fluid_class",
+        "dice",
+        "hd95",
+        "reference_present",
+        "reference_voxels",
+        "predicted_voxels",
+    }
+    for row in rows:
+        assert required <= set(row), f"missing {sorted(required - set(row))}"
+    keys = {(r["sample_id"], r["fluid_class"]) for r in rows}
+    assert len(keys) == len(rows), "a volume-class pair appears twice"
+
+
+def test_TC_126_the_fixture_exercises_the_absent_but_predicted_case(tmp_path):
+    """Vacuity guard: the cases the next tests depend on must actually occur."""
+    plan = EvaluationPlan(fold_id="f", bucket="val", seed=SEED, n_resamples=200)
+    rows = evaluate(plan, varied_volumes(), artifacts_root=tmp_path)["per_volume"]
+    absent_predicted = [r for r in rows if not r["reference_present"] and r["predicted_voxels"]]
+    assert absent_predicted, "no false-positive volume in the fixture; it tests nothing"
+    assert {r["dice"] for r in absent_predicted} == {0.0}, "absent-but-predicted must score 0.0"
+    assert any(r["reference_present"] for r in rows)
+    assert {r["vendor"] for r in rows} == {"spectralis", "topcon"}
+
+
+@pytest.mark.parametrize("metric", ["dice", "hd95"])
+def test_TC_126_every_aggregate_is_recomputable_from_the_rows(tmp_path, metric):
+    """The property the cirrus re-run will rely on: the summary and the rows cannot disagree.
+
+    Each per-vendor and pooled per-class value is the mean over the rows' finite values, and
+    must equal the reported aggregate **exactly** -- not approximately, since both are computed
+    from the same floats and any difference would mean a second, divergent route.
+    """
+    plan = EvaluationPlan(fold_id="f", bucket="val", seed=SEED, n_resamples=200)
+    result = evaluate(plan, varied_volumes(), artifacts_root=tmp_path)
+    rows = result["per_volume"]
+    scopes = {"all_vendors": rows} | {
+        v: [r for r in rows if r["vendor"] == v] for v in result["vendors"]
+    }
+    compared = 0
+    for scope, subset in scopes.items():
+        block = (
+            result["segmentation"]["all_vendors"]
+            if scope == "all_vendors"
+            else result["segmentation"]["by_vendor"][scope]
+        )
+        for fluid in ("IRF", "SRF", "PED"):
+            values = [
+                r[metric] for r in subset if r["fluid_class"] == fluid and r[metric] is not None
+            ]
+            finite = [v for v in values if not np.isnan(v)]
+            reported = block[fluid][metric]
+            if not finite:
+                assert np.isnan(reported["value"])
+                continue
+            assert float(np.mean(finite)) == reported["value"], (
+                f"{scope} {fluid} {metric}: rows give {np.mean(finite)!r}, record says "
+                f"{reported['value']!r}"
+            )
+            assert (
+                len(
+                    {
+                        r["patient_id"]
+                        for r in subset
+                        if r["fluid_class"] == fluid
+                        and r[metric] is not None
+                        and not np.isnan(r[metric])
+                    }
+                )
+                == reported["n"]
+            )
+            compared += 1
+    assert compared >= 6, f"only {compared} comparisons; the fixture is too thin"
+
+
+def test_TC_126_reference_present_matches_the_detection_arm(tmp_path):
+    """The present/absent strata must be the strata the detection metrics used."""
+    volumes = varied_volumes()
+    plan = EvaluationPlan(fold_id="f", bucket="val", seed=SEED, n_resamples=200)
+    rows = evaluate(plan, volumes, artifacts_root=tmp_path)["per_volume"]
+    detection = {
+        (v["sample_id"], d["fluid_class"]): d["reference_present"]
+        for v in volumes
+        for d in v["detection"]
+    }
+    for row in rows:
+        assert row["reference_present"] == detection[(row["sample_id"], row["fluid_class"])]
+
+
+def test_TC_126_adding_the_rows_changes_no_aggregate(tmp_path):
+    """The rows are a new field, never a new computation of the existing ones.
+
+    The segmentation and detection blocks are recomputed here by the original route --
+    `subgroup.by_vendor` and `aggregate_detection` on the same inputs, without
+    `per_volume_rows` anywhere in the path -- and must equal what `evaluate` now emits.
+    """
+    volumes = varied_volumes()
+    plan = EvaluationPlan(fold_id="f", bucket="val", seed=SEED, n_resamples=200)
+    result = evaluate(plan, volumes, artifacts_root=tmp_path)
+
+    seg = [
+        {
+            **r,
+            "patient_id": v["patient_id"],
+            "vendor": v["vendor"],
+            "sample_id": v["sample_id"],
+            "seed": SEED,
+        }
+        for v in volumes
+        for r in v["segmentation"]
+        if r["metric"] in ("dice", "hd95")
+    ]
+    det = [
+        {**r, "patient_id": v["patient_id"], "vendor": v["vendor"]}
+        for v in volumes
+        for r in v["detection"]
+    ]
+    expected_seg = subgroup.by_vendor(seg)
+    expected_det = aggregate_detection(det, seed=SEED, n_resamples=200, alpha=0.05)
+    assert json.dumps(result["segmentation"], sort_keys=True, default=str) == json.dumps(
+        expected_seg, sort_keys=True, default=str
+    )
+    assert json.dumps(result["detection"], sort_keys=True, default=str) == json.dumps(
+        expected_det, sort_keys=True, default=str
+    )
+
+
 def test_the_record_carries_everything_section_17_5_requires(tmp_path):
     """`docs/07` §17.5 is a list of fields. This asserts the list, item by item."""
     plan = EvaluationPlan(fold_id="cirrus_holdout", bucket="val", seed=SEED, n_resamples=200)

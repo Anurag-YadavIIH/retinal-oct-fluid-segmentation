@@ -1,8 +1,8 @@
 """The evaluation pipeline, exactly as pre-registered in `docs/07` §17.
 
 Traces to: SRS-032, SRS-033, SRS-034, SRS-050, SRS-051, SRS-052, SRS-053, SRS-057,
-SRS-074, SRS-087, SRS-088
-Verifies: TC-055, TC-056, TC-065, TC-066, TC-067, TC-073, TC-124, TC-125
+SRS-074, SRS-087, SRS-088, SRS-089
+Verifies: TC-055, TC-056, TC-065, TC-066, TC-067, TC-073, TC-124, TC-125, TC-126
 
 The protocol was committed before any Stage 2 training started, and this module implements
 it rather than interpreting it. Four properties are structural here, not conventions:
@@ -235,6 +235,54 @@ def _rate(subset, want_positive: bool, seed: int, n_resamples: int, alpha: float
     return out
 
 
+def per_volume_rows(volumes: Sequence[dict]) -> list[dict]:
+    """One row per volume per class: the measurements every aggregate is built from (SRS-089).
+
+    **Added after the Stage 2 evaluation, as the repair of `docs/08` D7.** That record carried
+    aggregates only, so no secondary analysis -- in particular the present/absent Dice
+    decomposition of `docs/07` §19.1 -- could be computed from it without re-running inference
+    on the sealed splits. A record that can answer only the questions asked before it was
+    written forces every later question to spend another unlock.
+
+    **Derived from the same inputs as the aggregates, never in addition to them.** These rows
+    are read off `volume["segmentation"]` -- the exact rows `subgroup.by_vendor` consumes -- so
+    the aggregates are recomputable from them, and TC-126 asserts that they are. A per-volume
+    table computed by a second route could disagree with the summary it sits beside.
+
+    `reference_present` is `reference voxels > 0`, the same definition `detection_rows` uses
+    (pipeline.py, `reference_present` in that function), so the present/absent strata here are
+    the strata the detection metrics were computed over.
+    """
+    out = []
+    for volume in volumes:
+        by_class: dict[str, dict] = {}
+        for row in volume["segmentation"]:
+            entry = by_class.setdefault(row["fluid_class"], {})
+            metric = row["metric"]
+            if metric in SEGMENTATION_METRICS:
+                entry[metric] = row["value"]
+            elif metric == "volume_mm3_predicted":
+                entry["predicted_voxels"] = int(row["voxels"])
+            elif metric == "volume_mm3_reference":
+                entry["reference_voxels"] = int(row["voxels"])
+        for fluid in sorted(by_class):
+            entry = by_class[fluid]
+            out.append(
+                {
+                    "sample_id": volume["sample_id"],
+                    "patient_id": volume["patient_id"],
+                    "vendor": volume["vendor"],
+                    "fluid_class": fluid,
+                    "dice": entry.get("dice"),
+                    "hd95": entry.get("hd95"),
+                    "reference_present": bool(entry.get("reference_voxels", 0) > 0),
+                    "reference_voxels": entry.get("reference_voxels"),
+                    "predicted_voxels": entry.get("predicted_voxels"),
+                }
+            )
+    return out
+
+
 def evaluate(
     plan: EvaluationPlan,
     volumes: Sequence[dict],
@@ -296,6 +344,8 @@ def evaluate(
         "mc_passes": plan.mc_passes,
         "segmentation": segmentation,
         "detection": detection,
+        # SRS-089, `docs/08` D7. Every aggregate above is recomputable from these rows.
+        "per_volume": per_volume_rows(volumes),
         "notes": plan.notes,
     }
 
@@ -316,5 +366,6 @@ __all__ = [
     "detection_rows",
     "evaluate",
     "measure_volume",
+    "per_volume_rows",
     "write_record",
 ]

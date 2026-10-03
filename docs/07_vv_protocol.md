@@ -515,6 +515,7 @@ passes every fixture written by the same person who wrote the code, and is wrong
 | TC-120 | Dice and HD95 agree with MONAI back to back | SRS-032, RC-006 | U | Over randomly generated mask pairs, `ocuval.eval.metrics` and the corresponding MONAI metric agree within tolerance for both Dice and HD95 | yes (`slow`) |
 | TC-124 | **Confidence intervals resample patients, not measurements** | SRS-087, SRS-033, SRS-034 | U | `bootstrap_ci_grouped` reports `n` as the patient count with its unit named; on clustered data its interval is materially wider than the naive one (measured ~3.2x at cluster size 10, against sqrt(10)=3.16 expected), while on unclustered data the two agree within 25% -- a negative control, so the extra width is the correlation and not the implementation. Reproducible from the seed, and a patient whose only value is NaN does not count as evidence | yes |
 | TC-125 | **The test and in-domain reference splits are sealed, and every access is counted** | SRS-088; `docs/07` §17.1, §17.5 | U | Both sealed buckets refuse without an `Unlock`; an `Unlock` opens one named bucket only and cannot be constructed without a reason and an approver; `val` needs nothing. Every access appends to a durable log carrying the time, bucket, fold, reason, approver and the count of prior accesses, and the count is read from the file so restarting cannot reset it. `evaluate` is gated, not merely gateable | yes |
+| TC-126 | **The evaluation record carries per-volume rows from which every aggregate is recomputable** | SRS-089; `docs/08` D7 | U | `evaluate` emits one row per volume per class with identifiers, vendor, Dice, HD95, `reference_present` and both voxel counts. Recomputing each per-class, per-vendor Dice and HD95 aggregate from those rows reproduces the reported value exactly, and `reference_present` agrees with the detection arm's definition on every volume. Adding the rows changes no aggregate: the same inputs evaluated with and without them give identical segmentation and detection blocks | yes |
 | TC-123 | **Two independently configured GPU runs agree exactly while their schedules coincide** | SRS-076, SRS-077, SRS-083, SRS-084, SRS-085; CLAUDE.md rule 4 | U | `cirrus_holdout_stage1b` (`--epochs 20`, two sessions, resumed at epoch 3) and `cirrus_holdout_stage2` (`--epochs 150`, one session) agree **exactly** on `train_loss`, `val_dice` and `per_class_dice` for every epoch whose learning rate they share, and the mean training loss over epochs 0–2 is 1.648121 in both. Divergence begins at the first epoch trained under a differing rate and not before, which the test asserts as a boundary rather than merely tolerating. The strongest evidence for rule 4 on GPU: it spans different fold lengths, different session structures and a resume. Marked `requires_data` — the run directories are gitignored | yes (`requires_data`) |
 | TC-122 | **The run record identifies the code, and a dirty tree refuses to run** | SRS-086, SRS-031; NFR-002 | U | `run.json` carries `source.commit`, `source.branch` and `source.dirty`; `commit` is never reported without `dirty` beside it; there is **no** top-level `seed` field, the seed having exactly one home in `resolved_config`; `require_clean_tree` raises on a dirty tree and on a missing commit, and permits both only under an explicit override that is itself recorded | yes |
 | TC-121 | **Two GPU runs of one configuration agree bit-for-bit** | SRS-076, SRS-077, SRS-084, SRS-085; CLAUDE.md rule 4 | U | Two independent runs of the same fold, seed and configuration produce **byte-identical** model weights, optimiser state and per-epoch loss log, and `determinism.json` records **zero fallbacks**. Both halves are required: zero fallbacks means no operation announced non-determinism, which is not the same claim as two runs agreeing — §3 rule 8. Marked `requires_data` and `slow`; it is the evidence for rule 4 on GPU and rule 4 is not claimed achieved there without it | yes (`slow`, `requires_data`) |
@@ -1155,6 +1156,28 @@ the count, and that is exactly the thing the seal exists to provide.
 The rule is about where the run's lifetime is owned. A run that outlives the thing that
 started it cannot be ended by that thing's timeout, and an evaluation of a sealed split is the
 last place to discover that a wrapper had an opinion about how long work may take.
+
+### 17.9 Per-volume rows added to the record — the repair of `docs/08` D7
+
+**Added 2026-10-03, after the Stage 2 results were seen.** §17.5 is left exactly as committed;
+this section records what was added and on what authority, rather than editing a
+pre-registered list after the fact.
+
+The record now also carries **one row per volume per class** (SRS-089, TC-126): identifiers,
+vendor, Dice, HD95, `reference_present`, and reference and predicted voxel counts. §17.5 did
+not require them, and their absence is why §19.1's present/absent decomposition could not be
+computed for cirrus without re-running inference on the sealed splits.
+
+**This is an evaluation-code defect fix under §17.7b, and it changes no figure.** The rows are
+read off the same measurements the aggregates are built from, the aggregate computation is
+untouched, and TC-126 asserts that every aggregate is recomputable from the rows and that the
+segmentation and detection blocks are identical with and without them. Nothing about the
+model, checkpoint, threshold or metric definitions changed.
+
+The cirrus re-run that uses these rows is authorised by the author under §17.7b with D7 as the
+defect, and is scheduled **between training sessions, never concurrently with training**. Its
+condition for proceeding is that **every aggregate reproduces the `767c8e5` results exactly**;
+if any differs, the analysis stops and the difference is reported before anything else.
 
 ---
 
