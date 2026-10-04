@@ -170,8 +170,9 @@ Accuracy alone is never reported. The classes are imbalanced and it is misleadin
 
 ## 7. Current status
 
-**Phase: 1 — pipeline and DICOM layer. No results yet, and none are possible until the
-dataset arrives.**
+**Phase: Stage 3 complete — all three folds trained and evaluated once, under one seeded,
+reproducible procedure (2026-10-05, `docs/08` §5g).** Next: the two open §19 decisions,
+`eval/report.py`, `docs/10`.
 
 ### Milestones
 
@@ -189,13 +190,13 @@ dataset arrives.**
    2026-09-25, closing `docs/07` item 6.
 4. ~~Splits and leakage gate.~~ **done** — 2026-09-17. TC-004 passes for real; its
    `strict` xfail was removed when `splits.py` landed.
-5. ~~Training locally; evaluation and subgroup reporting.~~ **`cirrus_holdout` trained and
-   evaluated end to end, 2026-10-01.** The fold completed by **early stopping at epoch 58**
-   of 150 in one 3.75 h session, best epoch 33 (`docs/08` §5c). The one-time evaluation of
-   the held-out vendor and the in-domain reference is **done and recorded** (`docs/08` §5d):
-   **no per-class Dice difference is established at 95%**, five of six intervals overlapping.
-   `models/uncertainty.py`, `eval/subgroup.py`, `eval/pipeline.py` and `eval/sealed.py` are
-   implemented. **`eval/report.py` is still a stub** — `docs/10` is not written.
+5. ~~Training locally; evaluation and subgroup reporting.~~ **All three folds trained and
+   evaluated, 2026-10-05** (`docs/08` §5c, §5e, §5f, §5g). Evaluation is seeded and
+   deterministic since SRS-091; two seeded `val` runs were IDENTICAL before any unlock. **No
+   per-class Dice difference between held-out and in-domain is established at 95% in any fold**:
+   all nine comparisons overlap, and the gaps point both ways. The 7-patient in-domain arms are
+   the binding limit. The cirrus `767c8e5` figures (§5d) stay in the record, labelled as a
+   single unseeded draw. **`eval/report.py` is still a stub** — `docs/10` is not written.
 6. SEG/SR output and Orthanc round-trip. **Objects done; round-trip blocked on Docker.**
 7. FastAPI service, Docker, full document set, GitHub Pages. **Not started.**
 
@@ -206,17 +207,17 @@ dataset arrives.**
 | ~~RETOUCH download~~ | **Unblocked 2026-09-21.** Training partition only; the test partition was deliberately not taken (`docs/06` §2.1) |
 | ~~Kaggle quota / a Kaggle session~~ | **Void since 2026-09-25.** Training runs locally; the Kaggle path stays documented and marked not used. The old budget figures in this file's "Measured on this workstation" note are superseded by the AMP reversal |
 | **Docker not installed** | TC-080, TC-081, TC-082 — written and **never executed**. The Orthanc round-trip is unverified |
-| ~~An author decision~~ | **Decided 2026-10-03: approved.** One more unlock on each sealed cirrus bucket under §17.7b, with `docs/08` D7 as the defect. The code is done (`6295bd0`, SRS-089, TC-126); the re-run itself waits for a gap between spectralis sessions — see "Next session" below |
-| **The GPU being free** | The cirrus sealed re-run. **Never concurrently with training** — it would compete for a 4 GiB card the trainer peaks near 2.9 GiB on |
-| **Neither** — these are simply next | Stage 3 (`spectralis_holdout`, then `topcon_holdout`), `eval/report.py`, `docs/10`, `service/api.py` |
+| **An author decision: §19.3** | The pooled cross-fold comparison. Its pre-registered assertion **failed**: the three in-domain arms are 21 volumes from **13** patients, with 8 in two folds' references (`docs/08` §5g.8, `docs/13` 2026-10-05). How to pool is an amendment for the author. Do not pick a method |
+| **Two GPU runs, open buckets, no unlock** | §19.2's validation-selected threshold for spectralis and topcon: each needs its own fold's `val` evaluation. Seeded, launched by the author, `--output` to new files |
+| **Neither** — these are simply next | `eval/report.py`, `docs/10`, `service/api.py`; the `docs/09` HAZ-009/RC-028 trace on TC-121..123 (`docs/13` 2026-10-04); no hazard covers non-reproducible evaluation (a `docs/05` decision) |
 
-### Numbers, measured 2026-10-01
+### Numbers, as of 2026-10-05
 
-Identifiers: URS-001..011, **SRS-001..088**, NFR-001..008, HAZ-001..015, RC-001..031,
-SOUP-001..022, TC-000..TC-125 (**111 registered**).
+Identifiers: URS-001..011, **SRS-001..091**, NFR-001..008, HAZ-001..015, RC-001..031,
+SOUP-001..022, TC-000..TC-128 (**114 registered**).
 
-**111 test cases registered, 87 written, 84 executed, 3 written but never run, 24
-registered and unwritten.** Those states are kept separate deliberately. A written test
+**114 test cases registered, 90 written, 87 executed, 3 written but never run, 24
+registered and unwritten** (`docs/09`, enforced by TC-104). Those states are kept separate deliberately. A written test
 nobody has executed is not verification. The three are TC-080..082, blocked on Docker.
 
 **These figures are now recomputed by TC-104, not maintained by hand.** It parses what
@@ -227,8 +228,8 @@ happened twice on the same artefact; on its first run it caught `docs/09` claimi
 against 88, plus two bugs of its own (`docs/13`, 2026-10-01). Do not recount by hand — run
 the test.
 
-Suite, measured locally 2026-10-01: **558 passing, 0 failed, 42 deselected**
-(`requires_pacs` and `slow`). Risk controls: 31 allocated a test.
+Suite, measured locally 2026-10-04 on CPU: **560 passed, 17 skipped, 0 failed, 42
+deselected** (`requires_pacs` and `slow`). Risk controls: 31 allocated a test.
 
 **CI state is not asserted here.** The previous version of this line read "CI is green on
 `main`" and was **false**: the two most recent runs before 2026-10-01 both failed on TC-099,
@@ -244,57 +245,29 @@ as the coverage counts did. **Read it from `gh run list`**, never from this file
 | **1** | Smoke run, `cirrus_holdout`, ~20 epochs. **Criteria pre-registered in `docs/07` §15 and committed 2026-09-26, before any run** | **done** — PASS on all four criteria (`docs/08` §5) |
 | **1b** | Re-run under the final configuration after the AMP reversal and the loss adoption. **Criteria pre-registered in `docs/07` §15.6 before the run** | **done** — PASS on all five, resume crossed the warmup boundary (`docs/08` §5b) |
 | **2** | `cirrus_holdout` trained fully **and evaluated end to end** before any other fold begins | **done 2026-10-01.** Early stop at epoch 58, best epoch 33; one-time evaluation of `test` and `in_domain_ref` complete (`docs/08` §5c, §5d) |
-| **3** | `spectralis_holdout`, then `topcon_holdout` | **`spectralis_holdout` trained, 2026-10-03/04; not yet evaluated.** Session 1 (Claude Code, WMI, `5f66359`) was **terminated externally after epoch 9** (`docs/08` D8). Session 2 (the author, VS Code terminal, `7be924f`; training path identical) resumed at 10 and ended by **early stopping at epoch 54**, best epoch **29**, `fold_complete: true` (`docs/08` §5e). **338.8 s/epoch measured** over all 55 epochs; 5.18 h train time. Run dir `artifacts/runs/spectralis_holdout_stage3`. Secondary analyses pre-registered in `docs/07` §19 before it trained. **topcon not started**; its cache goes on D: via `OCUVAL_CACHE_DIR`, because C: is short of space |
-| **4** | Uncertainty, subgroup analysis, `docs/10` | `eval/` is implemented; **`eval/report.py` is still a stub and `docs/10` is unwritten** |
+| **3** | `spectralis_holdout`, then `topcon_holdout` | **done.** Both trained and evaluated; topcon trained 2026-10-04 in one session from `d35e8e4`, early stopping after epoch 54, best 29, 265.3 s/epoch (`docs/08` §5f); all three folds evaluated seeded 2026-10-05 (`docs/08` §5g). History: **`spectralis_holdout` trained, 2026-10-03/04.** Session 1 (Claude Code, WMI, `5f66359`) was **terminated externally after epoch 9** (`docs/08` D8). Session 2 (the author, VS Code terminal, `7be924f`; training path identical) resumed at 10 and ended by **early stopping at epoch 54**, best epoch **29**, `fold_complete: true` (`docs/08` §5e). **338.8 s/epoch measured** over all 55 epochs; 5.18 h train time. Run dir `artifacts/runs/spectralis_holdout_stage3`. Secondary analyses pre-registered in `docs/07` §19 before it trained. **topcon not started**; its cache goes on D: via `OCUVAL_CACHE_DIR`, because C: is short of space |
+| **4** | Uncertainty, subgroup analysis, `docs/10` | `eval/` is implemented and all §17 results exist; §19.1 done, §19.2 cirrus only, §19.3 blocked on an author decision. **`eval/report.py` is still a stub and `docs/10` is unwritten** |
 
-### Next session — the plan, written 2026-10-03 while spectralis night 1 trained
+### Next session — the plan, written 2026-10-05 after the Stage 3 evaluation
 
-**First, read how night 1 ended.** `artifacts/monitor/stage3_night1.md` holds the status
-lines and a final summary written by the detached watcher — epochs completed, `stopped_by`,
-trajectory, best epoch, patience, peak temperature, any action taken. Confirm against
-`artifacts/runs/spectralis_holdout_stage3/epochs.jsonl` before acting on it.
+**Every sealed bucket has now been evaluated once under the seeded procedure.** Nothing sealed
+remains to unlock, and nothing about the models may change (`docs/07` §17.7b). Retraining any
+fold now would be a new experiment needing its own pre-registration, never a replacement.
 
-**1. Spectralis session 2 — only if night 1 hit the 80-epoch limit.** If `stopped_by` is
-`session_epoch_limit`, session 2 is **the same command without `--max-epochs-this-session`**,
-launched the next night, detached (§17.8). If `stopped_by` is `early_stopping`, the fold is
-complete and there is no session 2. Anything else is an anomaly to investigate, not a session
-to relaunch.
+1. **The author decides how §19.3 pools** (`docs/08` §5g.8): 21 in-domain volumes from 13
+   patients. Whatever is chosen is an amendment to §19.3 recorded in `docs/13` before anything
+   is computed, labelled as decided after the per-fold results were seen.
+2. **§19.2 for spectralis and topcon** needs one seeded `val` evaluation of each model: open
+   buckets, no unlock, launched by the author, with `--output` to new files. Then apply §19.2's
+   rule exactly as written.
+3. **`eval/report.py` and `docs/10`.** `docs/10` must let a reader tell the primary §17 figures
+   from the §19 secondary ones, and the pre-registered from the post-hoc (§19.4), without
+   reconstructing the chronology.
+4. **Smaller items:** the `docs/09` trace of TC-121..123 to HAZ-009/RC-028; whether `docs/05`
+   needs a hazard for non-reproducible evaluation; TC-080..082 still need Docker.
 
-```powershell
-.venv\Scripts\python.exe scripts\04_train.py --fold configs\folds\spectralis_holdout.yaml `
-  --run-dir artifacts\runs\spectralis_holdout_stage3 --epochs 150
-```
-
-Same `--run-dir`, so it resumes. It will record a newer commit than night 1's `5f66359`; the
-`docs/13` entry of 2026-10-03 shows no training-path file changed between them, so the two
-sessions run the same training code. Re-check that before launching if anything has been
-committed since `6295bd0`.
-
-**2. The cirrus sealed re-run — between sessions, in daytime, never concurrently with
-training.** Confirm no training process is alive and the GPU is idle first. Then re-run both
-sealed cirrus buckets from a **detached** process, reasons naming **D7** and **§17.7b**:
-
-- **Write to new files, not over the originals.** `scripts/05_evaluate.py` defaults to
-  `evaluation_{bucket}.json` in the run directory, which would overwrite the `767c8e5` records
-  the re-run is being compared against. Pass `--output` to a new path for both buckets.
-- **Every aggregate must reproduce the `767c8e5` results exactly** — every per-class,
-  per-vendor and pooled Dice, HD95, sensitivity, specificity and AUROC, value and interval.
-  TC-121 and TC-123 establish determinism and the evaluation path has changed only by adding
-  rows. **If any figure differs, stop and report before doing anything else**, including the
-  decomposition. A difference would mean the determinism claim does not cover evaluation.
-- **If all reproduce**, produce §19.1's present/absent decomposition for both arms from the
-  new `per_volume` rows — **labelled post-hoc everywhere**, never replacing a pre-registered
-  figure — with n per stratum and the share of the low mean Dice attributable to
-  false-positive predictions in class-absent volumes.
-- **Record in `docs/08`** that the decomposition came from a deterministic re-run made after
-  the Stage 3 analysis plan was already committed in **`cae1f36`**.
-
-Two things to carry into the decomposition. A class absent from the reference scores Dice
-**0.0** for even one predicted voxel and **1.0** only when nothing is predicted
-(`metrics.py:104-117`), while detection calls a class present only above **10** voxels — so
-the two can disagree on volumes with 1–10 predicted voxels, and that is expected rather than a
-defect. And the access log will show one more run per bucket; with `run_id` now recorded,
-each counts once.
+**Seeded evaluation costs time:** 2.4× the unseeded duration on `val` (measured). Tonight's six
+sealed buckets took 4 h 54 min plus 37 min for step 0 (measured, `docs/08` §5g.1).
 
 **Owed before Stage 1 — all delivered 2026-09-26** (SRS-080..083, TC-079, TC-095):
 `--max-epochs-this-session`; a `STOP` file that ends the session after the current epoch
