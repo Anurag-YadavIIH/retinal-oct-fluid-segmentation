@@ -31,6 +31,7 @@ A stale matrix is worse than no matrix (CLAUDE.md rule 5).
 | URS-007 | SRS-088 | HAZ-008 | RC-006 | TC-125 | `src/ocuval/eval/sealed.py` — the test split is read once, and the count is durable |
 | URS-007 | SRS-089 | HAZ-008 | RC-006 | TC-126 | `src/ocuval/eval/pipeline.py` — per-volume rows, from which every aggregate is recomputable |
 | URS-010 | SRS-090 | — | — | TC-127 | `scripts/compare_evaluation_records.py` — exact record comparison; NaN in both is equal, NaN in one is a difference. No hazard in `docs/05` covers an evaluation that cannot be reproduced, so none is named here |
+| URS-010 | SRS-091 | — | — | TC-128 | `scripts/05_evaluate.py`, `src/ocuval/models/uncertainty.py` — evaluation requests determinism and reseeds each volume's MC-dropout passes from `(seed, subject)`. Hazard column empty for the reason given for SRS-090 |
 | URS-010 | SRS-076, SRS-077, SRS-083 | HAZ-009 | RC-028 | TC-123 | `artifacts/runs/cirrus_holdout_stage1b` against `_stage2` — two differently configured GPU runs agree exactly while their schedules coincide |
 | URS-010 | SRS-031, SRS-086 | HAZ-009 | RC-028 | TC-122 | `src/ocuval/runs.py`, `scripts/04_train.py` — the run record identifies the code, and a fold run refuses a dirty tree |
 | URS-010 | SRS-076, SRS-077, SRS-084, SRS-085 | HAZ-009 | RC-028 | TC-121 | `src/ocuval/training/{loop,losses,checkpoint}.py`, `src/ocuval/data/datamodule.py` — two GPU runs compared byte for byte; the evidence for CLAUDE.md rule 4 on GPU |
@@ -67,12 +68,12 @@ implemented.
 
 - User requirements with at least one software requirement: **11 of 11**. Every URS in
   `docs/01` derives at least one SRS or NFR in `docs/02`.
-- Software requirements with a verifying test case **allocated**: **90 of 90**
+- Software requirements with a verifying test case **allocated**: **91 of 91**
   SRS and **8 of 8** NFR. Every SRS names a test case in its own row; each NFR is named by
   at least one row of `docs/07` §6 instead, the allocation running in that direction.
-- Test cases **registered** in `docs/07` §6: **113**.
-  Test cases **written**: **89**. Of those,
-  **86 are executed** by the suite and
+- Test cases **registered** in `docs/07` §6: **114**.
+  Test cases **written**: **90**. Of those,
+  **87 are executed** by the suite and
   **3 have never been run** (TC-080, TC-081, TC-082) because
   they need a PACS, which is not available here. A written test that nobody has executed is not
   verification, and is not counted as such here. The remaining

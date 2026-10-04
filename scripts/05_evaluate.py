@@ -1,10 +1,17 @@
 """Evaluate a finished run under the protocol pre-registered in `docs/07` §17.
 
-Traces to: SRS-032, SRS-033, SRS-050..SRS-053, SRS-057, SRS-074, SRS-087, SRS-088
+Traces to: SRS-032, SRS-033, SRS-050..SRS-053, SRS-057, SRS-074, SRS-087, SRS-088, SRS-091
 
 Volume-level metrics, per fluid class and per vendor, each with a **patient-level**
 bootstrap interval and its `n` in patients; predictions inverted to native geometry before
 anything is measured; detection derived from the same model's output.
+
+**Seeded and deterministic (SRS-091).** Two unseeded evaluations of one checkpoint differed in
+49 aggregate figures (`docs/13`, 2026-10-04). So the run first makes the same determinism
+request training makes, before anything reaches the device, and records the outcome. Each
+volume's MC-dropout passes then draw from a generator reseeded from `(run.seed, subject)`.
+The method is unchanged: the mean of the configured passes, the same threshold and the same
+metrics. Only the source of the dropout masks is now fixed.
 
 **The bucket is gated.** `val` runs freely. `test` and `in_domain_ref` are sealed (SRS-088)
 and need `--unlock-bucket` with `--unlock-reason` and `--approved-by`; every such access is
@@ -20,6 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -37,8 +45,9 @@ from ocuval.eval.pipeline import (
     measure_volume,
     write_record,
 )
-from ocuval.models.uncertainty import mc_dropout_predict
+from ocuval.models.uncertainty import mc_dropout_predict, reseed_for_volume
 from ocuval.runs import load_manifest, manifest_path, source_record
+from ocuval.training.checkpoint import describe_determinism, request_determinism
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -130,6 +139,10 @@ def main(argv: list[str] | None = None) -> int:
     cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
     data_cfg = yaml.safe_load(Path(args.data_config).read_text(encoding="utf-8"))
     device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
+    seed = int(cfg["run"]["seed"])
+    # SRS-091: before any tensor reaches the device, because CUBLAS_WORKSPACE_CONFIG only
+    # takes effect if it is set before the first CUDA context (`request_determinism`).
+    determinism = request_determinism(seed)
 
     unlock = build_unlock(args)
     run_dir = Path(args.run)
@@ -156,72 +169,78 @@ def main(argv: list[str] | None = None) -> int:
     from ocuval.data.transforms import eval_transforms, invert_axial_resample
 
     chain = eval_transforms(cfg)
-    volumes = []
-    for subject in subjects:
-        row = manifest[subject]
-        native = read_volume(Path(row["source_path"]), row["vendor"])
-        if native.label_array is None:
-            raise ValueError(
-                f"{subject}: no reference mask in the archive, so nothing can be "
-                f"measured against. A volume without a reference is not evaluable "
-                f"and is not silently skipped."
-            )
-        reference = np.asarray(native.label_array)
-        recorded = assert_spacing_unchanged(row["spacing_mm"], row["spacing_mm"], subject)
+    volumes, volume_seeds = [], {}
+    # Captured, not filtered: a kernel with no deterministic implementation announces itself
+    # as a warning, and `describe_determinism` folds those into the record -- as training does.
+    with warnings.catch_warnings(record=True) as captured:
+        warnings.simplefilter("always")
+        for subject in subjects:
+            row = manifest[subject]
+            native = read_volume(Path(row["source_path"]), row["vendor"])
+            if native.label_array is None:
+                raise ValueError(
+                    f"{subject}: no reference mask in the archive, so nothing can be "
+                    f"measured against. A volume without a reference is not evaluable "
+                    f"and is not silently skipped."
+                )
+            reference = np.asarray(native.label_array)
+            recorded = assert_spacing_unchanged(row["spacing_mm"], row["spacing_mm"], subject)
 
-        prepared = []
-        for index in range(native.pixel_array.shape[0]):
-            sample = chain(
+            prepared = []
+            for index in range(native.pixel_array.shape[0]):
+                sample = chain(
+                    {
+                        "image": native.pixel_array[index],
+                        "label": reference[index],
+                        "intensity_window": row["intensity_window"],
+                        "spacing_mm": row["spacing_mm"],
+                        "vendor": row["vendor"],
+                    }
+                )
+                prepared.append(np.asarray(sample["image"]).squeeze())
+            # SRS-091: this volume's dropout masks depend on (seed, subject) and nothing else.
+            volume_seeds[subject] = reseed_for_volume(seed, subject)
+            labels, scores = predict_volume(
+                model,
+                np.stack(prepared),
+                device,
+                int(cfg["inference"]["mc_dropout_passes"]),
+                args.frames_per_chunk,
+            )
+
+            # SRS-074: back to the acquisition's grid before anything is measured.
+            prediction = invert_axial_resample(
+                labels, tuple(row["spacing_mm"]), (reference.shape[1], reference.shape[2])
+            )
+            prediction = np.asarray(prediction).astype(np.uint8).reshape(reference.shape)
+
+            seg = measure_volume(prediction, reference, recorded)
+            predicted_voxels = {
+                r["fluid_class"]: r["voxels"] for r in seg if r["metric"] == "volume_mm3_predicted"
+            }
+            reference_voxels = {
+                r["fluid_class"]: r["voxels"] for r in seg if r["metric"] == "volume_mm3_reference"
+            }
+            volumes.append(
                 {
-                    "image": native.pixel_array[index],
-                    "label": reference[index],
-                    "intensity_window": row["intensity_window"],
-                    "spacing_mm": row["spacing_mm"],
+                    "sample_id": row["sample_id"],
+                    "patient_id": subject,
                     "vendor": row["vendor"],
+                    "segmentation": seg,
+                    "detection": detection_rows(
+                        predicted_voxels,
+                        reference_voxels,
+                        scores,
+                        threshold=int(cfg["inference"].get("presence_voxel_threshold", 10)),
+                    ),
                 }
             )
-            prepared.append(np.asarray(sample["image"]).squeeze())
-        labels, scores = predict_volume(
-            model,
-            np.stack(prepared),
-            device,
-            int(cfg["inference"]["mc_dropout_passes"]),
-            args.frames_per_chunk,
-        )
-
-        # SRS-074: back to the acquisition's grid before anything is measured.
-        prediction = invert_axial_resample(
-            labels, tuple(row["spacing_mm"]), (reference.shape[1], reference.shape[2])
-        )
-        prediction = np.asarray(prediction).astype(np.uint8).reshape(reference.shape)
-
-        seg = measure_volume(prediction, reference, recorded)
-        predicted_voxels = {
-            r["fluid_class"]: r["voxels"] for r in seg if r["metric"] == "volume_mm3_predicted"
-        }
-        reference_voxels = {
-            r["fluid_class"]: r["voxels"] for r in seg if r["metric"] == "volume_mm3_reference"
-        }
-        volumes.append(
-            {
-                "sample_id": row["sample_id"],
-                "patient_id": subject,
-                "vendor": row["vendor"],
-                "segmentation": seg,
-                "detection": detection_rows(
-                    predicted_voxels,
-                    reference_voxels,
-                    scores,
-                    threshold=int(cfg["inference"].get("presence_voxel_threshold", 10)),
-                ),
-            }
-        )
-        print(f"  {subject} ({row['vendor']}) measured", flush=True)
+            print(f"  {subject} ({row['vendor']}) measured", flush=True)
 
     plan = EvaluationPlan(
         fold_id=fold_id,
         bucket=args.bucket,
-        seed=int(cfg["run"]["seed"]),
+        seed=seed,
         presence_voxel_threshold=int(cfg["inference"].get("presence_voxel_threshold", 10)),
         mc_passes=int(cfg["inference"]["mc_dropout_passes"]),
         unlock=unlock,
@@ -233,6 +252,13 @@ def main(argv: list[str] | None = None) -> int:
             "trained_from_commit": provenance.get("source", {}).get("commit"),
             "evaluation_source": source_record(),
             "held_out_vendor": getattr(split, "held_out_vendor", None),
+            # SRS-091: what was requested and what was achieved, as training records it.
+            "determinism": describe_determinism(determinism, [str(w.message) for w in captured]),
+            "mc_dropout_seeds": {
+                "derivation": "sha256('mc_dropout:{seed}:{subject}')[:8] mod (2**63 - 1)",
+                "keyed_on": "source subject identifier, not SOP Instance UID (SRS-023)",
+                "per_volume": volume_seeds,
+            },
         },
     )
     result = evaluate(plan, volumes)
