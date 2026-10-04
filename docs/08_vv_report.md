@@ -468,6 +468,12 @@ would show throttling.
 
 ## 5d. Stage 2 — the one-time evaluation of the held-out vendor
 
+> **Label added 2026-10-04: these figures are a single unseeded draw.** Evaluation at
+> `767c8e5` did not seed the MC-dropout passes or request deterministic kernels, and two
+> evaluations of one checkpoint have since been shown to differ (`docs/13`, 2026-10-04). No
+> figure below is changed or withdrawn. A seeded re-run under `docs/07` §17.10 is the
+> reproducible record, and is reported beside these figures, not in place of them.
+
 Run 2026-10-01 under the protocol pre-registered in `docs/07` §17 and amended in §17.7
 **before any sealed split was accessed**. Records:
 `artifacts/runs/cirrus_holdout_stage2/evaluation_test.json` and

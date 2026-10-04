@@ -1201,6 +1201,64 @@ defect, and is scheduled **between training sessions, never concurrently with tr
 condition for proceeding is that **every aggregate reproduces the `767c8e5` results exactly**;
 if any differs, the analysis stops and the difference is reported before anything else.
 
+### 17.10 Seeded evaluation, and what the `767c8e5` cirrus figures are — amended before any unlock
+
+**Added 2026-10-04, before any sealed bucket was accessed that day.** At the time of writing,
+`sealed.access_count` reads: cirrus `test` **3** and `in_domain_ref` **2**, which are two and
+one actual runs; legacy entries without a `run_id` are over-counted by design (`docs/08` D6).
+Spectralis and topcon read **0** for both buckets. `artifacts/sealed_access.jsonl` holds only
+the five entries of 2026-10-01. As in §17.7, the ordering in the history is the evidence.
+
+**What was found.** Evaluation was not seeded. `request_determinism` was called only by
+training, and the 20 MC-dropout passes drew from torch's unseeded global generator. Two
+evaluations of the open `val` bucket at one commit, with the same checkpoint, differed in 49
+aggregate Dice and HD95 figures (`docs/13`, 2026-10-04). So **the `767c8e5` cirrus figures
+(`docs/08` §5d) are a single unseeded draw**, which no later run can reproduce. §17.9's
+condition for the D7 re-run, exact reproduction of `767c8e5`, therefore cannot be met by any
+run, and **is superseded by this section.** §17.9 is left as written.
+
+**The defect and its fix, under §17.7b.** The defect is that evaluation was unseeded. It is
+fixed by SRS-091 (`a2dd176`): the determinism request is made and recorded, and each volume's
+passes are reseeded from `(run.seed, subject)`. **Nothing §17.7b protects has changed:** not
+the model, the checkpoint (`best.pt`, epoch 33 for cirrus), the threshold (10 voxels, §17.7a),
+any metric definition, the bootstrap, or the use of the mean of 20 passes as the prediction.
+
+**Both cirrus results are reported; neither replaces the other.**
+
+- The `767c8e5` figures stay in `docs/08` §5d, **labelled as a single unseeded draw.**
+- The **seeded re-run is the reproducible record.** It is the cirrus figure in the cross-fold
+  comparison, because §19's pooled analysis needs all three folds evaluated by one procedure.
+  It is reported beside the `767c8e5` figures.
+- The differences between them are a measured example of MC-dropout sampling variation at 20
+  passes. They are reported as such and not explained away.
+
+**Spectralis and topcon are evaluated once, under the seeded path only.** Each bucket goes
+from 0 to 1.
+
+**What the re-run brings the cirrus counts to.**
+
+| Bucket | Recorded count now → after | Actual runs now → after | Runs |
+|---|---|---|---|
+| `test` | **3 → 4** | **2 → 3** | killed 2026-10-01 (D5); completed 2026-10-01; seeded 2026-10-04 |
+| `in_domain_ref` | **2 → 3** | **1 → 2** | completed 2026-10-01; seeded 2026-10-04 |
+
+A completed run logs two entries under one `run_id` and counts once (D6). Each unlock reason
+names this section, §17.7b and the defect.
+
+**Condition, before any unlock: the seeded path must reproduce itself on the GPU.** Two seeded
+evaluations of the open `val` bucket at the same commit must be **IDENTICAL** under TC-127's
+comparator. TC-128 shows the seeding is correct on CPU. Only the GPU run can show whether
+kernel choice still varies. If the two are not identical, **no sealed bucket is unlocked**;
+the cause is GPU kernels rather than dropout, and it needs its own fix.
+
+**The run is the author's** (§17.8): `scripts/run_remaining.ps1`, launched from the author's
+terminal. Any step that fails stops the chain, and no step is retried. A sealed run that fails
+after its gate has still consumed an unlock, and that will be recorded as such.
+
+**The §19.1 present/absent decomposition for cirrus** is computed from the seeded re-run's
+per-volume rows. It is labelled **post-hoc**, because it comes after the Stage 2 results
+were seen and after the Stage 3 plan was committed in `cae1f36`.
+
 ---
 
 ## 18. Stage 2 session plan
