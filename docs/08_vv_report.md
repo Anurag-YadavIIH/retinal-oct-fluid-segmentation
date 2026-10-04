@@ -817,6 +817,268 @@ moved between 8.50 and 14.65 GB with the page file, and no threshold was approac
 
 ---
 
+## 5g. Stage 3 — seeded evaluation of all three folds
+
+Run 2026-10-04 21:36 to 2026-10-05 03:07 local, under `docs/07` §17 as amended in §17.10
+**before any unlock**. One chain, `scripts/run_remaining.ps1` at **`5d0dc3c`**, was launched by
+the author from the VS Code integrated terminal. Records:
+
+- cirrus: `artifacts/runs/cirrus_holdout_stage2/repro/evaluation_{test,in_domain_ref}_seeded.json`;
+- spectralis and topcon: `evaluation_{test,in_domain_ref}.json` in each run directory.
+
+**Everything in §5g.2–§5g.4 is a §17 primary figure. Everything in §5g.6–§5g.8 is a §19
+secondary analysis and is labelled as such.**
+
+### 5g.1 Provenance and execution
+
+| Field | Value | Source |
+|---|---|---|
+| Evaluation code | **`5d0dc3c`**, `dirty: false`, in all six records | `notes.evaluation_source` |
+| Determinism | requested and granted in all six records; **0 fallbacks** each; MC-dropout seeded per volume from `(20260916, subject)` (SRS-091) | `notes.determinism`, `notes.mc_dropout_seeds` |
+| Models | cirrus `best.pt` epoch **33** (from `a6d6edb`); spectralis epoch **29** (`7be924f`); topcon epoch **29** (`d35e8e4`) | `notes` |
+| Threshold, passes, bootstrap | 10 voxels (§17.7a); 20 passes (SRS-029); 2000 resamples, α = 0.05, seed 20260916, **patients** (SRS-087) | records |
+| **Step 0** | two seeded `val` runs at one commit: **IDENTICAL** on 466 of 466 compared leaves; also all 21 per-volume rows and all seeds identical | `artifacts/chain/status.txt`, TC-127 comparator |
+| Integrity gate | every pooled per-class Dice and interval in all six records **recomputed exactly** (`==`) from its per-volume rows (SRS-089) | analysis script, before any figure below was used |
+
+| Step | Duration (measured, `status.txt`) | Exit |
+|---|---|---|
+| `val` seeded, two runs | 18 min 30 s, 18 min 20 s | 0, 0 |
+| cirrus `test` / `in_domain_ref` | 1 h 59 min 49 s / 20 min 12 s | 0 / 0 |
+| spectralis `test` / `in_domain_ref` | 33 min 23 s / 25 min 25 s | 0 / 0 |
+| topcon `test` / `in_domain_ref` | 1 h 20 min 12 s / 15 min 33 s | 0 / 0 |
+
+Seeded evaluation of the same 7 `val` volumes took **2.4×** as long as the unseeded run
+(18.5 against 7.6 min, both measured). That is the measured cost of deterministic kernels at
+inference.
+
+**Sealed access, read from the log after the chain (`sealed.access_count`).** Cirrus `test` is
+at **4** and `in_domain_ref` at **3**, exactly as §17.10 stated before the unlock. Spectralis and
+topcon are at **1** for each bucket. Every run tonight logged two gate entries under one
+`run_id`, and the log holds 17 entries.
+
+### 5g.2 Cirrus held out — seeded (the reproducible record), beside the 2026-10-01 unseeded draw
+
+Trained on spectralis + topcon. **Gap = in-domain − held-out**: positive means worse on the
+unseen vendor for Dice and AUROC. For HD95, lower is better, so a positive gap there means the
+in-domain arm is worse. `n` is patients. HD95 drops volumes where exactly one of prediction and
+reference is empty.
+
+| Class | Metric | Held-out cirrus, seeded | In-domain ref, seeded | Gap | Unseeded held-out (§5d) | Unseeded in-domain (§5d) |
+|---|---|---|---|---|---|---|
+| IRF | Dice | **0.3456** [0.2470, 0.4438] n=24 | **0.5561** [0.3369, 0.7291] n=7 | +0.2105 | 0.3452 | 0.5543 |
+| IRF | HD95 | 1.4973 [0.3614, 3.0828] n=18 | 0.9594 [0.0446, 2.0126] n=6 | −0.5380 | 1.5191 | 1.0296 |
+| SRF | Dice | **0.2478** [0.1428, 0.3627] n=24 | **0.1276** [0.0015, 0.3693] n=7 | −0.1201 | 0.2481 | 0.2707 |
+| SRF | HD95 | 1.2215 [0.2693, 2.3118] n=12 | 7.6029 [0.0355, 17.1420] n=3 | +6.3813 | 1.1525 | 5.8591 (n=4) |
+| PED | Dice | **0.1915** [0.0956, 0.2987] n=24 | **0.2742** [0.0385, 0.5599] n=7 | +0.0827 | 0.1916 | 0.2740 |
+| PED | HD95 | 1.5850 [0.6284, 2.9064] n=12 | 0.0879 [0.0000, 0.2215] n=3 | −1.4971 | 1.5771 | 0.0869 |
+| IRF | **AUROC** | **1.0000** (+18/−6) | **1.0000** (+6/−1) | 0.0000 | 1.0000 | 1.0000 |
+| SRF | **AUROC** | **0.9931** (+12/−12) | **1.0000** (+3/−4) | +0.0069 | 1.0000 | 0.9167 |
+| PED | **AUROC** | **0.9514** (+12/−12) | **1.0000** (+2/−5) | +0.0486 | 0.9514 | 1.0000 |
+| IRF | sens / spec | 1.0000 n=18 / 0.0000 n=6 | 1.0000 n=6 / 0.0000 n=1 | | 1.0000 / 0.0000 | 1.0000 / 0.0000 |
+| SRF | sens / spec | 1.0000 n=12 / **0.0000** n=12 | 1.0000 n=3 / 0.2500 [0.0000, 0.7500] n=4 | | 1.0000 / **0.0833** | 1.0000 / 0.2500 |
+| PED | sens / spec | 1.0000 n=12 / 0.0000 n=12 | 1.0000 n=2 / 0.2000 [0.0000, 0.6000] n=5 | | 1.0000 / 0.0000 | 1.0000 / 0.2000 |
+
+**Seeded against unseeded, measured.** Fifteen point estimates differ between the two draws.
+Leaving aside the in-domain SRF row and held-out SRF specificity, the other eleven moved by at
+most 0.0018 in Dice, 0.0702 in HD95 and 0.0069 in AUROC. One moved far more. **In-domain SRF Dice went from
+0.2707 to 0.1276 (−0.1431)**, its HD95 `n` from 4 to 3, and its AUROC from 0.9167 to 1.0000.
+That is consistent with one of 7 volumes, where SRF is absent from the reference, switching
+between predicting nothing (Dice 1.0) and predicting a few voxels (Dice 0.0): 1/7 = 0.1429. The
+unseeded record has no per-volume rows (D7), so this is **inferred, not verified**. The two
+draws differ in the arithmetic, not in the model, and §5g.6 shows how absent-class volumes
+dominate exactly this kind of figure. Held-out SRF specificity changed by one volume of 12
+(0.0833 to 0.0000).
+
+### 5g.3 Spectralis held out — one-time evaluation
+
+Trained on cirrus + topcon. Same conventions.
+
+| Class | Metric | Held-out spectralis | In-domain ref (cirrus + topcon) | Gap |
+|---|---|---|---|---|
+| IRF | Dice | **0.2298** [0.1487, 0.3273] n=24 | **0.4721** [0.2269, 0.6937] n=7 | +0.2424 |
+| IRF | HD95 | 2.1144 [0.8778, 3.8042] n=21 | 1.2267 [0.0349, 3.5668] n=5 | −0.8877 |
+| SRF | Dice | **0.4971** [0.3429, 0.6544] n=24 | **0.1261** [0.0000, 0.3761] n=7 | −0.3710 |
+| SRF | HD95 | 1.6210 [0.2542, 3.8001] n=21 | 3.1980 [0.0156, 6.3804] n=2 | +1.5770 |
+| PED | Dice | **0.3125** [0.1783, 0.4618] n=24 | **0.1562** [0.0000, 0.3522] n=7 | −0.1563 |
+| PED | HD95 | 0.7311 [0.1511, 1.5883] n=16 | 2.2425 [0.0369, 4.4482] n=2 | +1.5115 |
+| IRF | **AUROC** | **1.0000** (+20/−4) | **1.0000** (+5/−2) | 0.0000 |
+| SRF | **AUROC** | **0.9929** (+14/−10) | **0.7000** (+2/−5) | −0.2929 |
+| PED | **AUROC** | **0.9931** (+12/−12) | **1.0000** (+2/−5) | +0.0069 |
+| IRF | sens / spec | 1.0000 n=20 / 0.2500 [0.0000, 0.7500] n=4 | 1.0000 n=5 / 0.0000 n=2 | |
+| SRF | sens / spec | 1.0000 n=14 / **0.9000** [0.7000, 1.0000] n=10 | 1.0000 n=2 / 0.0000 n=5 | |
+| PED | sens / spec | 1.0000 n=12 / 0.4167 [0.1667, 0.6667] n=12 | 1.0000 n=2 / 0.0000 n=5 | |
+
+### 5g.4 Topcon held out — one-time evaluation
+
+Trained on cirrus + spectralis. Same conventions.
+
+| Class | Metric | Held-out topcon | In-domain ref (cirrus + spectralis) | Gap |
+|---|---|---|---|---|
+| IRF | Dice | **0.4585** [0.3297, 0.5768] n=22 | **0.3133** [0.1376, 0.4815] n=7 | −0.1452 |
+| IRF | HD95 | 2.5188 [1.2436, 3.9942] n=17 | 1.6540 [0.1387, 4.6278] n=6 | −0.8647 |
+| SRF | Dice | **0.2687** [0.1380, 0.3951] n=22 | **0.1740** [0.0000, 0.3663] n=7 | −0.0947 |
+| SRF | HD95 | 3.9000 [1.6269, 6.5503] n=11 | 9.7733 [0.1212, 19.4254] n=2 | +5.8733 |
+| PED | Dice | **0.1955** [0.0928, 0.3051] n=22 | **0.0511** [0.0000, 0.1534] n=7 | −0.1444 |
+| PED | HD95 | 1.3764 [0.6491, 2.1073] n=9 | 4.6798 [4.6798, 4.6798] **n=1** | +3.3035 |
+| IRF | **AUROC** | **1.0000** (+17/−5) | **1.0000** (+6/−1) | 0.0000 |
+| SRF | **AUROC** | **0.9793** (+11/−11) | **1.0000** (+2/−5) | +0.0207 |
+| PED | **AUROC** | **1.0000** (+9/−13) | **1.0000** (+1/−6) | 0.0000 |
+| IRF | sens / spec | 1.0000 n=17 / 0.0000 n=5 | 1.0000 n=6 / 0.0000 n=1 | |
+| SRF | sens / spec | 1.0000 n=11 / 0.0000 n=11 | 1.0000 n=2 / 0.0000 n=5 | |
+| PED | sens / spec | 1.0000 n=9 / 0.0000 n=13 | 1.0000 n=1 / 0.0000 n=6 | |
+
+### 5g.5 What the primary figures do and do not establish
+
+**No per-class Dice difference between held-out and in-domain is established at 95% in any
+fold.** All nine Dice comparisons have overlapping intervals. The gaps point in **both
+directions**: positive (worse on the unseen vendor) for cirrus IRF and PED and for spectralis
+IRF; negative for the other six. On these figures, the expected pattern of consistent
+degradation on the unseen vendor is **not shown**. Equally, with in-domain arms of 7 patients,
+its absence is not shown either. Intervals as wide as [0.0000, 0.3761] cannot distinguish the
+two.
+
+**Two HD95 comparisons do not overlap**: cirrus PED, with an in-domain arm of **3** patients,
+and topcon PED, with an in-domain arm of **1** patient, whose interval is a single point.
+Nothing is concluded from either. An interval over one patient carries no information about
+spread.
+
+**Every gap is a point difference with no interval, by design** (§17.2; `docs/08` §5d.4).
+
+**Detection at the fixed threshold.** Sensitivity is 1.0000 everywhere. Specificity is 0.0000
+in most cells, as in Stage 2, because at 10 voxels the model calls almost every class present
+in almost every volume. Specificity is non-zero in only 5 of 18 cells. The highest is
+spectralis held-out SRF at **0.9000** [0.7000, 1.0000] over 10 negative volumes. The other four
+are at most 0.4167. AUROC is 0.95–1.00 in every held-out arm.
+In-domain AUROC ranges from **0.7000** (spectralis SRF, 2 positives) to 1.0000. With 1–2
+positives, AUROC rests on very few pairs.
+
+### 5g.6 Secondary (§19.1): present/absent decomposition of per-class Dice
+
+> **Secondary analysis. Post-hoc for cirrus; pre-registered for spectralis and topcon.** For
+> cirrus it was declared after the Stage 2 results were seen, in `cae1f36`.
+
+"Present" means the class is in the reference. "Absent" means it is not, so any predicted voxel
+scores Dice 0.0 and an empty prediction scores 1.0 (`metrics.py:104-117`). The share is the
+absent stratum's contribution to the all-volume sum of Dice. All figures are measured from the
+per-volume rows, with patient-level intervals and `n` in patients (one volume per patient).
+
+| Fold | Arm | Class | All volumes | Present | Absent (Dice 0 / Dice 1) | Absent share of the sum |
+|---|---|---|---|---|---|---|
+| cirrus | held-out | IRF | 0.3456 n=24 | **0.4608** [0.3801, 0.5354] n=18 | 0.0000 n=6 (6/0) | 0.0000 |
+| cirrus | held-out | SRF | 0.2478 n=24 | **0.4955** [0.3784, 0.6035] n=12 | 0.0000 n=12 (12/0) | 0.0000 |
+| cirrus | held-out | PED | 0.1915 n=24 | **0.3830** [0.2454, 0.5146] n=12 | 0.0000 n=12 (12/0) | 0.0000 |
+| cirrus | in-domain | IRF | 0.5561 n=7 | **0.6488** [0.5299, 0.7737] n=6 | 0.0000 n=1 (1/0) | 0.0000 |
+| cirrus | in-domain | SRF | 0.1276 n=7 | **0.2978** [0.0103, 0.8509] n=3 | 0.0000 n=4 (4/0) | 0.0000 |
+| cirrus | in-domain | PED | 0.2742 n=7 | **0.4596** [0.2696, 0.6495] n=2 | 0.2000 n=5 (4/1) | 0.5211 |
+| spectralis | held-out | IRF | 0.2298 n=24 | **0.2257** [0.1599, 0.2921] n=20 | 0.2500 n=4 (3/1) | 0.1814 |
+| spectralis | held-out | SRF | 0.4971 n=24 | **0.3522** [0.2338, 0.4749] n=14 | 0.7000 n=10 (3/7) | **0.5867** |
+| spectralis | held-out | PED | 0.3125 n=24 | **0.2917** [0.1966, 0.4029] n=12 | 0.3333 n=12 (8/4) | **0.5333** |
+| spectralis | in-domain | IRF | 0.4721 n=7 | **0.6610** [0.5509, 0.7851] n=5 | 0.0000 n=2 (2/0) | 0.0000 |
+| spectralis | in-domain | SRF | 0.1261 n=7 | **0.4415** [0.0080, 0.8749] n=2 | 0.0000 n=5 (5/0) | 0.0000 |
+| spectralis | in-domain | PED | 0.1562 n=7 | **0.5468** [0.4573, 0.6363] n=2 | 0.0000 n=5 (5/0) | 0.0000 |
+| topcon | held-out | IRF | 0.4585 n=22 | **0.5933** [0.5036, 0.6721] n=17 | 0.0000 n=5 (5/0) | 0.0000 |
+| topcon | held-out | SRF | 0.2687 n=22 | **0.5374** [0.3971, 0.6681] n=11 | 0.0000 n=11 (11/0) | 0.0000 |
+| topcon | held-out | PED | 0.1955 n=22 | **0.4779** [0.4148, 0.5524] n=9 | 0.0000 n=13 (13/0) | 0.0000 |
+| topcon | in-domain | IRF | 0.3133 n=7 | **0.3655** [0.1981, 0.5242] n=6 | 0.0000 n=1 (1/0) | 0.0000 |
+| topcon | in-domain | SRF | 0.1740 n=7 | **0.6090** [0.5449, 0.6731] n=2 | 0.0000 n=5 (5/0) | 0.0000 |
+| topcon | in-domain | PED | 0.0511 n=7 | 0.3578 n=**1** (no spread) | 0.0000 n=6 (6/0) | 0.0000 |
+
+**What the decomposition shows (measured).**
+
+- **Absent-class volumes pull the all-volume means down sharply.** In 14 of 18 cells every
+  absent volume scored 0.0: the model predicted some of the class wherever it was absent. Those
+  volumes make up 14–86% of each cell.
+- **Present-stratum Dice is higher than the all-volume figure in 15 of 18 cells.** For example,
+  topcon held-out PED is 0.4779 present against 0.1955 overall, and cirrus held-out SRF 0.4955
+  against 0.2478.
+- **The direction reverses in all three spectralis held-out classes.** There, absent volumes
+  scored Dice 1.0 once, seven times and four times (IRF, SRF, PED), supplying 18%, **59%** and
+  **53%** of the sum. The all-volume figure is *higher* than the present-stratum one. That model
+  predicted nothing on many spectralis volumes without the class, consistent with the held-out
+  specificities of 0.2500, 0.9000 and 0.4167 in §5g.3. The only other cell with an absent volume
+  at Dice 1.0 is cirrus in-domain PED (1 of 5).
+- **So the all-volume Dice of §17 mixes two different quantities**, overlap where there is
+  something to overlap and false-positive behaviour where there is not, in proportions that
+  differ by fold and arm.
+
+**Present-stratum comparisons, still within the decomposition.** Held-out against in-domain
+present-only Dice intervals overlap in six of nine cells. Three do not:
+
+| Cell | Held-out present | In-domain present |
+|---|---|---|
+| spectralis IRF | 0.2257 [0.1599, 0.2921] n=20 | 0.6610 [0.5509, 0.7851] n=**5** |
+| spectralis PED | 0.2917 [0.1966, 0.4029] n=12 | 0.5468 [0.4573, 0.6363] n=**2** |
+| topcon PED | 0.4779 [0.4148, 0.5524] n=9 | 0.3578, a single point, n=**1** |
+
+Each rests on an in-domain stratum of 5, 2 or 1 patients and carries no interval on the
+difference. The topcon cell is not a comparison at all, since one patient has no spread, and
+its direction is the reverse of the other two. These are secondary analyses, pre-registered for
+these folds, reported as measured. They are not primary results, and no vendor-specific
+conclusion is drawn from them.
+
+### 5g.7 Secondary (§19.2): threshold selected on validation — cirrus only
+
+> **Secondary; post-hoc for cirrus.** Reported alongside the fixed-threshold figures, never
+> instead of them. AUROC is unaffected by any threshold.
+
+**Spectralis and topcon: not computed.** §19.2 selects each fold's threshold on **that fold's
+`val` split**. No `val` evaluation of the spectralis or topcon model exists, because the chain
+evaluated sealed buckets only. Computing it needs two GPU evaluations of open buckets, which
+unlock nothing. Until then, this analysis is **absent for those two folds, not substituted**.
+
+**Cirrus**, selected on the seeded `val` record (`evaluation_val_seeded_a.json`, 7 patients)
+using the grid, Youden's J and the smallest-wins tie rule exactly as §19.2 declares:
+
+| Class | `val` positives / negatives | Selected | J at selection | Held-out spec, fixed 10 → selected | In-domain spec, fixed 10 → selected |
+|---|---|---|---|---|---|
+| IRF | 6 / 1 | **500** | 1.0000 (tie with 1000) | 0.0000 → 0.1667 [0.0000, 0.5000] n=6 | 0.0000 → 0.0000 n=1 |
+| SRF | 5 / 2 | **500** | 1.0000 (tie with 1000) | 0.0000 → 0.1667 [0.0000, 0.4167] n=12 | 0.2500 → 0.5000 [0.0000, 1.0000] n=4 |
+| PED | 4 / 3 | **1000** | 0.6667 | 0.0000 → 0.2500 [0.0000, 0.5000] n=12 | 0.2000 → 0.8000 [0.4000, 1.0000] n=5 |
+
+Sensitivity stays **1.0000** at the selected threshold in every cell. Every selection lands at
+the top of the grid, on a `val` split with 1–3 negatives. A J of 1.0 on one negative volume
+says very little.
+
+### 5g.8 Secondary (§19.3): pooled cross-fold comparison — **not computed; its pre-registered assertion failed**
+
+§19.3 requires asserting at pooling time that no patient appears in more than one fold's
+in-domain reference. **The assertion failed.** The three in-domain reference arms hold **21
+volumes from only 13 distinct patients**: **8 patients appear in two folds' references**
+(cirrus+spectralis 5, spectralis+topcon 2, cirrus+topcon 1; by vendor topcon 5, cirrus 2,
+spectralis 1). Counts only; no sealed identifier is reproduced here. The held-out arms are
+clean: 70 volumes, 70 patients.
+
+**§19.3's claim that this held "by construction" was wrong.** Each vendor is a training vendor
+in two folds, and each fold draws its in-domain reference from its training vendors
+independently, so the same patient can be drawn twice. The assertion was written to catch an
+assumption, and it did.
+
+**Not computed, and not improvised.** As specified, the pooled in-domain arm would count 8
+patients twice, and an interval built that way overstates the evidence. Any fix chosen now
+would be chosen after every per-fold result was visible:
+
+- deduplicate and keep one fold's measurement of each patient;
+- resample patients with all their rows as a cluster;
+- report 13 patients instead of 21.
+
+The choice is the author's, as an amendment to §19.3, and is recorded in `docs/13`. The pooled
+analysis's own motivation, about 21 in-domain patients, is in any case **13**.
+
+### 5g.9 What Stage 3 does not establish
+
+- **No vendor-specific degradation is established for any held-out vendor at 95%** (§5g.5).
+  The primary question is answered as **not demonstrated at this sample size**, not as "no
+  degradation".
+- The in-domain arms of 7 patients are the binding limit. That is the same finding as Stage 2,
+  now across all three folds.
+- The all-volume Dice of §17 is dominated in many cells by false positives in class-absent
+  volumes (§5g.6). That is a property of the metric on this data, reported, not adjusted.
+- The cirrus seeded and unseeded draws differ by up to 0.1431 in one in-domain Dice
+  (§5g.2). Only the seeded figures are reproducible, and they are the ones carried into any
+  cross-fold statement.
+
+---
+
 ## 6. Conclusion
 
 **Not drafted.** The validation conclusion requires the cross-vendor result, which is
