@@ -1,5 +1,8 @@
 """Compare two evaluation records leaf by leaf, by exact equality, with no tolerance.
 
+Traces to: SRS-090
+Verified by: TC-127
+
 Serves: `docs/07` §17.7b and `docs/08` D7 -- a re-run of a sealed bucket is admissible only if
 every aggregate it reports reproduces the original record exactly.
 
@@ -13,6 +16,13 @@ Excluded keys, and only these, because they legitimately differ between two runs
 Every other leaf -- each value, interval, `n` and bootstrap setting -- must match. Floats are
 compared with `==`, because "close" is the claim this comparison exists to rule out.
 
+**NaN is the one exception to `==`, and only when both sides are NaN.** A metric that is
+undefined in both records -- AUROC or specificity for a class with no negative volumes -- is the
+same result twice, but `nan == nan` is false, so plain `==` reported it as a difference. Its
+first real use (2026-10-04, `docs/13`) listed 4 such spurious differences among 53. NaN on one
+side only is still a difference: a metric defined in one record and not the other is exactly
+what this comparison exists to catch.
+
 Exit status: 0 identical, 1 different, 2 unreadable input.
 
 Usage:
@@ -22,6 +32,7 @@ Usage:
 from __future__ import annotations
 
 import json
+import math
 import sys
 from collections.abc import Iterator
 from pathlib import Path
@@ -46,12 +57,19 @@ def leaves(node: Any, path: str = "") -> Iterator[tuple[str, Any]]:
         yield path, node
 
 
+def same(a: Any, b: Any) -> bool:
+    """Exact equality, except that NaN on both sides is the same undefined result."""
+    if isinstance(a, float) and isinstance(b, float) and math.isnan(a) and math.isnan(b):
+        return True
+    return a == b
+
+
 def compare(reference: dict, candidate: dict) -> tuple[int, list[tuple[str, Any, Any]]]:
     ref, cand = dict(leaves(reference)), dict(leaves(candidate))
     differ = [
         (key, ref.get(key, ABSENT), cand.get(key, ABSENT))
         for key in sorted(set(ref) | set(cand))
-        if ref.get(key, ABSENT) != cand.get(key, ABSENT)
+        if not same(ref.get(key, ABSENT), cand.get(key, ABSENT))
     ]
     return len(ref), differ
 
