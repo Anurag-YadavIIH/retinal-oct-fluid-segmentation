@@ -726,6 +726,91 @@ tree, and no remaining-time estimate is given without first confirming the proce
 
 ---
 
+## 5f. Stage 3 — `topcon_holdout` training record
+
+> **A training record, not a result.** The held-out vendor here is topcon; it has not been
+> touched, and `docs/07` §17 and §19 govern its evaluation.
+
+### 5f.1 The run
+
+| Field | Value | Source |
+|---|---|---|
+| Fold | `topcon_holdout` — trained on cirrus + spectralis | `run.json` |
+| Run directory | `artifacts/runs/topcon_holdout_stage3` | — |
+| Launched | 2026-10-04 12:57:40 local, **by the author**, as step 1 of `scripts/run_remaining.ps1` from the VS Code integrated terminal | `artifacts/chain/status.txt` |
+| Source | **`d35e8e4`**, `dirty: false`, `allow_dirty: false` | `run.json`, SRS-086 |
+| Epochs run | **55 (0–54)** of 150, no session limit | measured, `epochs.jsonl` |
+| **Stopped by** | **`early_stopping`**, 11:34:09 UTC, `fold_complete: true` | measured, `session_end` |
+| Sessions | **1** | measured, one `session_start` |
+| Seed | 20260916 | `resolved_config.run.seed` |
+| Frame cache | `D:\ocuval_cache` via `OCUVAL_CACHE_DIR`, because C: was short of space | `run.json.resolved_cache_dir` |
+| Pre-pass | 3088 training and 659 validation frames, cache built in **3 min 7 s** | measured, `started_utc` to `session_start` |
+| Determinism | `deterministic_algorithms: true`, **0 fallbacks** | `determinism.json` |
+
+**The training configuration is that of the other two folds.** Verified before launch, on
+2026-10-04:
+- **Against spectralis:** no file on the training path, no fold file, `requirements.lock` or
+  `pyproject.toml` differs between `7be924f` and the launch commit, so spectralis and topcon
+  trained under byte-identical configuration.
+- **Against cirrus:** the only difference from `a6d6edb` is
+  `inference.presence_voxel_threshold`, added to `configs/train_seg.yaml` under §17.7a, and no
+  training-path module reads it.
+- **Fold files:** `topcon_holdout.yaml` equals `spectralis_holdout.yaml` apart from the vendor
+  name.
+
+The cache location is a per-machine path recorded in the run, not a configuration change
+(`runs.py:262-282`).
+
+### 5f.2 Early stopping — the fold is complete, not truncated
+
+Validation Dice last improved at **epoch 29**, so the patience counter of 25 ran out at epoch
+54. This is the same pattern as the other folds: cirrus stopped at 58 (best 33) and spectralis
+at 54 (best 29). The longest run of falling validation Dice was 3 epochs.
+
+### 5f.3 Metrics at the best checkpoint
+
+**Epoch 29**, selected on in-domain validation only (`docs/07` §17.1).
+
+| Class | In-domain validation Dice |
+|---|---|
+| IRF | **0.608839** |
+| SRF | **0.775173** |
+| PED | **0.640639** |
+| mean (foreground) | **0.674884** |
+
+Training loss fell from a first-three-epoch mean of **1.582979** to a last-three mean of
+**0.818695**, a 48.3% reduction. Learning rate at the best epoch was 2.7853e-04, the same
+schedule position as spectralis's best epoch.
+
+**Point estimates with no interval, so not reportable as results** (CLAUDE.md §5, SRS-033). They
+are not comparable with the other folds' validation figures as a vendor claim, because each fold
+validates on a different pair of training vendors.
+
+### 5f.4 Timing, thermals and checkpoints
+
+| Quantity | Value | Measured from |
+|---|---|---|
+| Wall clock | 07:30:48 → 11:34:09 UTC, **4.06 h** | session boundaries |
+| Seconds per epoch | **263.6 min, 270.4 max, 265.3 mean** | all 55 `seconds` fields |
+| GPU temperature | **42–71 °C**, none at or above 90 °C | 487 telemetry samples, 0 error rows |
+| GPU memory | **69–2875 MiB of 4096** (70.2% peak) | same samples |
+
+The ~271 s/epoch expected before launch was **derived** by scaling cirrus's 229.0 s by training
+frames (3088 against 2610). The measurement came in 2.1% under that figure.
+
+| File | SHA-256 (from `checkpoints.sha256`, verified 2026-10-04) |
+|---|---|
+| `best.pt` (epoch 29) | `95bd0d5788185e511079e196051980622d7965125ccf55f37c0b3839c9107af6` |
+| `last.pt` (epoch 54) | `6b0b91b86355874a5defd484bfb4ddd22909a47ffabb89a8c24e0039c3acf2a2` |
+
+**Monitoring.** The run was checked read-only every 20 minutes by the Claude Code session, each
+row written only after confirming the training process was alive
+(`artifacts/monitor/chain_2026-10-04.md`, gitignored). **No intervention**: no non-finite
+metric, no temperature at or above 90 °C, no STOP file, and no storage action. C: free space
+moved between 8.50 and 14.65 GB with the page file, and no threshold was approached.
+
+---
+
 ## 6. Conclusion
 
 **Not drafted.** The validation conclusion requires the cross-vendor result, which is
