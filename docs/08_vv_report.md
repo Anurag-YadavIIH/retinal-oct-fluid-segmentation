@@ -601,7 +601,7 @@ is scheduled between training sessions.
 
 ---
 
-## 5e. Stage 3 — `spectralis_holdout` training record (in progress)
+## 5e. Stage 3 — `spectralis_holdout` training record
 
 > **A training record, not a result.** The held-out vendor here is spectralis; it has not been
 > touched, and `docs/07` §17 and §19 govern its evaluation.
@@ -633,6 +633,68 @@ the same run directory: `run.json` records `7be924f`, `dirty: false`,
 with `resumed: true`. **No file on the training path differs between `5f66359` and
 `7be924f`** — the two commits between them changed only documents, `eval/pipeline.py` and its
 test — so both sessions run the same training code under different identifiers.
+
+| Field | Value | Source |
+|---|---|---|
+| Epochs completed | **45** (10–54); **55 across the fold** (0–54) of 150 configured | measured, `epochs.jsonl` |
+| **Stopped by** | **`early_stopping`**, 19:47:29 UTC (01:17 local), `fold_complete: true` | measured, `session_end` |
+| Wall clock | 15:33:51 → 19:47:29 UTC, **4.23 h** | session boundaries |
+| Seconds per epoch | **334.7–348.0, mean 338.0** | measured, 45 epochs |
+| GPU | **49–76 °C**, 507 telemetry samples, none at or above 90 °C | measured, telemetry |
+| Determinism | `deterministic_algorithms: true`, **0 fallbacks** | `determinism.json` |
+
+**The resume was continuous.** Epoch 10's logged learning rate, `0.0002987343436093454`,
+equals the closed-form cosine value for that position exactly; the best epoch carried over as 8
+and patience continued from 1 to 2. Validation Dice improved at epochs 13, 17, 20, 23 and last
+at **epoch 29**, so the counter reached 25 at epoch 54 and the fold ended by its own
+pre-set criterion, at 55 of 150, like `cirrus_holdout` at 59 (§5c.2).
+
+### 5e.3 Metrics at the best checkpoint
+
+**Epoch 29**, selected on in-domain validation only (`docs/07` §17.1).
+
+| Class | In-domain validation Dice |
+|---|---|
+| IRF | **0.646696** |
+| SRF | **0.728785** |
+| PED | **0.611493** |
+| mean (foreground) | **0.662325** |
+
+Training loss fell from a first-three-epoch mean of **1.504528** to a last-three mean of
+**0.843016**, a 44.0% reduction. It fell at every epoch through 54, while validation Dice stayed
+at about 0.63–0.66 from epoch 13 onward, which is the pattern early stopping exists to cut off.
+Learning rate at the best epoch was 2.7853e-04.
+
+**Point estimates, no interval, not reportable as results** (CLAUDE.md §5, SRS-033), exactly as
+in §5c.3. In particular, these figures are **not comparable to cirrus's 0.710520** as a vendor
+claim: each is in-domain validation over a different pair of training vendors.
+
+### 5e.4 Timing, thermals and checkpoints, whole fold
+
+| Quantity | Value | Measured from |
+|---|---|---|
+| Train time | **5.18 h** | sum of 55 `seconds` fields |
+| Seconds per epoch | **334.7 min, 352.7 max, 338.8 mean** | all 55 epochs |
+| GPU temperature | **49–76 °C** | 623 telemetry samples, 0 error rows |
+| GPU memory | **69–2895 MiB of 4096** (70.7% peak) | same samples |
+
+338.8 s/epoch against cirrus's 229.0 s is a ratio of 1.48; the training-frame ratio is 4032
+against 2610, 1.54, so the per-frame cost is broadly consistent across folds. Scaling cirrus's
+229.0 s by that frame ratio predicted **353.8 s** (derived); the measurement came in 4% under
+it. Per-epoch time is not purely proportional to training frames, since validation and the
+fixed per-epoch overhead scale differently, which is why `docs/07` §18.1 sizes each fold's
+sessions from its own measured time.
+
+| File | SHA-256 (from `checkpoints.sha256`, verified 2026-10-04) |
+|---|---|
+| `best.pt` (epoch 29) | `ceac44a77c5730b710b27789351c5c59125a1001f368749f7affc9da89c6abec` |
+| `last.pt` (epoch 54) | `fdc2c605735b0879c2f86641abfa880dce4c22cd1e7f3df1069d0472909c9f2b` |
+
+**Monitoring.** Session 2 was checked read-only every 20 minutes by the Claude Code session,
+each line written only after confirming the training process was alive
+(`artifacts/monitor/stage3_night1.md`, gitignored). **No intervention**: no non-finite metric,
+no temperature at or above 90 °C, no STOP file. The longest run of falling validation Dice was
+2 epochs.
 
 ### D8 — a run described as detached was not, and died with its WMI parent
 
