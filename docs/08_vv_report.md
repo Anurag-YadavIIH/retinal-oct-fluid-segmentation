@@ -1042,28 +1042,54 @@ its direction is the reverse of the other two. These are secondary analyses, pre
 these folds, reported as measured. They are not primary results, and no vendor-specific
 conclusion is drawn from them.
 
-### 5g.7 Secondary (§19.2): threshold selected on validation — cirrus only
+### 5g.7 Secondary (§19.2): threshold selected on validation — all three folds
 
-> **Secondary; post-hoc for cirrus.** Reported alongside the fixed-threshold figures, never
-> instead of them. AUROC is unaffected by any threshold.
+> **Secondary; post-hoc for cirrus, pre-registered for spectralis and topcon.** Reported beside
+> the fixed-threshold figures of §5g.2–§5g.4, never instead of them. AUROC is unaffected by any
+> threshold.
 
-**Spectralis and topcon: not computed.** §19.2 selects each fold's threshold on **that fold's
-`val` split**. No `val` evaluation of the spectralis or topcon model exists, because the chain
-evaluated sealed buckets only. Computing it needs two GPU evaluations of open buckets, which
-unlock nothing. Until then, this analysis is **absent for those two folds, not substituted**.
+**Validation records.** Cirrus uses `evaluation_val_seeded_a.json` (the step-0 run of
+2026-10-04). Spectralis and topcon use `evaluation_val_seeded.json` in each run directory,
+evaluated 2026-10-05 by the author from `b7bf5b6` with `dirty: false`, 0 fallbacks, seeded, 7
+patients each, and no unlock. Exit 0 is inferred: each record is written only at the end of a
+successful run, and the topcon run started only on spectralis's exit 0.
 
-**Cirrus**, selected on the seeded `val` record (`evaluation_val_seeded_a.json`, 7 patients)
-using the grid, Youden's J and the smallest-wins tie rule exactly as §19.2 declares:
+**The rule, applied exactly as §19.2 declares.** The grid is `[1, 2, 5, 10, 20, 50, 100, 200,
+500, 1000]` predicted voxels. Youden's J is maximised per class on the fold's own `val` split,
+ties go to the smallest threshold, and the fixed 10 is used where `val` has no positive or no
+negative volume. Presence means predicted voxels > threshold. As a check, the fixed-threshold
+rates recomputed by the same code **reproduce every stored record exactly**.
 
-| Class | `val` positives / negatives | Selected | J at selection | Held-out spec, fixed 10 → selected | In-domain spec, fixed 10 → selected |
+| Held-out vendor | Class | `val` +/− | Selected (J) | Held-out spec: fixed 10 → selected | In-domain spec: fixed 10 → selected |
 |---|---|---|---|---|---|
-| IRF | 6 / 1 | **500** | 1.0000 (tie with 1000) | 0.0000 → 0.1667 [0.0000, 0.5000] n=6 | 0.0000 → 0.0000 n=1 |
-| SRF | 5 / 2 | **500** | 1.0000 (tie with 1000) | 0.0000 → 0.1667 [0.0000, 0.4167] n=12 | 0.2500 → 0.5000 [0.0000, 1.0000] n=4 |
-| PED | 4 / 3 | **1000** | 0.6667 | 0.0000 → 0.2500 [0.0000, 0.5000] n=12 | 0.2000 → 0.8000 [0.4000, 1.0000] n=5 |
+| cirrus | IRF | 6/1 | **500** (1.0000; tie across 2 grid points, smallest wins) | 0.0000 [0.0000, 0.0000] n=6 → 0.1667 [0.0000, 0.5000] n=6 | 0.0000 [0.0000, 0.0000] n=1 → 0.0000 [0.0000, 0.0000] n=1 |
+| cirrus | SRF | 5/2 | **500** (1.0000; tie across 2 grid points, smallest wins) | 0.0000 [0.0000, 0.0000] n=12 → 0.1667 [0.0000, 0.4167] n=12 | 0.2500 [0.0000, 0.7500] n=4 → 0.5000 [0.0000, 1.0000] n=4 |
+| cirrus | PED | 4/3 | **1000** (0.6667) | 0.0000 [0.0000, 0.0000] n=12 → 0.2500 [0.0000, 0.5000] n=12 | 0.2000 [0.0000, 0.6000] n=5 → 0.8000 [0.4000, 1.0000] n=5 |
+| spectralis | IRF | 7/0 | **10** (degenerate: no `val` negative; fixed threshold used) | 0.2500 [0.0000, 0.7500] n=4 → 0.2500 [0.0000, 0.7500] n=4 | 0.0000 [0.0000, 0.0000] n=2 → 0.0000 [0.0000, 0.0000] n=2 |
+| spectralis | SRF | 6/1 | **1** (1.0000; tie across 10 grid points, smallest wins) | 0.9000 [0.7000, 1.0000] n=10 → 0.8000 [0.5000, 1.0000] n=10 | 0.0000 [0.0000, 0.0000] n=5 → 0.0000 [0.0000, 0.0000] n=5 |
+| spectralis | PED | 3/4 | **1000** (0.2500) | 0.4167 [0.1667, 0.6667] n=12 → 1.0000 [1.0000, 1.0000] n=12 | 0.0000 [0.0000, 0.0000] n=5 → 0.4000 [0.0000, 0.8000] n=5 |
+| topcon | IRF | 7/0 | **10** (degenerate: no `val` negative; fixed threshold used) | 0.0000 [0.0000, 0.0000] n=5 → 0.0000 [0.0000, 0.0000] n=5 | 0.0000 [0.0000, 0.0000] n=1 → 0.0000 [0.0000, 0.0000] n=1 |
+| topcon | SRF | 7/0 | **10** (degenerate: no `val` negative; fixed threshold used) | 0.0000 [0.0000, 0.0000] n=11 → 0.0000 [0.0000, 0.0000] n=11 | 0.0000 [0.0000, 0.0000] n=5 → 0.0000 [0.0000, 0.0000] n=5 |
+| topcon | PED | 4/3 | **1** (0.0000; tie across 10 grid points, smallest wins) | 0.0000 [0.0000, 0.0000] n=13 → 0.0000 [0.0000, 0.0000] n=13 | 0.0000 [0.0000, 0.0000] n=6 → 0.0000 [0.0000, 0.0000] n=6 |
 
-Sensitivity stays **1.0000** at the selected threshold in every cell. Every selection lands at
-the top of the grid, on a `val` split with 1–3 negatives. A J of 1.0 on one negative volume
-says very little.
+**What the rule produced, measured.**
+
+- **Sensitivity stays 1.0000** at the selected threshold in every cell, in both arms.
+- **Three degenerate cases, where J is undefined:** spectralis IRF, topcon IRF and topcon SRF have
+  no negative volume in `val`. The fixed 10 is used, as declared.
+- **Two all-tie cases.** In spectralis SRF, J is 1.0 at every grid point. In topcon PED, J is
+  0.0 at every grid point: no threshold on the grid separates that fold's `val` volumes at all.
+  The tie rule selects 1 in both. For spectralis SRF that **lowers** held-out specificity, from
+  0.9000 to 0.8000, which is reported as the rule produced it.
+- **The largest change** is spectralis PED. At the selected 1000 voxels, held-out specificity
+  rises from 0.4167 to **1.0000** over 12 negative volumes, with sensitivity still 1.0000 over
+  12 positives.
+- Every non-degenerate selection rests on a `val` split with 1–4 negatives. A J of 1.0 over one
+  negative volume says very little, and several of these selections are not stable estimates of
+  an operating point.
+
+**The primary detection results are unchanged**, as §17.7a intends: the fixed-threshold figures
+stand, and AUROC does not depend on a threshold.
 
 ### 5g.8 Secondary (§19.3): pooled cross-fold comparison — **not computed; its pre-registered assertion failed**
 
