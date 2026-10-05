@@ -1155,6 +1155,33 @@ in-domain patients (§19.5). Nothing here bears on any particular vendor (§19.3
   (§5g.2). Only the seeded figures are reproducible, and they are the ones carried into any
   cross-fold statement.
 
+### 5g.10 Deviation
+
+#### D9 — per-volume detection scores were not persisted
+
+**What.** The per-volume rows added for D7 (SRS-089) carried Dice, HD95, voxel counts and
+reference presence, but **not the detection score**, the MC-dropout mean probability that AUROC
+ranks (SRS-052). The score was used only inside `aggregate_detection` (`eval/pipeline.py:154`,
+`:183`). So **no AUROC interval can be computed from any of the six sealed Stage 3 records**,
+nor from the 2026-10-01 cirrus records. **The same class of defect as D7:** a record that keeps
+only what was asked for when it was written.
+
+**Found** 2026-10-05, when an AUROC interval was requested for `docs/10`. Every Stage 3 AUROC
+has been a point value with no interval, against CLAUDE.md §5. The pipeline stated that openly
+(`interval_note` in every record), but nothing had made it possible to fix later.
+
+**Repaired** for future evaluations, under the author's option (a). The score is now persisted
+in every per-volume row (SRS-089 amended), and TC-126 asserts that every per-class and
+per-vendor AUROC is recomputable from the rows exactly. **No sealed bucket was unlocked to
+recover the missing scores.** That would cost one more unlock on each of the six buckets, about
+five hours of GPU, and every other figure is already reproducible.
+
+**What the missing intervals would have shown.** The in-domain arms hold **1–6 negatives and
+1–6 positives** per class. Three cells have at most 2 negatives, and five have at most 2
+positives (measured, from the records). An AUROC interval over a single negative or a pair of
+positives carries almost no information. The held-out arms, with 4–13 negatives and 9–20
+positives, would have been informative. Their AUROCs are 0.95–1.00 as point values only.
+
 ---
 
 ## 6. Conclusion

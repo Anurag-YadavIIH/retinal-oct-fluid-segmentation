@@ -252,9 +252,16 @@ def per_volume_rows(volumes: Sequence[dict]) -> list[dict]:
     `reference_present` is `reference voxels > 0`, the same definition `detection_rows` uses
     (pipeline.py, `reference_present` in that function), so the present/absent strata here are
     the strata the detection metrics were computed over.
+
+    **`score` added 2026-10-05 (`docs/08` D9).** The detection score -- the MC-dropout mean
+    probability that AUROC ranks (SRS-052) -- was used only inside `aggregate_detection` and not
+    persisted, so no AUROC interval could be computed from a record afterwards. That is the D7
+    defect again, for a second field. It is read from the volume's own `detection` rows, the
+    same values `aggregate_detection` consumes, so AUROC is recomputable from these rows.
     """
     out = []
     for volume in volumes:
+        scores = {row["fluid_class"]: row["score"] for row in volume.get("detection", [])}
         by_class: dict[str, dict] = {}
         for row in volume["segmentation"]:
             entry = by_class.setdefault(row["fluid_class"], {})
@@ -278,6 +285,7 @@ def per_volume_rows(volumes: Sequence[dict]) -> list[dict]:
                     "reference_present": bool(entry.get("reference_voxels", 0) > 0),
                     "reference_voxels": entry.get("reference_voxels"),
                     "predicted_voxels": entry.get("predicted_voxels"),
+                    "score": scores.get(fluid),
                 }
             )
     return out

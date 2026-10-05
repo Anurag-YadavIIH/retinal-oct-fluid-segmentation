@@ -465,6 +465,7 @@ def test_TC_126_one_row_per_volume_per_class_with_every_required_field(tmp_path)
         "reference_present",
         "reference_voxels",
         "predicted_voxels",
+        "score",
     }
     for row in rows:
         assert required <= set(row), f"missing {sorted(required - set(row))}"
@@ -545,6 +546,45 @@ def test_TC_126_reference_present_matches_the_detection_arm(tmp_path):
     }
     for row in rows:
         assert row["reference_present"] == detection[(row["sample_id"], row["fluid_class"])]
+
+
+def test_TC_126_auroc_is_recomputable_from_the_rows(tmp_path):
+    """The detection score is persisted, so every AUROC is recomputable from the rows (D9).
+
+    Before 2026-10-05 the score lived only inside `aggregate_detection`, and no AUROC interval
+    could be computed from a record without re-running inference. Recomputed here per class
+    and per vendor, from the rows alone, and compared with `==`.
+    """
+    volumes = varied_volumes()
+    plan = EvaluationPlan(fold_id="f", bucket="val", seed=SEED, n_resamples=200)
+    result = evaluate(plan, volumes, artifacts_root=tmp_path)
+    rows = result["per_volume"]
+    for vendor, block in result["detection"].items():
+        for fluid, stored in block.items():
+            selected = [
+                r
+                for r in rows
+                if r["fluid_class"] == fluid and (vendor == "all_vendors" or r["vendor"] == vendor)
+            ]
+            scores = np.array([r["score"] for r in selected], dtype=float)
+            truth = np.array([r["reference_present"] for r in selected], dtype=bool)
+            recomputed = auroc(scores, truth)
+            assert recomputed == stored["auroc"]["value"] or (
+                np.isnan(recomputed) and np.isnan(stored["auroc"]["value"])
+            ), (vendor, fluid)
+
+
+def test_TC_126_the_score_is_the_detection_arms_score_not_a_placeholder(tmp_path):
+    """Rule 8: the field must carry the real per-volume score, which differs across volumes."""
+    volumes = varied_volumes()
+    plan = EvaluationPlan(fold_id="f", bucket="val", seed=SEED, n_resamples=200)
+    rows = evaluate(plan, volumes, artifacts_root=tmp_path)["per_volume"]
+    expected = {
+        (v["sample_id"], d["fluid_class"]): d["score"] for v in volumes for d in v["detection"]
+    }
+    for row in rows:
+        assert row["score"] == expected[(row["sample_id"], row["fluid_class"])]
+    assert len({row["score"] for row in rows}) > 1, "every score identical: not a per-volume value"
 
 
 def test_TC_126_adding_the_rows_changes_no_aggregate(tmp_path):
