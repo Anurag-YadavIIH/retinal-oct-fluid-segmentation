@@ -1420,7 +1420,49 @@ pooled difference that excludes zero does not imply any single fold's does.
 | §17 figures, fixed threshold, per fold | **primary**, in every fold |
 | §19.1 present/absent decomposition | secondary; **post-hoc for cirrus**, pre-registered for the other two |
 | §19.2 validation-selected threshold | secondary; reported alongside, never instead |
-| §19.3 pooled cross-fold comparison | secondary |
+| §19.3 pooled cross-fold comparison | secondary; **post-hoc pooling rule** (§19.5, 2026-10-05) |
 
 A reader of `docs/10` must be able to tell which figures were fixed before the data was seen
 and which were not, without having to reconstruct the chronology from commit dates.
+
+### 19.5 Amendment to §19.3 — made 2026-10-05, **after every per-fold result was visible**
+
+**Standing: post-hoc.** Written after `docs/08` §5g recorded every per-fold §17 figure and
+§19.3's pre-registered assertion failed (`docs/08` §5g.8). §19.3 is left as written. This
+section says how the pooled comparison is now computed and why. Because the choice was made
+with the per-fold results in view, **the pooled result it produces is labelled post-hoc
+everywhere it appears**, and the §19.4 row for §19.3 now reads "secondary; **post-hoc**
+pooling rule".
+
+**What failed.** §19.3 asserted that no patient appears in more than one fold's in-domain
+reference "by construction". It does not hold. The three in-domain arms hold **21 volumes
+from 13 patients**, and **8 patients appear in two folds**. Each vendor is a training vendor
+in two folds, and each fold's reference is drawn independently.
+
+**The rule, decided by the author:** **the patient is the unit.**
+
+- **In-domain arm.** Each of the 13 patients contributes **one value per class**: the mean of
+  its Dice across the folds whose in-domain reference contains it. That is one fold for 5
+  patients and two folds for 8.
+- **Held-out arm.** Each of the 70 patients contributes its **single** held-out Dice. Every
+  patient is held out in exactly one fold, and the assertion confirmed it: 70 volumes, 70
+  patients.
+- **Resampling.** Patient-level bootstrap as everywhere else (SRS-087): 2000 resamples,
+  α = 0.05, seed 20260916, the project's `subgroup.estimate`. **n = 13 in-domain against 70
+  held-out.**
+- **Records.** The seeded records only. Cirrus comes from its §17.10 re-run, so all three
+  folds share one procedure, the reason for option (B).
+- **Reported:** per class, each arm's pooled Dice with its interval and n, and the gap
+  (in-domain − held-out) as a point difference with no interval, as in §17.2. The per-fold
+  composition is given beside it. **The result is reported whatever it shows.**
+
+**What this pooling is, and is not.** Averaging a patient's two in-domain values gives it the
+same weight as a patient seen once. The alternative, keeping both values, would give it double
+weight and a falsely narrow interval. The averaged value comes from **two different models**,
+one per fold, so it is a property of the training regime, not of one model.
+
+The two arms are **not independent samples**. Each of the 13 in-domain patients is also in
+the held-out arm, through its own vendor's fold. So the arms are bootstrapped separately and
+**no interval is put on the gap**, exactly as for the per-fold gaps. §19.3's own limits still
+apply: a pooled figure can narrow the average across vendors, and it **establishes nothing
+about any particular vendor**.
