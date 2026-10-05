@@ -209,11 +209,11 @@ reproducible procedure (2026-10-05, `docs/08` §5g).** Next: the two open §19 d
 | **Docker not installed** | TC-080, TC-081, TC-082 — written and **never executed**. The Orthanc round-trip is unverified |
 | **An author decision: §19.3** | The pooled cross-fold comparison. Its pre-registered assertion **failed**: the three in-domain arms are 21 volumes from **13** patients, with 8 in two folds' references (`docs/08` §5g.8, `docs/13` 2026-10-05). How to pool is an amendment for the author. Do not pick a method |
 | **Two GPU runs, open buckets, no unlock** | §19.2's validation-selected threshold for spectralis and topcon: each needs its own fold's `val` evaluation. Seeded, launched by the author, `--output` to new files |
-| **Neither** — these are simply next | `eval/report.py`, `docs/10`, `service/api.py`; the `docs/09` HAZ-009/RC-028 trace on TC-121..123 (`docs/13` 2026-10-04); no hazard covers non-reproducible evaluation (a `docs/05` decision) |
+| **Neither** — these are simply next | `eval/report.py`, `docs/10`, `service/api.py` |
 
 ### Numbers, as of 2026-10-05
 
-Identifiers: URS-001..011, **SRS-001..091**, NFR-001..008, HAZ-001..015, RC-001..031,
+Identifiers: URS-001..011, **SRS-001..091**, NFR-001..008, **HAZ-001..016, RC-001..032**,
 SOUP-001..022, TC-000..TC-128 (**114 registered**).
 
 **114 test cases registered, 90 written, 87 executed, 3 written but never run, 24
@@ -229,7 +229,8 @@ against 88, plus two bugs of its own (`docs/13`, 2026-10-01). Do not recount by 
 the test.
 
 Suite, measured locally 2026-10-04 on CPU: **560 passed, 17 skipped, 0 failed, 42
-deselected** (`requires_pacs` and `slow`). Risk controls: 31 allocated a test.
+deselected** (`requires_pacs` and `slow`). Risk controls: 32 of 32 allocated a test, 27
+verified by an executed test (`docs/09`, recomputed 2026-10-05; not checked by TC-104).
 
 **CI state is not asserted here.** The previous version of this line read "CI is green on
 `main`" and was **false**: the two most recent runs before 2026-10-01 both failed on TC-099,
@@ -263,8 +264,8 @@ fold now would be a new experiment needing its own pre-registration, never a rep
 3. **`eval/report.py` and `docs/10`.** `docs/10` must let a reader tell the primary §17 figures
    from the §19 secondary ones, and the pre-registered from the post-hoc (§19.4), without
    reconstructing the chronology.
-4. **Smaller items:** the `docs/09` trace of TC-121..123 to HAZ-009/RC-028; whether `docs/05`
-   needs a hazard for non-reproducible evaluation; TC-080..082 still need Docker.
+4. **Smaller items:** TC-080..082 still need Docker. (The TC-121..123 mis-trace and the
+   missing reproducibility hazard were fixed 2026-10-05: HAZ-016, RC-032.)
 
 **Seeded evaluation costs time:** 2.4× the unseeded duration on `val` (measured). Tonight's six
 sealed buckets took 4 h 54 min plus 37 min for step 0 (measured, `docs/08` §5g.1).
