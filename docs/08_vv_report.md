@@ -1064,6 +1064,32 @@ would be chosen after every per-fold result was visible:
 The choice is the author's, as an amendment to §19.3, and is recorded in `docs/13`. The pooled
 analysis's own motivation, about 21 in-domain patients, is in any case **13**.
 
+#### 5g.8a The pooled result under the §19.5 rule — **post-hoc**
+
+> **Secondary and post-hoc.** The pooling rule (`docs/07` §19.5) was decided by the author on
+> 2026-10-05, **after every per-fold result was visible**, and committed (`3ed36ae`) before
+> this figure was computed.
+
+The patient is the unit. Each of the 13 in-domain patients contributes the mean of its Dice
+across the folds whose reference holds it: two folds for 8 patients, one for 5. Each of the 70
+held-out patients contributes its single value. All values come from the seeded records, with a
+patient-level bootstrap (2000 resamples, α = 0.05, seed 20260916). Composition: held-out 24
+cirrus, 24 spectralis, 22 topcon; in-domain 2 cirrus, 6 spectralis, 5 topcon.
+
+| Class | Pooled held-out Dice | Pooled in-domain Dice | Gap (in-domain − held-out) |
+|---|---|---|---|
+| IRF | **0.3414** [0.2787, 0.4094] n=70 | **0.4201** [0.2595, 0.5669] n=13 | +0.0787 |
+| SRF | **0.3398** [0.2563, 0.4259] n=70 | **0.1624** [0.0031, 0.3514] n=13 | −0.1774 |
+| PED | **0.2343** [0.1686, 0.3098] n=70 | **0.1400** [0.0314, 0.2694] n=13 | −0.0942 |
+
+**No pooled difference is established at 95%.** All three pairs of intervals overlap. The gaps
+point both ways, worse on unseen vendors for IRF and better for SRF and PED, as in the per-fold
+results. Pooling narrowed the held-out intervals, from widths of 0.18–0.31 per fold to
+0.13–0.17. The in-domain arm, at 13 patients, stays wide, at 0.24–0.35 (all widths derived from
+the intervals above and in §5g.2–§5g.4). **The binding limit is
+unchanged: the in-domain arm.** The gaps carry no interval, because the arms share all 13
+in-domain patients (§19.5). Nothing here bears on any particular vendor (§19.3).
+
 ### 5g.9 What Stage 3 does not establish
 
 - **No vendor-specific degradation is established for any held-out vendor at 95%** (§5g.5).
