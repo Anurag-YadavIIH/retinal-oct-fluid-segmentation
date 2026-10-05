@@ -889,6 +889,32 @@ draws differ in the arithmetic, not in the model, and §5g.6 shows how absent-cl
 dominate exactly this kind of figure. Held-out SRF specificity changed by one volume of 12
 (0.0833 to 0.0000).
 
+#### 5g.2a Finding — fragility of class-absent Dice in small arms
+
+**The measurement.** Cirrus in-domain SRF Dice is **0.2707** in the unseeded 2026-10-01 draw
+and **0.1276** in the seeded one: a shift of **−0.1431** with the same model, threshold and
+metric, and only the dropout masks differing. Measured, from the two records.
+
+**The arithmetic that makes it possible.** The both-empty convention scores a class-absent
+volume **1.0** when nothing is predicted and **0.0** for even one predicted voxel
+(`metrics.py:104-117`). One such volume switching between the two moves a 7-patient mean by
+1/7 = **0.1429** (derived). That is the size of the observed shift. The arm holds **4**
+SRF-absent volumes out of 7 (§5g.6), so there were four candidates.
+
+**What cannot be confirmed.** The unseeded record carries **no per-volume rows** (D7). Whether
+one volume flipped, or several moved by amounts that happen to sum to 0.1431, **cannot be
+established from it**. The seeded record shows all four absent volumes at Dice 0.0. The
+unseeded one cannot show what they were. The HD95 `n` falling from 4 to 3 is consistent with
+the one-volume reading, since HD95 drops a volume when exactly one side is empty. It is
+consistent, not proof.
+
+**Why it matters.** A shift of 0.14 between two equally valid MC-dropout draws is **37%** of the
+width of the narrowest in-domain Dice interval in §5d (IRF, 0.3902; derived). It comes not from the model
+changing, but from a metric convention meeting a 7-patient arm in which most volumes lack the
+class. Any figure built on few class-absent volumes inherits it. That is one more reason the
+present-stratum figures of §5g.6 are worth reading beside the all-volume ones, and another face
+of the small-n limitation.
+
 ### 5g.3 Spectralis held out — one-time evaluation
 
 Trained on cirrus + topcon. Same conventions.
