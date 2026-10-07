@@ -12,9 +12,9 @@ A study of whether software that finds fluid in eye scans still works on a scann
 
 > **Not for clinical use.** This is a research and portfolio project built on public challenge data. It has never been used on patients, has not been validated for patient care, and makes no clinical claim of any kind.
 
-![Forest plot: for each held-out scanner brand and fluid type, the Dice score on the unseen brand and on new patients from the familiar brands, with 95% intervals, and the difference between them.](docs/figures/fig3_forest.png)
+![Dice score with 95% intervals on the unseen scanner brand and on new patients from the familiar brands, for each run and fluid type, with the three runs combined in the bottom rows.](docs/figures/fig2_dice_intervals.svg)
 
-*Figure 3 of [`docs/10`](docs/10_analytical_validation_report.md). Left: scores on the unseen brand (orange) and on new patients from the familiar brands (blue), with 95% intervals; the bottom three rows pool all three runs. Right: the difference between the two, with its own interval. Rows and panels marked post-hoc in [`docs/10`](docs/10_analytical_validation_report.md) were analysed after the results were seen.*
+*Figure 2 of [`docs/10`](docs/10_analytical_validation_report.md). In every row the unseen brand's interval (orange) overlaps the familiar brands' interval (blue), so the pre-registered comparison established no difference, and the blue intervals are wide because each run's familiar-brand group has only 7 patients. The bottom three rows combine all three runs, an analysis I chose after seeing the results.*
 
 ## In plain words
 

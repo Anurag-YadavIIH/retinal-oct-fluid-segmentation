@@ -5,7 +5,10 @@ Serves: `docs/10`. Computes no reported number. Every value drawn here is alread
 records disagrees with them:
 
 - every per-fold Dice value and interval must equal the stored record exactly;
-- every difference interval must equal the one printed in `docs/10` §5.4 (to its 4 decimals).
+- every pooled Dice value and interval must equal the one printed in `docs/10` §5.2;
+- every difference interval must equal the one printed in `docs/10` §5.4 (to its 4 decimals);
+- every interval must lie inside its axis, so none is clipped, and every count a caption states
+  is computed and asserted, not typed.
 
 **Inputs**, read only: the seeded evaluation records of the three folds (`test` and
 `in_domain_ref`), their per-volume rows (SRS-089), and each fold's `epochs.jsonl`. No sealed
@@ -22,7 +25,7 @@ persisted (`docs/08` D9). Drawing ROC from predicted voxel counts would plot a d
 from the one the reported AUROC ranks.
 
 Usage:
-    python scripts/07_make_figures.py            # writes docs/figures/*.png and captions.md
+    python scripts/07_make_figures.py            # writes docs/figures/*.png, *.svg, captions.md
 """
 
 from __future__ import annotations
@@ -37,6 +40,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
+from matplotlib.lines import Line2D  # noqa: E402
 
 from ocuval.eval import subgroup  # noqa: E402
 
@@ -49,6 +53,18 @@ FOLDS = ("cirrus", "spectralis", "topcon")
 CLASSES = ("IRF", "SRF", "PED")
 HELD, REF = "#D55E00", "#0072B2"  # Okabe-Ito vermillion, blue
 GREY = "#555555"
+PRESENT = "#009E73"  # Okabe-Ito bluish green: class-present differences, Figure 4
+BAND = "#efefef"
+NAME = {"cirrus": "Cirrus", "spectralis": "Spectralis", "topcon": "Topcon", "pooled": "Pooled"}
+LARGE = {  # Figures 2 and 4, sized to stay legible at README width
+    "font.size": 13,
+    "axes.labelsize": 13,
+    "xtick.labelsize": 13,
+    "ytick.labelsize": 13,
+    "legend.fontsize": 13,
+    "figure.titlesize": 15,
+}
+OPAQUE = {"facecolor": "white", "transparent": False}
 RECORDS = {
     "cirrus": {
         "dir": RUNS / "cirrus_holdout_stage2",
@@ -117,6 +133,19 @@ def docs10_differences() -> dict:
     return table
 
 
+def docs10_pooled() -> dict:
+    """The pooled arms printed in docs/10 §5.2: Figure 2's pooled rows must equal them."""
+    text = (REPO / "docs/10_analytical_validation_report.md").read_text(encoding="utf-8")
+    arm = r"\*\*(\d\.\d{4})\*\* \[(\d\.\d{4}), (\d\.\d{4})\] n=(\d+)"
+    pattern = re.compile(rf"^\| (IRF|SRF|PED) \| {arm} \| [^|]+ \| {arm} \|", re.M)
+    table = {}
+    for cls, *v in pattern.findall(text):
+        f = [float(x) for x in v]
+        table[cls] = ((f[0], f[1], f[2], int(f[3])), (f[4], f[5], f[6], int(f[7])))
+    assert len(table) == 3, f"expected 3 pooled rows in docs/10 §5.2, parsed {len(table)}"
+    return table
+
+
 def gather() -> dict:
     """Every value drawn, computed once and checked against the records and docs/10."""
     printed = docs10_differences()
@@ -146,86 +175,158 @@ def gather() -> dict:
                     arm,
                     cls,
                 )
+    # The pooled arms have no stored record; they must equal the table docs/10 §5.2 prints.
+    for cls, want in docs10_pooled().items():
+        for k in (0, 1):
+            e = data["arms"][("all-volume", "pooled", cls)][k]
+            got = (round(e["value"], 4), round(e["ci_low"], 4), round(e["ci_high"], 4), e["n"])
+            assert got == want[k], f"pooled {cls} arm {k} disagrees with docs/10 §5.2: {got}"
     return data
 
 
-def forest(data: dict) -> str:
-    """Figure 3: arm Dice with intervals, and the difference intervals of §5.4."""
+def row_layout() -> tuple[list[tuple[str, str]], np.ndarray]:
+    """Rows of Figures 2 and 4, top to bottom: each fold's three classes, then the pooled rows."""
     labels = [(c, cls) for c in (*FOLDS, "pooled") for cls in CLASSES]
     y = np.arange(len(labels))[::-1].astype(float)
     y[len(FOLDS) * 3 :] -= 0.6  # a gap before the pooled rows
-    fig, (ax1, ax2) = plt.subplots(
-        1, 2, figsize=(11, 7.2), sharey=True, gridspec_kw={"width_ratios": [1.15, 1]}
-    )
-    for yy, (comp, cls) in zip(y, labels, strict=True):
-        held, ref = data["arms"][("all-volume", comp, cls)]
-        for e, off, col in ((held, 0.14, HELD), (ref, -0.14, REF)):
-            ax1.errorbar(
-                e["value"],
-                yy + off,
-                xerr=[[e["value"] - e["ci_low"]], [e["ci_high"] - e["value"]]],
-                fmt="o",
-                color=col,
-                ms=5,
-                capsize=2.5,
-                lw=1.3,
-            )
-        for view, off, face in (("all-volume", 0.14, "black"), ("class-present", -0.14, "white")):
-            p, lo, hi = data["diff"][(view, comp, cls)]
-            n_ref = data["arms"][(view, comp, cls)][1]["n"]
-            edge = GREY if n_ref == 1 else "black"
-            ax2.errorbar(
-                p,
-                yy + off,
-                xerr=[[p - lo], [hi - p]],
-                fmt="o",
-                mfc=face,
-                mec=edge,
-                color=edge,
-                ms=5,
-                capsize=2.5,
-                lw=1.3,
-                ls="none",
-            )
-    ax1.set_yticks(y, [f"{c} · {cls}" for c, cls in labels])
-    ax1.set_xlim(-0.02, 1.0)
-    ax1.set_xlabel("Dice (all volumes), 95% patient-level interval")
-    ax1.set_title("Held-out vs in-domain Dice", fontsize=11)
-    ax1.plot([], [], "o", color=HELD, label="held-out vendor")
-    ax1.plot([], [], "o", color=REF, label="in-domain reference")
-    ax1.legend(loc="lower right", fontsize=8, frameon=False)
-    ax2.axvline(0, color=GREY, lw=0.8, ls="--")
-    ax2.set_xlabel("held-out − in-domain Dice, 95% interval")
-    ax2.set_title("Difference, bootstrapped directly (post-hoc)", fontsize=11)
-    ax2.plot([], [], "o", color="black", label="all volumes")
-    ax2.plot([], [], "o", mfc="white", mec="black", label="class-present volumes")
-    ax2.legend(loc="lower left", fontsize=8, frameon=False)
-    for ax in (ax1, ax2):
-        ax.axhline((y[len(FOLDS) * 3 - 1] + y[len(FOLDS) * 3]) / 2, color=GREY, lw=0.6)
-        ax.grid(axis="x", color="#dddddd", lw=0.6)
-    fig.tight_layout()
-    fig.savefig(OUT / "fig3_forest.png", **PNG)
+    return labels, y
+
+
+def frame_rows(ax, labels, y) -> None:
+    """Shared furniture of Figures 2 and 4: fold bands, pooled separator, row labels, grid."""
+    for k in range(0, len(FOLDS) + 1, 2):  # cirrus and topcon shaded, spectralis and pooled not
+        ys = y[k * 3 : k * 3 + 3]
+        ax.axhspan(ys.min() - 0.5, ys.max() + 0.5, color=BAND, lw=0, zorder=0)
+    ax.axhline((y[len(FOLDS) * 3 - 1] + y[len(FOLDS) * 3]) / 2, color="#333333", lw=1.8)
+    ax.set_yticks(y, [f"{NAME[c]}  {cls}" for c, cls in labels])
+    ax.tick_params(axis="y", length=0)
+    ax.set_ylim(y.min() - 0.5, y.max() + 0.5)
+    ax.grid(axis="x", color="#d9d9d9", lw=0.9)
+    ax.set_axisbelow(True)
+
+
+def interval(ax, e: tuple[float, float, float], yy: float, **style):
+    p, lo, hi = e
+    return ax.errorbar(
+        p, yy, xerr=[[p - lo], [hi - p]], ms=10, capsize=6, capthick=2.5, elinewidth=2.5,
+        ls="none", clip_on=False, zorder=3, **style,
+    )  # fmt: skip
+
+
+def key(color: str, marker: str, dashed: bool = False) -> Line2D:
+    """A legend entry drawn as the plot draws it: marker on a thick line, dashed if invalid."""
+    return Line2D(
+        [], [], color=color, marker=marker, ms=10, lw=2.5, ls=(0, (2, 1.5)) if dashed else "-",
+        mfc="white" if dashed else color,
+    )  # fmt: skip
+
+
+def place(fig, title, handles, names, ncol, top=0.85, bottom=0.12) -> None:
+    """Fixed layout of Figures 2 and 4: title, then the legend, then the data area below both."""
+    fig.subplots_adjust(left=0.18, right=0.97, top=top, bottom=bottom)
+    fig.suptitle(title, y=0.975)
+    fig.legend(handles, names, loc="upper center", bbox_to_anchor=(0.5, 0.935), ncol=ncol,
+               frameon=False, handlelength=2.6, columnspacing=1.6)  # fmt: skip
+
+
+def save(fig, stem: str) -> None:
+    """SVG and 200 dpi PNG, white and opaque, with no date, version or software metadata."""
+    fig.savefig(OUT / f"{stem}.svg", metadata={"Date": None, "Creator": None}, **OPAQUE)
+    fig.savefig(OUT / f"{stem}.png", dpi=200, metadata={"Software": None}, **OPAQUE)
     plt.close(fig)
-    n = {
-        f: (
-            data["arms"][("all-volume", f, "IRF")][0]["n"],
-            data["arms"][("all-volume", f, "IRF")][1]["n"],
+
+
+def dice_intervals(data: dict) -> str:
+    """Figure 2: held-out and in-domain Dice with intervals, per fold and pooled (§3, §5.1)."""
+    labels, y = row_layout()
+    arms = [data["arms"][("all-volume", c, cls)] for c, cls in labels]
+    lims = (0.0, 0.8)
+    assert all(lims[0] <= e[k] <= lims[1] for a in arms for e in a for k in ("ci_low", "ci_high"))
+    with plt.rc_context(LARGE):
+        fig, ax = plt.subplots(figsize=(10, 8))
+        frame_rows(ax, labels, y)
+        for yy, (held, ref) in zip(y, arms, strict=True):
+            for e, off, col in ((held, 0.17, HELD), (ref, -0.17, REF)):
+                interval(ax, (e["value"], e["ci_low"], e["ci_high"]), yy + off, fmt="o", color=col)
+        ax.set_xlim(*lims)
+        ax.set_xticks(np.arange(0, 0.81, 0.1))
+        ax.set_xlabel("Dice over all scans, 95% interval (0 = no overlap, 1 = perfect)")
+        place(
+            fig,
+            "Unseen scanner brand vs familiar brands: Dice with 95% intervals",
+            [key(HELD, "o"), key(REF, "o")],
+            ["Unseen brand (held-out)", "Familiar brands, new patients (in-domain)"],
+            ncol=2,
+            bottom=0.1,
         )
-        for f in (*FOLDS, "pooled")
-    }
+        save(fig, "fig2_dice_intervals")
+    overlap = [h["ci_low"] <= r["ci_high"] and r["ci_low"] <= h["ci_high"] for h, r in arms]
+    assert all(overlap), "the caption below says every row overlaps"
+    n = {c: tuple(data["arms"][("all-volume", c, "IRF")][k]["n"] for k in (0, 1)) for c in NAME}
+    (hc, ic), (hs, _), (ht, _), (hp, ip) = (n[c] for c in (*FOLDS, "pooled"))
     return (
-        "**Figure 3. Held-out and in-domain Dice, and their difference.** Left: Dice over all "
-        "volumes with 95% patient-level bootstrap intervals, for each held-out vendor and fluid "
-        f"class (held-out n = {n['cirrus'][0]}, {n['spectralis'][0]}, {n['topcon'][0]} patients; "
-        f"in-domain n = {n['cirrus'][1]} per fold). The per-fold rows are the pre-registered "
-        "primary figures (`docs/07` §17). The pooled rows "
-        f"(held-out n = {n['pooled'][0]}, in-domain n = {n['pooled'][1]}) "
-        "use the patient-as-unit rule decided after the per-fold results (§19.5): **post-hoc**. "
-        "Right: held-out minus in-domain Dice, bootstrapped directly with each arm resampled "
-        "independently, for all volumes (filled) and class-present volumes only (open); "
-        "**post-hoc** (§5.4). Grey marks a class-present interval whose in-domain arm is a single "
-        "patient: it ignores in-domain variance and is not a valid interval. Overlapping intervals "
-        "on the left establish no difference."
+        "**Figure 2. Held-out and in-domain Dice with 95% intervals.** In all "
+        f"{len(overlap)} rows the held-out interval (orange) overlaps the in-domain one (blue), so "
+        "no difference is established; the in-domain intervals are wide because those arms are "
+        "small. Per-fold rows are the primary, pre-registered figures of §3 (held-out n = "
+        f"{hc}, {hs}, {ht} patients; in-domain n = {ic} per fold). The pooled rows (n = {hp} and "
+        f"{ip}) use the patient-as-unit rule decided after the per-fold results (§5.1, `docs/07` "
+        "§19.5): **post-hoc**."
+    )
+
+
+def dice_differences(data: dict) -> str:
+    """Figure 4: held-out − in-domain Dice, bootstrapped directly (§5.4)."""
+    labels, y = row_layout()
+    views = (("all-volume", 0.17, "o", "black"), ("class-present", -0.17, "D", PRESENT))
+    lims = (-0.75, 0.75)
+    assert all(lims[0] <= v <= lims[1] for d in data["diff"].values() for v in d[1:])
+    with plt.rc_context(LARGE):
+        fig, ax = plt.subplots(figsize=(10, 8))
+        frame_rows(ax, labels, y)
+        ax.axvline(0, color="black", lw=2.4, zorder=2)
+        for yy, (comp, cls) in zip(y, labels, strict=True):
+            for view, off, marker, col in views:
+                eb = interval(ax, data["diff"][(view, comp, cls)], yy + off, fmt=marker, color=col)
+                if data["arms"][(view, comp, cls)][1]["n"] == 1:
+                    eb[2][0].set_linestyle((0, (2, 1.5)))
+                    eb[0].set_markerfacecolor("white")
+        ax.set_xlim(*lims)
+        ax.set_xticks(np.arange(-0.6, 0.61, 0.2))
+        ax.set_xlabel("Held-out minus in-domain Dice, 95% interval", labelpad=30)
+        for x, ha, text in (
+            (0, "left", "← unseen brand worse"),
+            (1, "right", "unseen brand better →"),
+        ):
+            ax.text(x, -0.075, text, transform=ax.transAxes, ha=ha, va="top", style="italic")
+        place(
+            fig,
+            "Unseen scanner brand minus familiar brands: difference in Dice",
+            # Legends fill by column: this order reads row by row, the invalid entry alone below.
+            [key("black", "o"), key(PRESENT, "D", dashed=True), key(PRESENT, "D")],
+            [
+                "All scans",
+                "Only 1 in-domain patient: not a valid interval",
+                "Only scans containing the fluid type",
+            ],
+            ncol=2,
+            top=0.82,
+        )
+        save(fig, "fig4_dice_differences")
+    rows = [(k, d, data["arms"][k][1]["n"]) for k, d in data["diff"].items()]
+    excl = [(k, d, n) for k, d, n in rows if d[1] > 0 or d[2] < 0]
+    pooled = [r for r in rows if r[0][1] == "pooled"]
+    assert {d[0] > 0 for _, d, _ in excl} == {True, False}, "the caption says both directions"
+    assert not any(r in excl for r in pooled), "the caption says no pooled interval excludes 0"
+    ns = sorted(n for _, _, n in excl)
+    return (
+        "**Figure 4. Held-out minus in-domain Dice, bootstrapped directly.** "
+        f"Of the {len(rows)} intervals, {len(excl)} exclude zero, pointing both ways and resting "
+        f"on in-domain arms of {ns[0]} to {ns[-1]} patients, and none of the {len(pooled)} pooled "
+        "intervals does, so no cross-vendor difference is concluded (§5.4). The whole figure is "
+        "**post-hoc** (§5.4), and its pooled rows also use the post-hoc pooling rule (§5.1); the "
+        "dashed interval has a single in-domain patient, ignores in-domain variance and is not a "
+        "valid interval."
     )
 
 
@@ -234,7 +335,7 @@ def jitter(n: int, width: float = 0.32) -> np.ndarray:
 
 
 def per_volume(data: dict) -> str:
-    """Figure 4: every volume's Dice, by arm, class present vs absent (§19.1)."""
+    """Figure 5: every volume's Dice, by arm, class present vs absent (§19.1)."""
     fig, axes = plt.subplots(1, 3, figsize=(13.5, 4.4), sharey=True)
     counts = {}
     for ax, cls in zip(axes, CLASSES, strict=True):
@@ -268,7 +369,7 @@ def per_volume(data: dict) -> str:
     axes[0].scatter([], [], s=16, facecolors="white", edgecolors="black", label="class absent")
     axes[0].legend(loc="upper left", fontsize=7, frameon=False)
     fig.tight_layout()
-    fig.savefig(OUT / "fig4_per_volume_dice.png", **PNG)
+    fig.savefig(OUT / "fig5_per_volume_dice.png", **PNG)
     plt.close(fig)
     absent_zero = sum(
         1
@@ -277,7 +378,7 @@ def per_volume(data: dict) -> str:
         and all(r["dice"] == 0.0 for r in rows(fold, arm, cls) if not r["reference_present"])
     )
     return (
-        "**Figure 4. Dice of every volume, split by whether the class is present in the "
+        "**Figure 5. Dice of every volume, split by whether the class is present in the "
         "reference.** One point per patient (held-out arms 22–24, in-domain arms 7). Filled: "
         "class present. Open: class absent, where Dice is 1 if nothing is predicted and 0 if "
         f"anything is (`metrics.py:104-117`). In {absent_zero} of 18 arm × class cells every "
@@ -288,7 +389,7 @@ def per_volume(data: dict) -> str:
 
 
 def voxels(data: dict) -> str:
-    """Figure 2: predicted voxel count against reference presence, log scale; ROC omitted (D9)."""
+    """Figure 3: predicted voxel count against reference presence, log scale; ROC omitted (D9)."""
     fig, axes = plt.subplots(1, 3, figsize=(13.5, 4.4), sharey=True)
     floor = 0.5  # zero predicted voxels drawn here, below the axis's 1
     for ax, cls in zip(axes, CLASSES, strict=True):
@@ -324,10 +425,10 @@ def voxels(data: dict) -> str:
     axes[0].plot([], [], color=GREY, ls="--", label="presence threshold, 10 voxels")
     axes[0].legend(loc="lower left", fontsize=7, frameon=False)
     fig.tight_layout()
-    fig.savefig(OUT / "fig2_predicted_voxels.png", **PNG)
+    fig.savefig(OUT / "fig3_predicted_voxels.png", **PNG)
     plt.close(fig)
     return (
-        "**Figure 2. Predicted voxel count by reference presence, log scale.** One point per "
+        "**Figure 3. Predicted voxel count by reference presence, log scale.** One point per "
         "patient and class; a volume with no predicted voxels is drawn at 0.5. The dashed line "
         "is the pre-registered presence threshold of 10 voxels (§17.7a). Volumes without the "
         "class (open) mostly sit far above it, which is why specificity at that threshold is "
@@ -397,8 +498,14 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     plt.rcParams.update({"font.size": 9, "svg.hashsalt": "ocuval"})
     data = gather()
-    # In the reading order of docs/10: §2, §4, §5.4, §7.1.
-    captions = [training(), voxels(data), forest(data), per_volume(data)]
+    # In the reading order of docs/10: §2, §3, §4, §5.4, §7.1.
+    captions = [
+        training(),
+        dice_intervals(data),
+        voxels(data),
+        dice_differences(data),
+        per_volume(data),
+    ]
     (OUT / "captions.md").write_text(
         "<!-- Generated by scripts/07_make_figures.py. Do not edit by hand. -->\n\n"
         + "\n\n".join(captions)
