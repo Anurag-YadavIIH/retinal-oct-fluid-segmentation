@@ -109,9 +109,9 @@ and its `n` (CLAUDE.md §5).
 | Sealed access | each `test` and `in_domain_ref` bucket evaluated once under the seeded procedure. Cirrus also has an earlier unseeded draw, kept and labelled (§3.1) | `docs/07` §17.10, `docs/08` §5g.1 |
 | Reproducibility | two seeded evaluations of the open `val` bucket at the evaluation commit were IDENTICAL on every one of 466 compared values before any unlock | `docs/08` §5g.1, HAZ-016, RC-032 |
 
-![Training loss and in-domain validation Dice per epoch for the three folds.](figures/fig4_training_curves.png)
+![Training loss and in-domain validation Dice per epoch for the three folds.](figures/fig1_training_curves.png)
 
-**Figure 4. Training loss and in-domain validation Dice per fold.** From each fold's `epochs.jsonl` (cirrus: 59 epochs, best 33, stopped after 58; spectralis: 55 epochs, best 29, stopped after 54; topcon: 55 epochs, best 29, stopped after 54). Every fold ended by early stopping, after 25 epochs without improvement. The checkpoint evaluated is the best epoch, chosen on in-domain validation only (§17.1). The dash-dot line marks where the spectralis run was resumed after an external interruption (`docs/08` D8). Validation Dice here is a training record, a point value with no interval, and is not a result.
+**Figure 1. Training loss and in-domain validation Dice per fold.** From each fold's `epochs.jsonl` (cirrus: 59 epochs, best 33, stopped after 58; spectralis: 55 epochs, best 29, stopped after 54; topcon: 55 epochs, best 29, stopped after 54). Every fold ended by early stopping, after 25 epochs without improvement. The checkpoint evaluated is the best epoch, chosen on in-domain validation only (§17.1). The dash-dot line marks where the spectralis run was resumed after an external interruption (`docs/08` D8). Validation Dice here is a training record, a point value with no interval, and is not a result.
 
 ## 3. Results — segmentation (primary, pre-registered)
 
@@ -147,7 +147,7 @@ their in-domain arms hold **3** and **1** patients. An interval over one patient
 so nothing is concluded from either.
 
 The Dice intervals above are plotted, with the pooled rows and the §5.4 differences, in
-Figure 1 (end of §5.4).
+Figure 3 (end of §5.4).
 
 ### 3.1 Cirrus — the seeded record beside the earlier unseeded draw
 
@@ -199,9 +199,9 @@ held-out arm. The fixed operating point is not. In-domain AUROC rests on 1–6 p
 cell. The §19.2 validation-selected threshold is reported in §7.3, beside these figures and
 never instead of them.
 
-![Predicted voxel count per volume and class, by whether the class is present in the reference, on a log scale with the 10-voxel threshold marked.](figures/fig3_predicted_voxels.png)
+![Predicted voxel count per volume and class, by whether the class is present in the reference, on a log scale with the 10-voxel threshold marked.](figures/fig2_predicted_voxels.png)
 
-**Figure 3. Predicted voxel count by reference presence, log scale.** One point per patient and class; a volume with no predicted voxels is drawn at 0.5. The dashed line is the pre-registered presence threshold of 10 voxels (§17.7a). Volumes without the class (open) mostly sit far above it, which is why specificity at that threshold is 0.0000 in 13 of 18 cells (§4). **ROC curves are not shown:** they need each volume's detection score, which the sealed records did not persist (`docs/08` D9). A curve built from voxel counts would rank a different score from the one the reported AUROC uses.
+**Figure 2. Predicted voxel count by reference presence, log scale.** One point per patient and class; a volume with no predicted voxels is drawn at 0.5. The dashed line is the pre-registered presence threshold of 10 voxels (§17.7a). Volumes without the class (open) mostly sit far above it, which is why specificity at that threshold is 0.0000 in 13 of 18 cells (§4). **ROC curves are not shown:** they need each volume's detection score, which the sealed records did not persist (`docs/08` D9). A curve built from voxel counts would rank a different score from the one the reported AUROC uses.
 
 ## 5. Generalisation gap
 
@@ -354,9 +354,9 @@ A true difference at that size is detected only about half the time. **This desi
 cross-vendor Dice differences below about 0.14, and detects per-fold differences below about 0.3
 unreliably.**
 
-![Forest plot of held-out and in-domain Dice with 95% intervals per fold and class, pooled rows, and the directly bootstrapped differences.](figures/fig1_forest.png)
+![Forest plot of held-out and in-domain Dice with 95% intervals per fold and class, pooled rows, and the directly bootstrapped differences.](figures/fig3_forest.png)
 
-**Figure 1. Held-out and in-domain Dice, and their difference.** Left: Dice over all volumes with 95% patient-level bootstrap intervals, for each held-out vendor and fluid class (held-out n = 24, 24, 22 patients; in-domain n = 7 per fold). The per-fold rows are the pre-registered primary figures (`docs/07` §17). The pooled rows (held-out n = 70, in-domain n = 13) use the patient-as-unit rule decided after the per-fold results (§19.5): **post-hoc**. Right: held-out minus in-domain Dice, bootstrapped directly with each arm resampled independently, for all volumes (filled) and class-present volumes only (open); **post-hoc** (§5.4). Grey marks a class-present interval whose in-domain arm is a single patient: it ignores in-domain variance and is not a valid interval. Overlapping intervals on the left establish no difference.
+**Figure 3. Held-out and in-domain Dice, and their difference.** Left: Dice over all volumes with 95% patient-level bootstrap intervals, for each held-out vendor and fluid class (held-out n = 24, 24, 22 patients; in-domain n = 7 per fold). The per-fold rows are the pre-registered primary figures (`docs/07` §17). The pooled rows (held-out n = 70, in-domain n = 13) use the patient-as-unit rule decided after the per-fold results (§19.5): **post-hoc**. Right: held-out minus in-domain Dice, bootstrapped directly with each arm resampled independently, for all volumes (filled) and class-present volumes only (open); **post-hoc** (§5.4). Grey marks a class-present interval whose in-domain arm is a single patient: it ignores in-domain variance and is not a valid interval. Overlapping intervals on the left establish no difference.
 
 ## 6. Calibration
 
@@ -393,9 +393,9 @@ that differ by arm: overlap quality where the class is present, and false-positi
 where it is not. Class-present Dice exceeds the all-volume figure in 15 of 18 cells
 (`docs/08` §5g.6).
 
-![Dice of every volume per fold, arm and class, split into class-present and class-absent volumes.](figures/fig2_per_volume_dice.png)
+![Dice of every volume per fold, arm and class, split into class-present and class-absent volumes.](figures/fig4_per_volume_dice.png)
 
-**Figure 2. Dice of every volume, split by whether the class is present in the reference.** One point per patient (held-out arms 22–24, in-domain arms 7). Filled: class present. Open: class absent, where Dice is 1 if nothing is predicted and 0 if anything is (`metrics.py:104-117`). In 14 of 18 arm × class cells every class-absent volume scores 0, which is the false-positive pattern of §7.1. The present/absent split is the §19.1 decomposition: pre-registered for spectralis and topcon, **post-hoc for cirrus**.
+**Figure 4. Dice of every volume, split by whether the class is present in the reference.** One point per patient (held-out arms 22–24, in-domain arms 7). Filled: class present. Open: class absent, where Dice is 1 if nothing is predicted and 0 if anything is (`metrics.py:104-117`). In 14 of 18 arm × class cells every class-absent volume scores 0, which is the false-positive pattern of §7.1. The present/absent split is the §19.1 decomposition: pre-registered for spectralis and topcon, **post-hoc for cirrus**.
 
 ### 7.2 Metric fragility in small arms
 

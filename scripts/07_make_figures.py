@@ -150,7 +150,7 @@ def gather() -> dict:
 
 
 def forest(data: dict) -> str:
-    """Figure 1: arm Dice with intervals, and the difference intervals of §5.4."""
+    """Figure 3: arm Dice with intervals, and the difference intervals of §5.4."""
     labels = [(c, cls) for c in (*FOLDS, "pooled") for cls in CLASSES]
     y = np.arange(len(labels))[::-1].astype(float)
     y[len(FOLDS) * 3 :] -= 0.6  # a gap before the pooled rows
@@ -204,7 +204,7 @@ def forest(data: dict) -> str:
         ax.axhline((y[len(FOLDS) * 3 - 1] + y[len(FOLDS) * 3]) / 2, color=GREY, lw=0.6)
         ax.grid(axis="x", color="#dddddd", lw=0.6)
     fig.tight_layout()
-    fig.savefig(OUT / "fig1_forest.png", **PNG)
+    fig.savefig(OUT / "fig3_forest.png", **PNG)
     plt.close(fig)
     n = {
         f: (
@@ -214,7 +214,7 @@ def forest(data: dict) -> str:
         for f in (*FOLDS, "pooled")
     }
     return (
-        "**Figure 1. Held-out and in-domain Dice, and their difference.** Left: Dice over all "
+        "**Figure 3. Held-out and in-domain Dice, and their difference.** Left: Dice over all "
         "volumes with 95% patient-level bootstrap intervals, for each held-out vendor and fluid "
         f"class (held-out n = {n['cirrus'][0]}, {n['spectralis'][0]}, {n['topcon'][0]} patients; "
         f"in-domain n = {n['cirrus'][1]} per fold). The per-fold rows are the pre-registered "
@@ -234,7 +234,7 @@ def jitter(n: int, width: float = 0.32) -> np.ndarray:
 
 
 def per_volume(data: dict) -> str:
-    """Figure 2: every volume's Dice, by arm, class present vs absent (§19.1)."""
+    """Figure 4: every volume's Dice, by arm, class present vs absent (§19.1)."""
     fig, axes = plt.subplots(1, 3, figsize=(13.5, 4.4), sharey=True)
     counts = {}
     for ax, cls in zip(axes, CLASSES, strict=True):
@@ -268,7 +268,7 @@ def per_volume(data: dict) -> str:
     axes[0].scatter([], [], s=16, facecolors="white", edgecolors="black", label="class absent")
     axes[0].legend(loc="upper left", fontsize=7, frameon=False)
     fig.tight_layout()
-    fig.savefig(OUT / "fig2_per_volume_dice.png", **PNG)
+    fig.savefig(OUT / "fig4_per_volume_dice.png", **PNG)
     plt.close(fig)
     absent_zero = sum(
         1
@@ -277,7 +277,7 @@ def per_volume(data: dict) -> str:
         and all(r["dice"] == 0.0 for r in rows(fold, arm, cls) if not r["reference_present"])
     )
     return (
-        "**Figure 2. Dice of every volume, split by whether the class is present in the "
+        "**Figure 4. Dice of every volume, split by whether the class is present in the "
         "reference.** One point per patient (held-out arms 22–24, in-domain arms 7). Filled: "
         "class present. Open: class absent, where Dice is 1 if nothing is predicted and 0 if "
         f"anything is (`metrics.py:104-117`). In {absent_zero} of 18 arm × class cells every "
@@ -288,7 +288,7 @@ def per_volume(data: dict) -> str:
 
 
 def voxels(data: dict) -> str:
-    """Figure 3: predicted voxel count against reference presence, log scale; ROC omitted (D9)."""
+    """Figure 2: predicted voxel count against reference presence, log scale; ROC omitted (D9)."""
     fig, axes = plt.subplots(1, 3, figsize=(13.5, 4.4), sharey=True)
     floor = 0.5  # zero predicted voxels drawn here, below the axis's 1
     for ax, cls in zip(axes, CLASSES, strict=True):
@@ -324,10 +324,10 @@ def voxels(data: dict) -> str:
     axes[0].plot([], [], color=GREY, ls="--", label="presence threshold, 10 voxels")
     axes[0].legend(loc="lower left", fontsize=7, frameon=False)
     fig.tight_layout()
-    fig.savefig(OUT / "fig3_predicted_voxels.png", **PNG)
+    fig.savefig(OUT / "fig2_predicted_voxels.png", **PNG)
     plt.close(fig)
     return (
-        "**Figure 3. Predicted voxel count by reference presence, log scale.** One point per "
+        "**Figure 2. Predicted voxel count by reference presence, log scale.** One point per "
         "patient and class; a volume with no predicted voxels is drawn at 0.5. The dashed line "
         "is the pre-registered presence threshold of 10 voxels (§17.7a). Volumes without the "
         "class (open) mostly sit far above it, which is why specificity at that threshold is "
@@ -338,7 +338,7 @@ def voxels(data: dict) -> str:
 
 
 def training() -> str:
-    """Figure 4: training loss and validation Dice per fold, best epoch and early stop."""
+    """Figure 1: training loss and validation Dice per fold, best epoch and early stop."""
     fig, axes = plt.subplots(2, 3, figsize=(12, 5.6), sharex="col")
     stats = {}
     for k, fold in enumerate(FOLDS):
@@ -378,13 +378,13 @@ def training() -> str:
     axes[0, 0].plot([], [], color=HELD, ls="-.", label="session resumed")
     axes[0, 0].legend(fontsize=7, frameon=False)
     fig.tight_layout()
-    fig.savefig(OUT / "fig4_training_curves.png", **PNG)
+    fig.savefig(OUT / "fig1_training_curves.png", **PNG)
     plt.close(fig)
     s = "; ".join(
         f"{f}: {n} epochs, best {b}, stopped after {last}" for f, (n, b, last) in stats.items()
     )
     return (
-        "**Figure 4. Training loss and in-domain validation Dice per fold.** From each fold's "
+        "**Figure 1. Training loss and in-domain validation Dice per fold.** From each fold's "
         f"`epochs.jsonl` ({s}). Every fold ended by early stopping, after 25 epochs without "
         "improvement. The checkpoint evaluated is the best epoch, chosen on in-domain validation "
         "only (§17.1). The dash-dot line marks where the spectralis run was resumed after an "
@@ -397,7 +397,8 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     plt.rcParams.update({"font.size": 9, "svg.hashsalt": "ocuval"})
     data = gather()
-    captions = [forest(data), per_volume(data), voxels(data), training()]
+    # In the reading order of docs/10: §2, §4, §5.4, §7.1.
+    captions = [training(), voxels(data), forest(data), per_volume(data)]
     (OUT / "captions.md").write_text(
         "<!-- Generated by scripts/07_make_figures.py. Do not edit by hand. -->\n\n"
         + "\n\n".join(captions)
