@@ -220,7 +220,7 @@ publication (`df5e9db`). What remains open is listed below, without softening.
 ### Numbers, as of 2026-10-05
 
 Identifiers: URS-001..011, **SRS-001..091**, NFR-001..008, **HAZ-001..016, RC-001..032**,
-SOUP-001..022, TC-000..TC-128 (**114 registered**).
+SOUP-001..024, TC-000..TC-128 (**114 registered**).
 
 **114 test cases registered, 90 written, 87 executed, 3 written but never run, 24
 registered and unwritten** (`docs/09`, enforced by TC-104). Those states are kept separate deliberately. A written test
