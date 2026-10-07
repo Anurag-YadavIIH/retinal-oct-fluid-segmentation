@@ -248,7 +248,7 @@ def dice_intervals(data: dict) -> str:
         for yy, (held, ref) in zip(y, arms, strict=True):
             for e, off, col in ((held, 0.17, HELD), (ref, -0.17, REF)):
                 interval(ax, (e["value"], e["ci_low"], e["ci_high"]), yy + off, fmt="o", color=col)
-        ax.set_xlim(*lims)
+        ax.set_xlim(lims[0] - 0.02, lims[1])  # room for the caps of intervals that end at 0
         ax.set_xticks(np.arange(0, 0.81, 0.1))
         ax.set_xlabel("Dice over all scans, 95% interval (0 = no overlap, 1 = perfect)")
         place(

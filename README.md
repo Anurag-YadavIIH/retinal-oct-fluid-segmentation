@@ -16,6 +16,8 @@ A study of whether software that finds fluid in eye scans still works on a scann
 
 *Figure 2 of [`docs/10`](docs/10_analytical_validation_report.md). In every row the unseen brand's interval (orange) overlaps the familiar brands' interval (blue), so the pre-registered comparison established no difference, and the blue intervals are wide because each run's familiar-brand group has only 7 patients. The bottom three rows combine all three runs, an analysis I chose after seeing the results.*
 
+The difference between the two arms, with its own interval for each row, is shown in [Figure 4 of `docs/10` (section 5.4)](docs/10_analytical_validation_report.md#54-the-difference-bootstrapped-directly--post-hoc).
+
 ## In plain words
 
 An OCT scan uses light to take cross-section pictures of the back of the eye, a bit like an ultrasound but far finer. In some common eye diseases, fluid collects in or under the retina, and doctors watch how much there is to decide on treatment and to see whether it is working. I trained a model that outlines three kinds of this fluid in OCT scans. Hospitals use scanners from different companies whose images look different, so I asked: if the model learns from two brands, does it still work on a third it has never seen? The honest answer is that I could not detect a difference, but this test could only have detected a large one, so it does not show that the model works on the new brand. The aim was a trustworthy measurement rather than the highest score, and part of why the scores are modest is the pattern described in [finding 2](#what-i-found): the model marks fluid in scans that have none of that type, though even counting only scans that do contain it, the scores stay moderate.
