@@ -35,6 +35,10 @@ dev = [
     # computed in numpy in eval/metrics.py; scikit-learn is the independent cross-check
     # in a back-to-back test, exactly as MONAI is for the metrics under TC-120.
     "scikit-learn==1.5.1",
+    # Report figures only (scripts/07_make_figures.py, docs/figures/). Ships in no
+    # artefact and computes no reported number: every figure is drawn from the
+    # committed evaluation records, whose values are produced elsewhere.
+    "matplotlib==3.9.2",
     "pytest==8.3.2",
     "pytest-cov==5.0.0",
     "ruff==0.5.7",
