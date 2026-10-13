@@ -152,4 +152,4 @@ The data is not redistributed here, in any form. It is available from the organi
 
 ## Contact
 
-Anurag Yadav: [LinkedIn](https://www.linkedin.com/in/anuragyadav-fem-bioengineering) and [portfolio](https://ask-anurag.vercel.app).
+Anurag Yadav: [LinkedIn](https://www.linkedin.com/in/anurag-yadav-ai) and [portfolio](https://ask-anurag.vercel.app).
