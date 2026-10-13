@@ -1,8 +1,8 @@
 <!--
 Document: Data Management Plan
-Status: DRAFT v0.1
+Status: DRAFT v0.2 — audited against the agreement 2026-10-08 (§2.5)
 Owner: Anurag Yadav
-Last reviewed: 2026-09-16
+Last reviewed: 2026-10-13
 Change history: docs/13_change_control_log.md
 
 Ordering note: this document is drafted ahead of docs/01-03, out of the
@@ -157,15 +157,33 @@ publication — it was previously the only option that removed the question outr
 `docs/08` was never affected; it reports test execution rather than dataset-derived
 findings.
 
+### 2.2.2 Illustrative images permitted, 2026-10-08
+
+**Permission received.** On 8 October 2026 the organiser gave written permission, in these
+words: *"adding a very small amount of illustrative images is fine."*
+
+**The cap the author committed to.** In reply, the author confirmed that the project will
+use **six B-scans at most**. The cap is the author's own undertaking, given to the organiser
+in writing, and it binds this project: the organiser's wording is "a very small amount",
+and six is the number the author named against it.
+
+**Scope.** This permits a small number of illustrative single B-scans in the published
+documents. It is not permission to publish volumes, masks as files, or any other image
+derived from the data, and it changes nothing else in the agreement or in §2.2.1. Which
+B-scans are shown is decided by a rule committed before any is rendered (`docs/07` §21),
+by the numbers in the sealed records and never by viewing, so the selection cannot be
+steered towards flattering examples. Carried into DMP-C2 below.
+
 ### 2.3 Controls adopted as a consequence
 
 | ID | Control | Implementation |
 |---|---|---|
 | DMP-C1 | No redistribution of source data | `data/` is excluded in `.gitignore`; `check-added-large-files` pre-commit hook; no data in container images |
-| DMP-C2 | No redistribution of derived imagery at volume scale | Only illustrative single B-scans appear in figures, in the quantity conventional for a publication |
+| DMP-C2 | No redistribution of derived imagery at volume scale | **At most six** illustrative single B-scans, under the organiser's written permission of 2026-10-08 (§2.2.2), each chosen by the pre-registered rule of `docs/07` §21 and shown with no case identifier, filename, date or other metadata. No volume, mask file or other image derived from the data is published. Until 2026-10-08 no B-scan appeared anywhere (amended 2026-10-13; previously "in the quantity conventional for a publication", a quantity no one had fixed) |
 | DMP-C3 | No commercial use | Repository licensed MIT for **code only**; README states the dataset carries separate terms |
 | DMP-C4 | Scope limited to fluid segmentation and detection | No secondary task, no pretraining for unrelated models, no derivative dataset published |
 | DMP-C5 | Single registered user | Data accessed under one registration by a single named recipient; not shared with any third party (§7) |
+| DMP-C12 | **No image, mask or pixel content enters a coding-assistant session** | Added 2026-10-13 (§7.3). Scripts that read pixel data print only shapes, types, value ranges and label sets. Images rendered from the data, including the illustrative B-scans of §2.2.2, are reviewed by the author outside any session and are never opened, read or described in one |
 | DMP-C11 | **No reidentification, and no attempt at it** | No linkage to any external dataset, no demographic inference, no attempt to recover subject identity from image content or metadata. Technically, the salted-hash pseudonyms of SRS-013 are one-way and the salt is never committed, so this project's own outputs cannot be relinked to source identifiers by anyone reading the repository. Carried as RC-030 in `docs/05` |
 
 ### 2.4 Decision gate — closed 2026-09-23, not triggered
@@ -185,6 +203,27 @@ The gate is judged to have worked. Its function was to force the question to be 
 uncertainty was identified at the point the binding document was first read, and
 resolved the same week, before any model was trained on the data. §9 remains documented
 as a contingency should authorisation ever be withdrawn under §8.
+
+### 2.5 Compliance audit against the agreement — 2026-10-08
+
+Requested by the author before the report page was published. Read-only: nothing was
+changed while it ran. Each item was checked in the repository or on this workstation, not
+recalled. Two issues and two judgement calls were found, all in this plan; the author
+decided them on 2026-10-13 and the corrections are in this change.
+
+| Item | Outcome | Evidence, and what was done |
+|---|---|---|
+| Git history and tags | Compliant | 189 commits across all refs. Nothing under `data/` or `artifacts/` was ever committed beyond the two `.gitkeep` files. No volume, DICOM file, archive or PDF was ever committed; the only images are the plots in `docs/figures`. GitHub holds `main` and `v1.0` only; a local backup branch was never pushed |
+| Current repository and the report page | Compliant | The page's files are text only, with no subject identifier, UID root or identifying field |
+| `docs/` text | Compliant | `TRAINnnn` appears only as the archive's naming scheme (§4) and as synthetic test fixtures; no subject is linked to any value, and no document shows a B-scan |
+| Where data lives on this machine | **Issue, fixed** | Five locations were missing from §4.1. All locations are now in §4.2, on the two internal disks, none synchronised |
+| OneDrive and other synchronisation | Compliant | Documents is redirected to OneDrive, but the repository is in the separate local folder; neither OneDrive root holds a project or dataset file; no other client present |
+| RETOUCH images, masks or renderings in a Claude Code session | Compliant | None, across the full session record from 2026-09-16 (§7.3) |
+| Dataset-derived text in sessions | **Judgement call, recorded** | Identifiers, metrics, headers and value ranges did pass through sessions. Recorded in §7.3, with the rule DMP-C12 |
+| The signed agreement PDF | Compliant | Never in git history; kept in the author's Downloads folder only |
+| Licence | Compliant | MIT, code only; the README and the report page say it does not extend to the data |
+| §8 retention statement | **Issue, fixed** | It said split and evaluation records are committed and pseudonymised; both are local and keyed on RETOUCH identifiers. Corrected in §8, and §8.1 is now a path-by-path deletion list |
+| Per-scan reference presence in the report page's downloads | **Judgement call, decided** | Presence derives from the reference annotations (DMP-C4). The author decided to keep it in the page's charts and drop it from the downloadable files; applied in the commit that publishes the page |
 
 ---
 
@@ -468,6 +507,36 @@ All of `data/` and `artifacts/` are excluded from version control (DMP-C1), whic
 re-confirmed on 2026-09-23: the only tracked paths under `data/` and `artifacts/` are
 their two `.gitkeep` files.
 
+### 4.2 Every location holding RETOUCH-derived data — inventory, 2026-10-08
+
+**Added 2026-10-13 after the audit of 2026-10-08 (§2.5)**, which found that §4.1 named only
+three of these locations. A deletion that followed §4.1 would have left the original
+archives, three frame caches and the run records in place. Sizes were measured in the audit;
+"not measured" means exactly that.
+
+All of it is on this workstation's two internal disks: `C:` (NVMe) and `D:` (SATA). None is
+under a synchronised folder: the Windows Documents folder is redirected to OneDrive, but the
+repository sits in the separate local folder `C:\Users\rites_ljry4pu\Documents`, which is
+not a link to it, and the audit found no project or dataset file in either OneDrive root.
+`<repo>` is `C:\Users\rites_ljry4pu\Documents\Projects\ocuval`.
+
+| Location | What it holds | Size |
+|---|---|---|
+| `D:\RETOUCH_DATA\Retouch_zipped_data` | The archives as downloaded | 3.7 GB |
+| `D:\RETOUCH_DATA\retouch_traning_data_extracted` (`data\raw\retouch`) | The extracted training partition: images and reference masks | 5.9 GB |
+| `D:\RETOUCH_DATA\ocuval_dicom` (`data\dicom`) | Converted DICOM images | 6.1 GB |
+| `D:\RETOUCH_DATA\ocuval_dicom_deident` (`data\dicom_deident`) | De-identified DICOM images | 6.1 GB |
+| `D:\RETOUCH_DATA\ocuval_cache` | An earlier training frame cache: image and label arrays | 4.4 GB |
+| `D:\ocuval_cache` | The Topcon fold's frame cache, image and label arrays, placed there via `OCUVAL_CACHE_DIR` on 2026-10-04 | 5.2 GB |
+| `<repo>\artifacts\cache` | The Cirrus and Spectralis folds' frame caches: image and label arrays, each frame carrying its subject identifier | 12 GB |
+| `<repo>\artifacts\runs` | Trained checkpoints, and evaluation records whose per-scan rows are keyed on RETOUCH subject identifiers | not measured |
+| `<repo>\artifacts` (everything else) | Run logs, the evaluation chain's logs, benchmarks, telemetry, the sealed-access log | not measured |
+| `<repo>\data\splits` | Split records, keyed on RETOUCH subject identifiers | 28 KB (measured 2026-09-23, §4.1) |
+| `C:\Users\rites_ljry4pu\.claude\projects\c--Users-rites-ljry4pu-Documents-Projects-ocuval`, and the session's temporary folder under `%LOCALAPPDATA%\Temp\claude` | Claude Code session records and scratch files: dataset-derived text only (§7.3), no image data | not measured |
+
+The signed agreement itself is kept outside the repository, in the author's Downloads
+folder; it is not data and is not in this inventory.
+
 ---
 
 ## 5. De-identification
@@ -649,6 +718,35 @@ Consequences, binding on the whole project:
 
 Carried into `docs/11` §7 and §10. Resolves `docs/02` §6 item 3.
 
+### 7.3 What has passed through coding-assistant sessions — recorded 2026-10-13
+
+This project is built with Claude Code (Anthropic) as a coding assistant. What a session
+reads or prints is sent to Anthropic's service to run the session, and is kept on this
+workstation in the session record. This plan said nothing about that until the audit of
+2026-10-08 (§2.5) asked. Recorded here as a fact, not characterised.
+
+**What has entered sessions, all as text:**
+
+- RETOUCH subject identifiers (`TRAINnnn`), from split lists and from evaluation record rows;
+- per-scan metrics: Dice, HD95, predicted voxel counts and reference presence;
+- file headers: MetaImage header text, and DICOM headers read without pixel data;
+- array shapes, data types, intensity value ranges, and the set of label values present in a
+  volume.
+
+**What has not:** no image, no reference mask, no pixel array and no rendering of the data.
+Evidence, from the audit of the full session record from the project's first day,
+2026-09-16: every one of the 33 images that entered a session is a plot from `docs/figures`
+or a screenshot of the report page; no session read a file under a data path; the 18
+commands that loaded volumes or cached frames printed only summaries, with no run of 40 or
+more consecutive numbers in any output; no subagent was used.
+
+**The rule from here (DMP-C12): no image, mask or pixel content enters a session.**
+
+**What cannot be verified from here.** The copy Anthropic's service received is outside this
+workstation, and its retention is governed by Anthropic's terms rather than by anything this
+project can inspect or delete. The local session record is in the §4.2 inventory and the
+§8.1 deletion list.
+
 ---
 
 ## 8. Retention and disposal
@@ -664,36 +762,68 @@ Two consequences follow, and both are design constraints rather than paperwork:
   mid-training. That is why every derived stage is reproducible from the one before it
   (§4) and why nothing downstream embeds source image data.
 - **No result may depend on data the project might have to destroy before the result is
-  reproduced.** Metrics, resolved configurations and split records are committed;
-  because subject identifiers are pseudonymised (§5) and no image data is committed, they
-  survive deletion of the source without carrying any of it.
+  reproduced.** What is committed is the document set, with its aggregate results, the
+  result figures in `docs/figures`, and the report page's data (`site/data`) once
+  published: per-scan scores with no identifier and no image data (DMP-C11). These survive
+  deletion of the source without carrying any of it. **The evaluation records and the split
+  records are not committed.** They stay on this workstation (`<repo>\artifacts\runs`,
+  `<repo>\data\splits`, §4.2), and they are keyed on the RETOUCH subject identifiers, not on
+  the pseudonyms of §5.
+
+**Corrected 2026-10-13.** This paragraph previously read: "Metrics, resolved configurations
+and split records are committed; because subject identifiers are pseudonymised (§5) and no
+image data is committed, they survive deletion of the source without carrying any of it."
+Two parts of that were false, as the audit of 2026-10-08 found (§2.5): neither the
+evaluation records nor the split records are committed (only the two `.gitkeep` files are
+tracked under `data/` and `artifacts/`), and both carry the RETOUCH identifiers. The
+pseudonyms of §5 are applied to the de-identified DICOM instances, not to these records.
 
 ### 8.1 Deletion on request
 
 On notice from the organisers withdrawing authorisation, and without waiting for any
-milestone to complete:
+milestone to complete, delete every copy, **path by path**, from the §4.2 inventory.
+Deleting a junction in `data\` removes only the link and leaves the data in place while
+appearing to remove it, so the targets are named here, not the links. `<repo>` is
+`C:\Users\rites_ljry4pu\Documents\Projects\ocuval`.
 
-1. Delete `data/raw/` — in this deployment that means the archive at the junction target
-   in §4.1, not merely the link, which would leave the data in place while appearing to
-   remove it.
-2. Delete `data/dicom/` and `data/dicom_deident/`, which contain image data derived from
-   the source and are equally covered.
-3. Delete the private Kaggle Dataset and any training artefacts containing image data.
-4. Delete trained checkpoints. They are derived from the data and are not published in
-   any case (excluded by `.gitignore`).
-5. Record the deletion, its date and the request that prompted it in
-   `docs/13_change_control_log.md`.
+1. `D:\RETOUCH_DATA\Retouch_zipped_data`: the archives as downloaded.
+2. `D:\RETOUCH_DATA\retouch_traning_data_extracted`: the extracted partition, target of
+   `data\raw\retouch`.
+3. `D:\RETOUCH_DATA\ocuval_dicom` and `D:\RETOUCH_DATA\ocuval_dicom_deident`: the DICOM
+   stages, targets of `data\dicom` and `data\dicom_deident`.
+4. `D:\RETOUCH_DATA\ocuval_cache`: an earlier frame cache.
+5. `D:\ocuval_cache`: the Topcon fold's frame cache, outside `D:\RETOUCH_DATA`.
+6. `<repo>\artifacts\cache`: the Cirrus and Spectralis folds' frame caches.
+7. `<repo>\artifacts\runs`: trained checkpoints and evaluation records.
+8. Everything else under `<repo>\artifacts` except `.gitkeep`: logs, the chain's logs,
+   benchmarks, telemetry and the sealed-access log.
+9. `<repo>\data\splits`, then the three junctions in `<repo>\data`.
+10. The Claude Code session records and scratch files for this project (§4.2, §7.3). They
+    hold dataset-derived text, not image data. The copy Anthropic's service received cannot
+    be deleted from this workstation (§7.3).
+11. **The illustrative B-scans, if any have been published (§2.2.2):** their files in
+    `docs/figures` and every place they are shown, in `docs/10`, the README and the report
+    page. A committed image also stays in git history. Removing it from history means
+    rewriting history, which this project otherwise refuses (TC-108); on a request, the
+    agreement governs, and the rewrite and every cited SHA it breaks are recorded.
+12. Confirm: no file named `oct.mhd` or `reference.mhd` and no path in this list remains,
+    on `C:` or `D:`.
+13. Record the deletion, its date and the request that prompted it in
+    `docs/13_change_control_log.md`.
 
-Retained after such a deletion: metrics, resolved configurations, split records and the
-document set. None contains image data or a source identifier. If the organisers require
-those too, they go as well — the agreement governs, not this list.
+The private Kaggle Dataset this list once named has no step: the data was never uploaded
+anywhere (§7.1), so no such copy exists.
+
+Retained after such a deletion: the committed document set, the result figures and the
+report page's data. None contains image data or a source identifier, apart from the
+illustrative B-scans, which step 11 removes. If the organisers require the rest too, it goes
+as well: the agreement governs, not this list.
 
 ### 8.2 Ordinary disposal
 
 Absent a withdrawal, the data is retained for the active life of the project. On
-completion or abandonment the same five steps run. Trained checkpoints derived from the
-data are not published; only metrics, resolved configs and split records — none of which
-contain image data — are committed.
+completion or abandonment the same steps run, except that step 11 applies only if the
+organisers ask for it. Trained checkpoints derived from the data are not published.
 
 Disposal is recorded in `docs/13_change_control_log.md`.
 
