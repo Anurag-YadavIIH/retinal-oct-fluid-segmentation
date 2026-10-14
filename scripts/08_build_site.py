@@ -780,13 +780,16 @@ def inline_markdown(s: str) -> str:
 
 
 def illustrations_block() -> str:
-    """The illustrative B-scans with their generated captions, in `ILLUSTRATIONS` order."""
+    """The illustrative B-scans with their generated captions, in `ILLUSTRATIONS` order.
+
+    Each image links to its own file, so a click opens it at full resolution.
+    """
     captions = dict(re.findall(r"^\*\*([\w.]+)\*\*: (.+)$", text(ILLUSTRATION_CAPTIONS), re.M))
     assert set(captions) == set(ILLUSTRATIONS), "illustrations.md and ILLUSTRATIONS disagree"
     figures = [
-        f"<figure class='bscan'><img src='figures/{name}' alt='One B-scan: the expert outline "
-        f"on the left and the model outline on the right' loading='lazy'>"
-        f"<figcaption>{inline_markdown(captions[name])}</figcaption></figure>"
+        f"<figure class='bscan'><a href='figures/{name}'><img src='figures/{name}' "
+        f"alt='One B-scan: the expert outline on the left and the model outline on the right' "
+        f"loading='lazy'></a><figcaption>{inline_markdown(captions[name])}</figcaption></figure>"
         for name in ILLUSTRATIONS
     ]
     return "<div class='bscans'>" + "".join(figures) + "</div>"
