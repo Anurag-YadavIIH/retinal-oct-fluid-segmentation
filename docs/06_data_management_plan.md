@@ -565,9 +565,9 @@ not a link to it, and the audit found no project or dataset file in either OneDr
 | `D:\RETOUCH_DATA\retouch_traning_data_extracted` (`data\raw\retouch`) | The extracted training partition: images and reference masks | 5.9 GB |
 | `D:\RETOUCH_DATA\ocuval_dicom` (`data\dicom`) | Converted DICOM images | 6.1 GB |
 | `D:\RETOUCH_DATA\ocuval_dicom_deident` (`data\dicom_deident`) | De-identified DICOM images | 6.1 GB |
-| `D:\RETOUCH_DATA\ocuval_cache` | An earlier training frame cache: image and label arrays | 4.4 GB |
-| `D:\ocuval_cache` | The Topcon fold's frame cache, image and label arrays, placed there via `OCUVAL_CACHE_DIR` on 2026-10-04 | 5.2 GB |
-| `<repo>\artifacts\cache` | The Cirrus and Spectralis folds' frame caches: image and label arrays, each frame carrying its subject identifier | 12 GB |
+| ~~`D:\RETOUCH_DATA\ocuval_cache`~~ | An earlier training frame cache (Cirrus fold): image and label arrays. **Deleted 2026-10-14** | 4.4 GB, now none |
+| ~~`D:\ocuval_cache`~~ | The Topcon fold's frame cache, image and label arrays, placed there via `OCUVAL_CACHE_DIR` on 2026-10-04. **Deleted 2026-10-14** | 5.2 GB, now none |
+| ~~`<repo>\artifacts\cache`~~ | The Cirrus and Spectralis folds' frame caches: image and label arrays, each frame carrying its subject identifier. **Deleted 2026-10-14** | 12 GB, now none |
 | `<repo>\artifacts\runs` | Trained checkpoints, and evaluation records whose per-scan rows are keyed on RETOUCH subject identifiers | not measured |
 | `<repo>\artifacts` (everything else) | Run logs, the evaluation chain's logs, benchmarks, telemetry, the sealed-access log | not measured |
 | `<repo>\data\splits` | Split records, keyed on RETOUCH subject identifiers | 28 KB (measured 2026-09-23, §4.1) |
@@ -575,6 +575,20 @@ not a link to it, and the audit found no project or dataset file in either OneDr
 
 The signed agreement itself is kept outside the repository, in the author's Downloads
 folder; it is not data and is not in this inventory.
+
+**Frame caches deleted, 2026-10-14, by the author's decision.** All three training frame
+caches were removed: `<repo>\artifacts\cache` (Cirrus and Spectralis folds, 12 GB on `C:`),
+`D:\RETOUCH_DATA\ocuval_cache` (an earlier Cirrus cache, 4.4 GB) and `D:\ocuval_cache`
+(Topcon fold, 5.2 GB). Each held only per-fold `train`, `val` and `test` frame folders,
+checked before deletion. **Why they could go:** training is finished, and the code was
+checked before deleting. Only training reads a frame cache: `datamodule.py` builds and
+serves it through `resolve_cache_dir` (`runs.py:262`), `04_train.py` fills it, and
+`benchmark_device.py` and `evaluate_stage1.py` read it. Evaluation (`05_evaluate.py`) and the
+illustration script (`09_illustrative_bscans.py`) read the original volumes with
+`read_volume` and import neither; no test reads a real cache. **Why it is good, not only
+safe:** three fewer copies of RETOUCH-derived image data. A future training run rebuilds a
+cache wherever `OCUVAL_CACHE_DIR` or `data.cache_dir` points, and that location must then be
+added back to this inventory.
 
 ---
 
@@ -830,9 +844,12 @@ appearing to remove it, so the targets are named here, not the links. `<repo>` i
    `data\raw\retouch`.
 3. `D:\RETOUCH_DATA\ocuval_dicom` and `D:\RETOUCH_DATA\ocuval_dicom_deident`: the DICOM
    stages, targets of `data\dicom` and `data\dicom_deident`.
-4. `D:\RETOUCH_DATA\ocuval_cache`: an earlier frame cache.
-5. `D:\ocuval_cache`: the Topcon fold's frame cache, outside `D:\RETOUCH_DATA`.
-6. `<repo>\artifacts\cache`: the Cirrus and Spectralis folds' frame caches.
+4. `D:\RETOUCH_DATA\ocuval_cache`: an earlier frame cache. **Deleted 2026-10-14** (§4.2).
+5. `D:\ocuval_cache`: the Topcon fold's frame cache, outside `D:\RETOUCH_DATA`. **Deleted
+   2026-10-14** (§4.2).
+6. `<repo>\artifacts\cache`: the Cirrus and Spectralis folds' frame caches. **Deleted
+   2026-10-14** (§4.2). Steps 4 to 6 stay in this list because a future training run
+   recreates a cache: delete wherever `OCUVAL_CACHE_DIR` or `data.cache_dir` then points.
 7. `<repo>\artifacts\runs`: trained checkpoints and evaluation records.
 8. Everything else under `<repo>\artifacts` except `.gitkeep`: logs, the chain's logs,
    benchmarks, telemetry and the sealed-access log.
