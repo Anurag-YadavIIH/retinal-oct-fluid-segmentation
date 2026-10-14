@@ -306,6 +306,7 @@ fold would be a new experiment with its own pre-registration, never a replacemen
 **Possible next phase: a paper.** Named by the author on 2026-10-15 as a possible next phase.
 No plan for it is recorded in the repository and nothing has been started; its scope is the
 author's to set.
+The author's literature-review document, outside the repository, holds the anatomical-plausibility gate hypothesis (direction 2).
 
 **Seeded evaluation costs time:** 2.4× the unseeded duration on `val` (measured). The six sealed
 buckets took 4 h 54 min, plus 37 min for step 0 (measured, `docs/08` §5g.1).
