@@ -1594,3 +1594,28 @@ no image was opened in a Claude Code session, DMP-C12).
 `bscan_fp_srf.png`, `bscan_fp_ped.png`. None was declined, so §21.6's rule that a declined
 image is left out, not replaced, did not need to be applied. The selection record, which holds
 the identifiers, stays in `artifacts/illustrations/` and is not committed.
+
+### 21.8 Caption additions by the author — recorded 2026-10-14
+
+After reviewing the images, the author confirmed the approval of all six (§21.7) and added
+one sentence to each of two generated captions, describing what the images show. Every other
+caption stays exactly as generated.
+
+- **Worst** (`bscan_worst.png`, `docs/10` Figure 6): *"The model marked no fluid on this
+  B-scan, which was chosen as the slice with the most expert-marked fluid, so it shows a
+  complete miss on that slice."*
+- **Best** (`bscan_best.png`, `docs/10` Figure 8): *"The ranking uses only the fluid types the
+  expert marked; the model also predicted PED, which the expert did not mark, so even the best
+  case shows the false-positive pattern."*
+
+**What the records confirm, and what only the image can.** Both sentences describe the
+images, which only the author has seen. Their scan-level counterparts were checked against the
+sealed records' numbers, without opening any image. **Best:** the expert marked only IRF, so
+the ranking used IRF alone, and the model predicted PED in this scan though the expert marked
+none (it also predicted SRF, which the expert did not mark either). **Worst:** the expert
+marked only IRF, and the scan's IRF Dice is 0, so none of the model's IRF overlaps the expert's
+anywhere in it. The model did mark a little IRF elsewhere in the scan; the caption's statement
+is about the B-scan shown, and that is the author's observation.
+
+The caption file `docs/figures/illustrations.md` records in its header which two sentences are
+the author's. It is therefore no longer the script's output unchanged.
