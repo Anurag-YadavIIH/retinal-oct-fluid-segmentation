@@ -345,8 +345,14 @@ Three observations that bear on requirements:
 
 **Measured from all 70 reference volumes on 2026-09-23. The previous figures were
 literature-derived and every fluid-class value was wrong**, several by large factors.
-Both the pooled voxel count and the mean of per-volume percentages were computed; they
-agree, so the discrepancy is not a difference of statistic.
+Both the pooled voxel count and the mean of per-volume percentages were computed. They agree
+exactly for Cirrus and Spectralis, whose volumes each share one geometry. For Topcon, whose
+volumes have three geometries, they differ: IRF 0.2043% pooled against 0.1955% as a
+per-volume mean, SRF 0.0963% against 0.1071%, PED 0.2983% against 0.3360%. The table below
+gives the pooled figures. Neither statistic comes near the superseded figures, so the
+discrepancy is not a difference of statistic. **Corrected 2026-10-14:** this sentence
+previously said the two "agree" without qualification, which was exact only for Cirrus and
+Spectralis (`docs/13`, 2026-10-14).
 
 | Vendor | Background | IRF | SRF | PED |
 |---|---|---|---|---|
