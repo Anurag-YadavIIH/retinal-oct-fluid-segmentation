@@ -220,6 +220,17 @@ def test_TC_130_rendering_the_committed_data_reproduces_the_committed_page():
     )
 
 
+def test_TC_130_the_published_documentation_counts_match_docs_09():
+    """The page states docs/09's requirement and test-case counts; they must be current.
+
+    Runs in CI with no records, because these counts come from docs/09, not from a record.
+    Before this test, only TC-129 (records needed, so local only) could see the drift.
+    """
+    facts = json.loads((SITE / "data" / "facts.json").read_text(encoding="utf-8"))
+    stale = "the page's documentation counts differ from docs/09; run scripts/08_build_site.py"
+    assert facts["docs"] == BUILD.docs_counts(), stale
+
+
 def test_TC_130_the_template_types_no_number_by_hand():
     found = typed_numbers(BUILD.TEMPLATE.read_text(encoding="utf-8"))
     assert not found, f"numbers typed into the template: {found}"

@@ -178,6 +178,29 @@ def epochs(run_dir: Path) -> tuple[list[dict], list[dict]]:
     return events, [e for e in events if e.get("event") == "epoch"]
 
 
+def docs_counts() -> dict:
+    """The engineering and documentation counts the page states, as `docs/09` states them.
+
+    Needs no records, so TC-130 compares the published counts with `docs/09` in CI. They go
+    stale whenever a requirement or test case is added, which on 2026-10-14 left the live
+    page two commits behind until TC-129, run locally, caught it (`docs/13`).
+    """
+    matrix = "docs/09_traceability_matrix.md"
+    counts = {
+        "srs": int(claim(matrix, r"\*\*(\d+) of \d+\*\*\s+SRS")[0]),
+        "registered": int(claim(matrix, r"registered\*\* in `docs/07` §6: \*\*(\d+)\*\*")[0]),
+        "written": int(claim(matrix, r"\*\*written\*\*: \*\*(\d+)\*\*")[0]),
+        "executed": int(claim(matrix, r"\*\*(\d+) are executed\*\*")[0]),
+        "hazards": int(claim(matrix, r"Hazards with at least one risk control: \*\*(\d+) of")[0]),
+        "controls": int(
+            claim(matrix, r"Risk controls with a verifying test \*\*allocated\*\*: \*\*(\d+) of")[0]
+        ),
+        "safety_class": claim(matrix, r"software safety class ([ABC])\*\*")[0],
+    }
+    counts["never_run"] = counts["written"] - counts["executed"]
+    return counts
+
+
 # --- stage 1: extract ----------------------------------------------------------------------
 
 
@@ -518,20 +541,7 @@ def extract() -> dict[str, bytes]:
         "eval_differ": int(claim(readme, r"differed in (\d+) figures")[0]),
     }
 
-    # Engineering and documentation counts, as docs/09 states them (TC-104 keeps them true).
-    matrix = "docs/09_traceability_matrix.md"
-    facts["docs"] = {
-        "srs": int(claim(matrix, r"\*\*(\d+) of \d+\*\*\s+SRS")[0]),
-        "registered": int(claim(matrix, r"registered\*\* in `docs/07` §6: \*\*(\d+)\*\*")[0]),
-        "written": int(claim(matrix, r"\*\*written\*\*: \*\*(\d+)\*\*")[0]),
-        "executed": int(claim(matrix, r"\*\*(\d+) are executed\*\*")[0]),
-        "hazards": int(claim(matrix, r"Hazards with at least one risk control: \*\*(\d+) of")[0]),
-        "controls": int(
-            claim(matrix, r"Risk controls with a verifying test \*\*allocated\*\*: \*\*(\d+) of")[0]
-        ),
-        "safety_class": claim(matrix, r"software safety class ([ABC])\*\*")[0],
-    }
-    facts["docs"]["never_run"] = facts["docs"]["written"] - facts["docs"]["executed"]
+    facts["docs"] = docs_counts()
     out["site/data/facts.json"] = dumps(facts)
 
     # CSV downloads: one per table.
