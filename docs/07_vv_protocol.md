@@ -1571,3 +1571,26 @@ not replaced**: replacing it with another scan would make the selection depend o
 which is what this section exists to prevent. A defect found in the script is fixed and
 recorded in `docs/13`; the selection it then produces is the one the rule gives, whatever it
 shows.
+
+### 21.7 The run and the author's decisions — recorded 2026-10-14
+
+**The run.** Launched by the author from his own terminal on 2026-10-14 at 22:05 local time;
+the images were written at 22:23. The rule gave six picks: worst, median, best, and one
+false-positive case each for IRF, SRF and PED, two from the Spectralis held-out run and four
+from the Topcon one. Two sealed buckets were opened, each with an `Unlock` naming the reason
+and the approver: `test` of `spectralis_holdout` and `test` of `topcon_holdout`. Each was that
+bucket's **second access**, logged in `artifacts/sealed_access.jsonl`. Neither was an
+evaluation: nothing measured in this run is reported, and each bucket's **evaluation** count
+is unchanged at one.
+
+**The gate passed for all six.** Every regenerated prediction reproduced its scan's sealed
+Dice and predicted voxel count for all three fluid types exactly, compared with `==`, so each
+image shows the prediction that was evaluated. The PNGs carry no metadata chunks, and the
+captions contain no identifier, brand or date (checked by reading the files' bytes and text;
+no image was opened in a Claude Code session, DMP-C12).
+
+**The author's review, on his own screen, outside any session:** all six **approved**:
+`bscan_worst.png`, `bscan_median.png`, `bscan_best.png`, `bscan_fp_irf.png`,
+`bscan_fp_srf.png`, `bscan_fp_ped.png`. None was declined, so §21.6's rule that a declined
+image is left out, not replaced, did not need to be applied. The selection record, which holds
+the identifiers, stays in `artifacts/illustrations/` and is not committed.
