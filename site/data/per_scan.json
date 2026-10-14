@@ -1,0 +1,2470 @@
+{
+ "fields": [
+  "run",
+  "arm",
+  "vendor",
+  "fluid",
+  "dice",
+  "hd95",
+  "predicted_voxels"
+ ],
+ "rows": [
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 245
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 704
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 3189
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 15498
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 42451
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 49592
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.06898454746136866,
+   "hd95": 12.421833858230405,
+   "predicted_voxels": 2847
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.20110037021801727,
+   "hd95": 0.3997635356186322,
+   "predicted_voxels": 21770
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.2324467763265941,
+   "hd95": 4.879673910329876,
+   "predicted_voxels": 56682
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.3550043959094905,
+   "hd95": 1.9860051479754528,
+   "predicted_voxels": 96005
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.35961346445004755,
+   "hd95": 0.25320388221549844,
+   "predicted_voxels": 366307
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.3731074187967701,
+   "hd95": 0.49060277643833206,
+   "predicted_voxels": 96716
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.3844054065953419,
+   "hd95": 4.0751538701728585,
+   "predicted_voxels": 21411
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.4535181276500364,
+   "hd95": 0.13290677035229725,
+   "predicted_voxels": 883185
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.4979705049666315,
+   "hd95": 0.6037095025999374,
+   "predicted_voxels": 103536
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.5120818474344753,
+   "hd95": 0.11139678841420879,
+   "predicted_voxels": 207400
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.5256773961783708,
+   "hd95": 0.21179857875113328,
+   "predicted_voxels": 168741
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.5332372927729478,
+   "hd95": 0.2280537988392213,
+   "predicted_voxels": 70302
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.5453244988874669,
+   "hd95": 0.153445139760111,
+   "predicted_voxels": 873526
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.5685132113501087,
+   "hd95": 0.6736333614838774,
+   "predicted_voxels": 56270
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.5847423107970998,
+   "hd95": 0.1330727214393019,
+   "predicted_voxels": 477451
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.6844412305017769,
+   "hd95": 0.0666825054377091,
+   "predicted_voxels": 557437
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.6947725286002052,
+   "hd95": 0.060757499125622345,
+   "predicted_voxels": 604916
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.7190040127585142,
+   "hd95": 0.070452,
+   "predicted_voxels": 296806
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 27
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 232
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 761
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 967
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 1016
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 1127
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 1275
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 2509
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 2803
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 4159
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 9201
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 19615
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.1549819574342735,
+   "hd95": 0.30902484236708216,
+   "predicted_voxels": 46805
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.17546487275496606,
+   "hd95": 0.2837620133351186,
+   "predicted_voxels": 8541
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.3305503231443642,
+   "hd95": 0.3996155402496255,
+   "predicted_voxels": 570818
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.3534280345414309,
+   "hd95": 0.3057986090370589,
+   "predicted_voxels": 601377
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.39142121865500357,
+   "hd95": 0.30522319223807354,
+   "predicted_voxels": 328859
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.563478588945482,
+   "hd95": 0.09466984931328454,
+   "predicted_voxels": 3460
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.5703902584546958,
+   "hd95": 2.937977303203204,
+   "predicted_voxels": 15954
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.6038920851766109,
+   "hd95": 4.868771912661755,
+   "predicted_voxels": 62620
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.6566833342813362,
+   "hd95": 0.22804541902875403,
+   "predicted_voxels": 463362
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.6925196188492806,
+   "hd95": 0.2862851325601803,
+   "predicted_voxels": 147915
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.7082736977559515,
+   "hd95": 4.508243571858474,
+   "predicted_voxels": 32574
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.7452328428747867,
+   "hd95": 0.13094001401023295,
+   "predicted_voxels": 363050
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 454
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 610
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 695
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 1482
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 1700
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 2606
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 2746
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 5584
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 8807
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 14727
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 15893
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 34292
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.031235191912809983,
+   "hd95": 2.0393974477222434,
+   "predicted_voxels": 20712
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.07915948816320416,
+   "hd95": 0.6369577652003311,
+   "predicted_voxels": 33619
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.12007054824082314,
+   "hd95": 2.223573898822344,
+   "predicted_voxels": 124848
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.14456326020651894,
+   "hd95": 8.11079132627209,
+   "predicted_voxels": 8576
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.2407599175433333,
+   "hd95": 0.30543624985454565,
+   "predicted_voxels": 174031
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.31465649906975673,
+   "hd95": 2.739827083948623,
+   "predicted_voxels": 186861
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.5100617352911176,
+   "hd95": 0.14605243981974564,
+   "predicted_voxels": 105522
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.5823538516164862,
+   "hd95": 1.4148469635674772,
+   "predicted_voxels": 41563
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.6102752739667859,
+   "hd95": 0.5502769846680367,
+   "predicted_voxels": 511140
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.6291585700014541,
+   "hd95": 0.2423532503867031,
+   "predicted_voxels": 374612
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.6421555267917468,
+   "hd95": 0.49173131835688483,
+   "predicted_voxels": 1638123
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.6916754616609423,
+   "hd95": 0.11826672005682749,
+   "predicted_voxels": 492110
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.4106822900372572,
+   "hd95": 2.3593913477674704,
+   "predicted_voxels": 34572
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.6302906483694395,
+   "hd95": 0.09189852664760192,
+   "predicted_voxels": 25445
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 1793
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.6030917190311827,
+   "hd95": 0.0534610623730114,
+   "predicted_voxels": 24675
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.627593847202693,
+   "hd95": 3.1903291155615903,
+   "predicted_voxels": 16912
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.7139764361133236,
+   "hd95": 0.04940743263922949,
+   "predicted_voxels": 273862
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.907249472559965,
+   "hd95": 0.01172,
+   "predicted_voxels": 93681
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 2323
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.01026694045174538,
+   "hd95": 17.14204785924039,
+   "predicted_voxels": 6279
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 4
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 36
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 1239
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.032342657342657344,
+   "hd95": 5.630983490279566,
+   "predicted_voxels": 4288
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.850909090909091,
+   "hd95": 0.0355424478616766,
+   "predicted_voxels": 42982
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 385
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.2696394223913657,
+   "hd95": 0.22152000000000002,
+   "predicted_voxels": 103527
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 125
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 863
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 22210
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.6494665406459413,
+   "hd95": 0.04212402639824451,
+   "predicted_voxels": 58902
+  },
+  {
+   "run": "cirrus",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 1.0,
+   "hd95": 0.0,
+   "predicted_voxels": 0
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": 3.09605705815324,
+   "predicted_voxels": 537
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": 10.633530526680103,
+   "predicted_voxels": 53
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 20
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 23
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 139
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.02364864864864865,
+   "hd95": 13.914113196018628,
+   "predicted_voxels": 208
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.07399539139143033,
+   "hd95": 0.46299299581924236,
+   "predicted_voxels": 39460
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.10438305709023941,
+   "hd95": 2.1283651607214877,
+   "predicted_voxels": 9494
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.12056298132247499,
+   "hd95": 0.364768,
+   "predicted_voxels": 13807
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.12428818659026117,
+   "hd95": 0.23794444934900247,
+   "predicted_voxels": 21283
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.13309272553711768,
+   "hd95": 2.930254143015154,
+   "predicted_voxels": 13542
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.16623336970333752,
+   "hd95": 1.1588955775283114,
+   "predicted_voxels": 37701
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.19166602746030528,
+   "hd95": 1.1764424959452213,
+   "predicted_voxels": 16939
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.22405891339261233,
+   "hd95": 0.41790933554540266,
+   "predicted_voxels": 47262
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.28299986173931935,
+   "hd95": 3.2429837334115708,
+   "predicted_voxels": 11787
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.29164882226980726,
+   "hd95": 0.6155442417997934,
+   "predicted_voxels": 6251
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.2944949806110245,
+   "hd95": 0.270583106468317,
+   "predicted_voxels": 17822
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.2979425958851918,
+   "hd95": 0.5950958003671031,
+   "predicted_voxels": 11494
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.32520846696600386,
+   "hd95": 0.7424360891686232,
+   "predicted_voxels": 10176
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.4006061668195829,
+   "hd95": 0.9248443956861068,
+   "predicted_voxels": 30178
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.42527218487971985,
+   "hd95": 0.20594570040182922,
+   "predicted_voxels": 37616
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.4967846245486926,
+   "hd95": 0.29200067295984095,
+   "predicted_voxels": 31560
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.5372874966340544,
+   "hd95": 0.9917362457134835,
+   "predicted_voxels": 96983
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 1.0,
+   "hd95": 0.0,
+   "predicted_voxels": 0
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 1
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 4
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 352
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.0060882800608828,
+   "hd95": 7.133117842460047,
+   "predicted_voxels": 118
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.023471996281663954,
+   "hd95": 3.284228641640682,
+   "predicted_voxels": 3322
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.033610001024695156,
+   "hd95": 1.880529687882358,
+   "predicted_voxels": 3042
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.08845179458742429,
+   "hd95": 0.46827575776327357,
+   "predicted_voxels": 23970
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.2649838497427922,
+   "hd95": 0.9811109720204025,
+   "predicted_voxels": 9291
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.30613073487616727,
+   "hd95": 19.013682045610498,
+   "predicted_voxels": 5021
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.3524625239471484,
+   "hd95": 0.3315320963285455,
+   "predicted_voxels": 61972
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.39798478104408463,
+   "hd95": 0.18823622989212252,
+   "predicted_voxels": 90792
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.4020435107054704,
+   "hd95": 0.154112,
+   "predicted_voxels": 106857
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.571659559447288,
+   "hd95": 0.08373956582165924,
+   "predicted_voxels": 52570
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.5803936715017309,
+   "hd95": 0.14511665396156292,
+   "predicted_voxels": 43131
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.5822404092071611,
+   "hd95": 0.1502329627744857,
+   "predicted_voxels": 160568
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.6387315298259107,
+   "hd95": 0.1489167658749728,
+   "predicted_voxels": 21864
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.6820707412928582,
+   "hd95": 0.078302,
+   "predicted_voxels": 10899
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 1.0,
+   "hd95": 0.0,
+   "predicted_voxels": 0
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 1.0,
+   "hd95": 0.0,
+   "predicted_voxels": 0
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 1.0,
+   "hd95": 0.0,
+   "predicted_voxels": 0
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 1.0,
+   "hd95": 0.0,
+   "predicted_voxels": 0
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 1.0,
+   "hd95": 0.0,
+   "predicted_voxels": 0
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 1.0,
+   "hd95": 0.0,
+   "predicted_voxels": 0
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 1.0,
+   "hd95": 0.0,
+   "predicted_voxels": 0
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 9
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 21
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 44
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 51
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 83
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 123
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 242
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 745
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.07607412630455362,
+   "hd95": 0.36556849527253626,
+   "predicted_voxels": 44647
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.11190080531765308,
+   "hd95": 0.47959891249251185,
+   "predicted_voxels": 13454
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.1439950602037666,
+   "hd95": 2.9059295346198604,
+   "predicted_voxels": 2265
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.17131677441306567,
+   "hd95": 6.214989834318756,
+   "predicted_voxels": 2784
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.2239509069578558,
+   "hd95": 0.202572,
+   "predicted_voxels": 12842
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.22523293076510773,
+   "hd95": 0.1671575909972383,
+   "predicted_voxels": 14762
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.26072353229305156,
+   "hd95": 0.4702852771839663,
+   "predicted_voxels": 16149
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.26084304431256433,
+   "hd95": 0.36871654394263353,
+   "predicted_voxels": 11601
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.28340717946344907,
+   "hd95": 0.15800282164569088,
+   "predicted_voxels": 18056
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.5103699811454888,
+   "hd95": 0.11550119253064013,
+   "predicted_voxels": 36576
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.5328777516388387,
+   "hd95": 0.1794172010594302,
+   "predicted_voxels": 55525
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.7000549579109464,
+   "hd95": 0.06945,
+   "predicted_voxels": 74527
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 1.0,
+   "hd95": 0.0,
+   "predicted_voxels": 0
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 1.0,
+   "hd95": 0.0,
+   "predicted_voxels": 0
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 1.0,
+   "hd95": 0.0,
+   "predicted_voxels": 0
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 1.0,
+   "hd95": 0.0,
+   "predicted_voxels": 0
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 3104
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.4755340369027677,
+   "hd95": 0.1345490886584388,
+   "predicted_voxels": 628374
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 2078
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.576114067176588,
+   "hd95": 5.884161490996492,
+   "predicted_voxels": 18086
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.6638790282848445,
+   "hd95": 0.0469520436189949,
+   "predicted_voxels": 36040
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.7090844611590832,
+   "hd95": 0.054599999999999996,
+   "predicted_voxels": 301350
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.8801660447159281,
+   "hd95": 0.013,
+   "predicted_voxels": 89586
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 23271
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 104125
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 27
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 435
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 3153
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.007994950557542605,
+   "hd95": 6.38039234343108,
+   "predicted_voxels": 18724
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.8749445944312366,
+   "hd95": 0.0156,
+   "predicted_voxels": 51225
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 17650
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.4573214485035001,
+   "hd95": 4.448155506650209,
+   "predicted_voxels": 57152
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 21
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 247
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 1545
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 60718
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.636279948070341,
+   "hd95": 0.03691013952831932,
+   "predicted_voxels": 68556
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 4182
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 6351
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 39823
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 51639
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 54765
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.04973785551895328,
+   "hd95": 6.1428325248628655,
+   "predicted_voxels": 20780
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.389777319233084,
+   "hd95": 1.0590511287967141,
+   "predicted_voxels": 90575
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.4131429730420903,
+   "hd95": 10.20028948596779,
+   "predicted_voxels": 83373
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.41791759382444243,
+   "hd95": 0.22364932908461851,
+   "predicted_voxels": 114693
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.54168551524473,
+   "hd95": 4.487607553648335,
+   "predicted_voxels": 61956
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.5619093858797338,
+   "hd95": 0.2925915894652258,
+   "predicted_voxels": 74051
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.5857750011914097,
+   "hd95": 5.341316557205272,
+   "predicted_voxels": 154960
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.5864708677843222,
+   "hd95": 0.9410494195311955,
+   "predicted_voxels": 224160
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.6687605552580632,
+   "hd95": 7.490119016239562,
+   "predicted_voxels": 53989
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.6737257799568772,
+   "hd95": 1.1426171847345437,
+   "predicted_voxels": 282285
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.6758937551430922,
+   "hd95": 0.6510830545358404,
+   "predicted_voxels": 53699
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.6789414783389431,
+   "hd95": 1.3647501674367637,
+   "predicted_voxels": 400116
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.7036450256367269,
+   "hd95": 0.078,
+   "predicted_voxels": 425504
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.7610838698362357,
+   "hd95": 1.536074909712612,
+   "predicted_voxels": 141887
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.7723627098054902,
+   "hd95": 0.0156,
+   "predicted_voxels": 390523
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.7981052889378708,
+   "hd95": 1.1407739141477595,
+   "predicted_voxels": 83270
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.8076399291842571,
+   "hd95": 0.7116708970730831,
+   "predicted_voxels": 80629
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 70
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 818
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 864
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 4086
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 4094
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 4854
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 4954
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 9938
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 17089
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 39638
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 240951
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.007822685788787484,
+   "hd95": 12.826227628370791,
+   "predicted_voxels": 12751
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.2685387529137529,
+   "hd95": 8.302187280152864,
+   "predicted_voxels": 46699
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.4543670830181579,
+   "hd95": 0.12739999999999999,
+   "predicted_voxels": 107200
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.48458071170338435,
+   "hd95": 2.2725128341111738,
+   "predicted_voxels": 192135
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.5279740154283394,
+   "hd95": 9.377951611683843,
+   "predicted_voxels": 8760
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.5552893953127023,
+   "hd95": 5.64315129118415,
+   "predicted_voxels": 17431
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.587436126206505,
+   "hd95": 1.4942603138763386,
+   "predicted_voxels": 33350
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.6942665673864482,
+   "hd95": 0.07075127136666874,
+   "predicted_voxels": 3761
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.6977932024191305,
+   "hd95": 2.0726325696132935,
+   "predicted_voxels": 294396
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.7794059063791391,
+   "hd95": 0.16559947946778095,
+   "predicted_voxels": 322419
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "SRF",
+   "dice": 0.8538417540514776,
+   "hd95": 0.5473813982955578,
+   "predicted_voxels": 56857
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 1643
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 3488
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 3724
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 4954
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 7578
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 7595
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 8511
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 10044
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 16253
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 35486
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 97043
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 323665
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 444193
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.3466560814695174,
+   "hd95": 3.48546754606187,
+   "predicted_voxels": 55474
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.3504130018907176,
+   "hd95": 1.0671127183240507,
+   "predicted_voxels": 120758
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.4347610978490767,
+   "hd95": 0.896945831023372,
+   "predicted_voxels": 48150
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.44145319563379765,
+   "hd95": 0.17586535607671255,
+   "predicted_voxels": 180708
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.4591288350597362,
+   "hd95": 0.08717788939863134,
+   "predicted_voxels": 293514
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.4594496570212095,
+   "hd95": 2.1473364235335537,
+   "predicted_voxels": 209218
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.48121274668800945,
+   "hd95": 1.895049211768656,
+   "predicted_voxels": 109356
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.6636705662584172,
+   "hd95": 0.08468507306485601,
+   "predicted_voxels": 947798
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.6639796647696433,
+   "hd95": 2.547717855436857,
+   "predicted_voxels": 91321
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 564
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "cirrus",
+   "fluid": "IRF",
+   "dice": 0.46882457386363635,
+   "hd95": 0.11743627388928857,
+   "predicted_voxels": 859601
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.03840682788051209,
+   "hd95": 9.067917620596749,
+   "predicted_voxels": 1022
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.225374831018803,
+   "hd95": 0.20294784768506416,
+   "predicted_voxels": 67261
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.24459221314873467,
+   "hd95": 0.242308,
+   "predicted_voxels": 291405
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.6034010639225604,
+   "hd95": 0.19284116919631036,
+   "predicted_voxels": 30896
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.6123788683963739,
+   "hd95": 0.100674,
+   "predicted_voxels": 144756
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 39197
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 67039
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 64
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 496
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 8200
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.5448834059496418,
+   "hd95": 0.121154,
+   "predicted_voxels": 172256
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "SRF",
+   "dice": 0.6730922371419942,
+   "hd95": 19.42539092601711,
+   "predicted_voxels": 17800
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 77615
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.35784522271008756,
+   "hd95": 4.6798296343132675,
+   "predicted_voxels": 56305
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 584
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 741
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 775
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 818
+  },
+  {
+   "run": "topcon",
+   "arm": "in_domain",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 6454
+  }
+ ]
+}

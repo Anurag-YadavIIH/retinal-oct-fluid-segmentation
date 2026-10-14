@@ -1,0 +1,65 @@
+[
+ {
+  "brand": "Cirrus",
+  "patients": 24,
+  "bscan_size_px": "512 × 1024",
+  "bscans_per_scan": "128",
+  "spacing_mm": {
+   "lateral": "0.011742 (constant)",
+   "axial": "0.001955 (constant)",
+   "bscan_separation": "0.046878 to 0.047244"
+  },
+  "scans_with_fluid": {
+   "IRF": 18,
+   "SRF": 12,
+   "PED": 12
+  },
+  "voxel_percent": {
+   "IRF": 0.4019,
+   "SRF": 0.3515,
+   "PED": 0.4029
+  }
+ },
+ {
+  "brand": "Spectralis",
+  "patients": 24,
+  "bscan_size_px": "512 × 496",
+  "bscans_per_scan": "49",
+  "spacing_mm": {
+   "lateral": "0.010856 to 0.011950",
+   "axial": "0.003872 (constant)",
+   "bscan_separation": "0.116380 to 0.128624"
+  },
+  "scans_with_fluid": {
+   "IRF": 20,
+   "SRF": 14,
+   "PED": 12
+  },
+  "voxel_percent": {
+   "IRF": 0.5821,
+   "SRF": 0.5777,
+   "PED": 0.3229
+  }
+ },
+ {
+  "brand": "Topcon",
+  "patients": 22,
+  "bscan_size_px": "512 × 650 (10 scans) and 512 × 885 (12 scans)",
+  "bscans_per_scan": "128 (20 scans), 64 (2 scans)",
+  "spacing_mm": {
+   "lateral": "0.011720 (constant)",
+   "axial": "0.002600 or 0.003500",
+   "bscan_separation": "0.046880 (constant)"
+  },
+  "scans_with_fluid": {
+   "IRF": 17,
+   "SRF": 11,
+   "PED": 9
+  },
+  "voxel_percent": {
+   "IRF": 0.2043,
+   "SRF": 0.0963,
+   "PED": 0.2983
+  }
+ }
+]

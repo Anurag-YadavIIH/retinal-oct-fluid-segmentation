@@ -13,3 +13,7 @@ Dockerfile* text eol=lf
 *.md        text eol=lf
 *.py        text eol=lf
 *.cfg       text eol=lf
+# The report page is compared byte for byte with what scripts/08_build_site.py renders
+# (TC-130), which writes LF; a CRLF checkout of these would fail that test on Windows only.
+site/**     text eol=lf
+site_src/** text eol=lf

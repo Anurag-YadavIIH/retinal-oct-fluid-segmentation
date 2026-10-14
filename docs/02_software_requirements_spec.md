@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-091 and NFR-001..NFR-008. Every requirement here derives
+Allocates SRS-001..SRS-092 and NFR-001..NFR-008. Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -169,6 +169,7 @@ reported for detection either, and the prevalence figures in `docs/06` §3.2 are
 | SRS-050 | Volume-level detection of each fluid class shall be **derived from the segmentation output of the same model**. No separate classifier shall be trained, stored or served, and no forward pass shall be required beyond the MC-dropout passes of SRS-029. | URS-001, URS-007 | TC-065 |
 | SRS-051 | A fluid class shall be reported present in a volume when the number of voxels predicted for that class exceeds a threshold read from the run configuration. The threshold shall not be hard-coded, and its resolved value shall be written to the run output with the rest of the configuration. | URS-007, URS-010 | TC-066 |
 | SRS-052 | The continuous score used for AUROC shall be derived, per class and per volume, from the MC-dropout mean class probability produced by SRS-029. **AUROC shall be computed in numpy in `eval/metrics.py`**, on the same terms as every other reported metric: `docs/10`'s credibility rests on the figures being independently computable without a torch or scikit-learn runtime. scikit-learn shall be used **only as an independent reference in a back-to-back test**, never as the source of a reported number — the arrangement TC-120 already uses for MONAI. | URS-005, URS-007 | TC-067 |
+| SRS-092 | The published report page (`site/`) shall be **generated from the recorded evaluations, never typed**. A build step shall read the evaluation records, epoch logs and split files, and the measured values in `docs/06`, and write data files and CSV downloads; the page shall render every table, chart and number in its prose from those files, and its template shall carry no hand-typed number outside a stated allowlist. Every value shall equal its record, and every count the prose states shall be computed and checked against the document that states it. **The page shall carry no image data and nothing that relinks a row to a subject**: no B-scan, mask or predicted segmentation; no source subject identifier, SOP Instance UID or reference voxel count; and per-scan rows ordered by value, so that their order cannot stand in for the identifier removed (`docs/06` DMP-C2, DMP-C11). Per-scan reference presence is used by the charts only: it shall not appear in any downloadable file, as a field or through row order (`docs/06` §2.5, J2). The chart library shall be loaded at an exact version with an integrity hash, and every chart shall have a static fallback. Two builds from the same inputs shall be byte-identical. **Added 2026-10-07.** | URS-007, NFR-002 | TC-129, TC-130, TC-131 |
 | SRS-053 | Detection performance shall be reported as sensitivity, specificity and AUROC, per fluid class and per scanner platform, each accompanied by a bootstrap 95% confidence interval and the sample size, on the same terms as SRS-032 and SRS-033. | URS-007 | TC-068 |
 
 ### 3.7 Segmentation and structured report output
@@ -232,6 +233,7 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `scripts/benchmark_device.py` | SRS-031 |
 | `scripts/compare_evaluation_records.py` | SRS-090 |
 | `scripts/05_evaluate.py` | SRS-091 |
+| `scripts/08_build_site.py` | SRS-092 |
 | `data/datamodule.py` | SRS-024 |
 | `data/transforms.py` | SRS-025, SRS-026 |
 | `models/seg_unet.py` | SRS-027, SRS-028, SRS-061 |

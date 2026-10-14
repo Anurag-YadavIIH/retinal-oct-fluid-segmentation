@@ -1,0 +1,121 @@
+{
+ "best_epoch": {
+  "cirrus": 33,
+  "spectralis": 29,
+  "topcon": 29
+ },
+ "patience": 25,
+ "n_scans": 70,
+ "n_brands": 3,
+ "n_runs": 3,
+ "n_sealed": 6,
+ "held_n": {
+  "cirrus": 24,
+  "spectralis": 24,
+  "topcon": 22
+ },
+ "in_domain_n": 7,
+ "pooled_held_n": 70,
+ "pooled_in_domain_n": 13,
+ "n_resamples": 2000,
+ "seed": 20260916,
+ "threshold": 10,
+ "mc_passes": 20,
+ "familiar_n": 46,
+ "overlap_folds": 9,
+ "n_fold_comparisons": 9,
+ "overlap_pooled": 3,
+ "worse_unseen": 3,
+ "better_unseen": 6,
+ "n_differences": 24,
+ "n_excluding": 6,
+ "n_pooled_differences": 6,
+ "n_pooled_excluding": 0,
+ "spectralis_srf": {
+  "comparison": "spectralis",
+  "fluid": "SRF",
+  "value": 0.37096258693503725,
+  "ci_low": 0.05371808599200235,
+  "ci_high": 0.604479507164901
+ },
+ "n_class_present_excluding": 5,
+ "class_present_strata": [
+  1,
+  2,
+  5,
+  6
+ ],
+ "halfwidth_fold": [
+  0.14,
+  0.29
+ ],
+ "halfwidth_pooled": [
+  0.14,
+  0.18
+ ],
+ "halfwidth_present_pooled": [
+  0.15,
+  0.3
+ ],
+ "detection_limit": 0.14,
+ "unreliable_below": 0.3,
+ "n_cells": 18,
+ "fp_cells": 14,
+ "spec_zero_cells": 13,
+ "sens_one_cells": 18,
+ "auroc_held_range": [
+  0.9513888888888888,
+  1.0
+ ],
+ "absent_srf": [
+  47,
+  62
+ ],
+ "absent_ped": [
+  53,
+  77
+ ],
+ "fragility": {
+  "unseeded": 0.27069992862064585,
+  "seeded": 0.12764552695764195,
+  "shift": 0.1430544016630039,
+  "one_flip": 0.14285714285714285,
+  "absent": 4
+ },
+ "step0": {
+  "leaves": 466,
+  "rows": 21
+ },
+ "training_agreement": {
+  "through": 5,
+  "first_difference": 6
+ },
+ "fallbacks": {
+  "total": 0,
+  "records": 9
+ },
+ "closer": {
+  "hd95": [
+   5,
+   12
+  ],
+  "spacing_factor": 6.0,
+  "spacing_checks": [
+   0,
+   210,
+   210
+  ],
+  "stage1_fallbacks": 1308,
+  "eval_differ": 49
+ },
+ "docs": {
+  "srs": 92,
+  "registered": 117,
+  "written": 93,
+  "executed": 90,
+  "hazards": 16,
+  "controls": 32,
+  "safety_class": "B",
+  "never_run": 3
+ }
+}

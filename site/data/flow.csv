@@ -1,0 +1,13 @@
+run_unseen_brand,bucket,patients,by_brand
+cirrus,train,32,Spectralis 18; Topcon 14
+cirrus,val,7,Spectralis 4; Topcon 3
+cirrus,in_domain_ref,7,Spectralis 2; Topcon 5
+cirrus,test,24,Cirrus 24
+spectralis,train,32,Cirrus 18; Topcon 14
+spectralis,val,7,Cirrus 4; Topcon 3
+spectralis,in_domain_ref,7,Cirrus 2; Topcon 5
+spectralis,test,24,Spectralis 24
+topcon,train,34,Cirrus 18; Spectralis 16
+topcon,val,7,Cirrus 4; Spectralis 3
+topcon,in_domain_ref,7,Cirrus 2; Spectralis 5
+topcon,test,22,Topcon 22

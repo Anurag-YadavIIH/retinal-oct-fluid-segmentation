@@ -29,6 +29,10 @@ htmlcov/
 # Notebooks
 .ipynb_checkpoints/
 
+# Report page: the static fallback figures are copied from docs/figures at build and
+# deploy time (scripts/08_build_site.py, .github/workflows/pages.yml), never committed twice.
+site/figures/
+
 # OS / editor
 .DS_Store
 .idea/

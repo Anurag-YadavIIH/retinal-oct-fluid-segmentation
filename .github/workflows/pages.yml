@@ -1,0 +1,61 @@
+name: Pages
+
+# Publishes the report page (site/) to GitHub Pages, only after CI has passed on the same
+# commit. CI runs TC-130 and TC-131, which check that the committed page renders from the
+# committed data and carries no image data or identifier (SRS-092).
+#
+# The page is NOT built here. scripts/08_build_site.py needs the evaluation records, which never
+# leave the workstation (docs/06 section 7.1), so the page and its data are generated there and
+# committed. This workflow adds only the static fallback figures, copied from docs/figures, so
+# they are not committed twice.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Deploy exactly the commit CI passed, not whatever main points at by now.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Assemble the page and its fallback figures
+        run: |
+          mkdir -p _site/figures
+          cp site/index.html site/style.css site/app.js _site/
+          cp -r site/data _site/data
+          cp docs/figures/fig1_training_curves.png docs/figures/fig2_dice_intervals.svg \
+             docs/figures/fig3_predicted_voxels.png docs/figures/fig4_dice_differences.svg \
+             docs/figures/fig5_per_volume_dice.png _site/figures/
+          find _site -type f | sort
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

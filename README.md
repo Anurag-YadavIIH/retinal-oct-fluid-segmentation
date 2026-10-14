@@ -2,6 +2,8 @@
 
 A study of whether software that finds fluid in eye scans still works on a scanner brand it was never trained on, built and documented the way medical device software is.
 
+**Project report page:** [anurag-yadaviih.github.io/retinal-oct-fluid-segmentation](https://anurag-yadaviih.github.io/retinal-oct-fluid-segmentation/), with interactive charts and every table as a CSV download.
+
 ## At a glance
 
 - **What:** a pipeline that outlines three types of fluid in retinal OCT scans, converts the scans to standard medical imaging (DICOM) files, and includes tested code for packaging results as DICOM.
@@ -100,6 +102,7 @@ python scripts/03_make_splits.py --config configs/folds
 python scripts/04_train.py --fold configs/folds/cirrus_holdout.yaml --run-dir artifacts/runs/<run> --epochs 150
 python scripts/05_evaluate.py --run artifacts/runs/<run> --bucket val
 python scripts/07_make_figures.py
+python scripts/08_build_site.py
 ```
 
 `test` and `in_domain_ref` are sealed: `05_evaluate.py` refuses them unless given `--unlock-bucket` with a reason and an approver, and records every access. Long runs are launched from an interactive terminal that is kept open ([`docs/07`](docs/07_vv_protocol.md) §17.8). DICOM objects produced here must stay on a local PACS, because the UID root is unregistered by declaration ([`docs/06`](docs/06_data_management_plan.md) §7.2).
@@ -116,7 +119,8 @@ python scripts/07_make_figures.py
 | `src/ocuval/eval/` | Metrics (numpy and scipy, cross-checked against MONAI), patient-level bootstrap, sealed splits, evaluation pipeline |
 | `src/ocuval/report/` | DICOM Segmentation and Structured Report objects |
 | `src/ocuval/service/` | FastAPI inference service (stub) |
-| `scripts/` | Numbered pipeline entry points `00` to `07`, the evaluation chain, the exact record comparison |
+| `scripts/` | Numbered pipeline entry points `00` to `08`, the evaluation chain, the exact record comparison |
+| `site/`, `site_src/` | The report page, generated from the evaluation records by `scripts/08_build_site.py`, and its template |
 | `configs/` | Data, training and per-fold configuration |
 | `tests/` | pytest suite; each test name carries its `TC-nnn` identifier |
 

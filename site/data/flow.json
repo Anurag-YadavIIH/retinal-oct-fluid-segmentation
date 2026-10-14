@@ -1,0 +1,98 @@
+[
+ {
+  "run": "cirrus",
+  "total": 70,
+  "seed": 20260916,
+  "train": {
+   "n": 32,
+   "by_brand": {
+    "Spectralis": 18,
+    "Topcon": 14
+   }
+  },
+  "val": {
+   "n": 7,
+   "by_brand": {
+    "Spectralis": 4,
+    "Topcon": 3
+   }
+  },
+  "in_domain_ref": {
+   "n": 7,
+   "by_brand": {
+    "Spectralis": 2,
+    "Topcon": 5
+   }
+  },
+  "test": {
+   "n": 24,
+   "by_brand": {
+    "Cirrus": 24
+   }
+  }
+ },
+ {
+  "run": "spectralis",
+  "total": 70,
+  "seed": 20260916,
+  "train": {
+   "n": 32,
+   "by_brand": {
+    "Cirrus": 18,
+    "Topcon": 14
+   }
+  },
+  "val": {
+   "n": 7,
+   "by_brand": {
+    "Cirrus": 4,
+    "Topcon": 3
+   }
+  },
+  "in_domain_ref": {
+   "n": 7,
+   "by_brand": {
+    "Cirrus": 2,
+    "Topcon": 5
+   }
+  },
+  "test": {
+   "n": 24,
+   "by_brand": {
+    "Spectralis": 24
+   }
+  }
+ },
+ {
+  "run": "topcon",
+  "total": 70,
+  "seed": 20260916,
+  "train": {
+   "n": 34,
+   "by_brand": {
+    "Cirrus": 18,
+    "Spectralis": 16
+   }
+  },
+  "val": {
+   "n": 7,
+   "by_brand": {
+    "Cirrus": 4,
+    "Spectralis": 3
+   }
+  },
+  "in_domain_ref": {
+   "n": 7,
+   "by_brand": {
+    "Cirrus": 2,
+    "Spectralis": 5
+   }
+  },
+  "test": {
+   "n": 22,
+   "by_brand": {
+    "Topcon": 22
+   }
+  }
+ }
+]
