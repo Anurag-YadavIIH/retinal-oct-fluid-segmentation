@@ -181,6 +181,29 @@ def test_TC_133_captions_carry_no_identifier_brand_filename_or_date(pick):
         assert "largest" not in text
 
 
+def test_TC_133_the_published_illustrations_respect_the_cap_and_carry_no_metadata():
+    """What is committed and deployed: at most six B-scans (DMP-C2), no metadata, clean captions.
+
+    Runs in CI on the committed files. Reads PNG chunk types and caption text only, never
+    the pixels, and checks that the Pages workflow deploys exactly the files the page shows.
+    """
+    site = importlib.util.spec_from_file_location(
+        "site_builder", REPO / "scripts" / "08_build_site.py"
+    )
+    builder = importlib.util.module_from_spec(site)
+    site.loader.exec_module(builder)
+    figures = REPO / "docs" / "figures"
+    on_disk = sorted(p.name for p in figures.glob("bscan_*.png"))
+    assert len(on_disk) <= 6, f"{len(on_disk)} B-scans exceed the cap of six (docs/06 §2.2.2)"
+    assert on_disk == sorted(builder.ILLUSTRATIONS)
+    for name in on_disk:
+        assert ILL.forbidden_chunks(figures / name) == set(), name
+    captions = (figures / "illustrations.md").read_text(encoding="utf-8")
+    assert not re.search(r"TRAIN\d{3}|cirrus|spectralis|topcon|20\d\d-\d\d-\d\d", captions, re.I)
+    workflow = (REPO / ".github" / "workflows" / "pages.yml").read_text(encoding="utf-8")
+    assert all(f"docs/figures/{name}" in workflow for name in on_disk), "not all deployed"
+
+
 # --- TC-134: nothing is saved unless every prediction reproduces its record ------------------
 
 

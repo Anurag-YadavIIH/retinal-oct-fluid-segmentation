@@ -73,6 +73,18 @@ FALLBACKS = (
     "fig4_dice_differences.svg",
     "fig5_per_volume_dice.png",
 )
+# The illustrative B-scans of docs/07 section 21, in the order docs/10 section 7.4 shows them.
+# They live in docs/figures and are copied in at build and deploy time, like the fallbacks, so
+# site/ itself stays text only (TC-131). Captions come from the file the script generated.
+ILLUSTRATIONS = (
+    "bscan_worst.png",
+    "bscan_median.png",
+    "bscan_best.png",
+    "bscan_fp_irf.png",
+    "bscan_fp_srf.png",
+    "bscan_fp_ped.png",
+)
+ILLUSTRATION_CAPTIONS = FIGURES / "illustrations.md"
 WORDS = {6: "Six", 9: "nine"}
 CURVES = ("epoch", "train_loss", "val_dice")
 
@@ -760,6 +772,26 @@ def downloads(d: dict) -> str:
     return "<ul class='downloads'>" + "".join(items) + "</ul>"
 
 
+def inline_markdown(s: str) -> str:
+    """The two inline forms the generated captions use: `code` and **bold**. Escaped first."""
+    s = esc(s)
+    s = re.sub(r"`([^`]+)`", r"<code>\1</code>", s)
+    return re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", s)
+
+
+def illustrations_block() -> str:
+    """The illustrative B-scans with their generated captions, in `ILLUSTRATIONS` order."""
+    captions = dict(re.findall(r"^\*\*([\w.]+)\*\*: (.+)$", text(ILLUSTRATION_CAPTIONS), re.M))
+    assert set(captions) == set(ILLUSTRATIONS), "illustrations.md and ILLUSTRATIONS disagree"
+    figures = [
+        f"<figure class='bscan'><img src='figures/{name}' alt='One B-scan: the expert outline "
+        f"on the left and the model outline on the right' loading='lazy'>"
+        f"<figcaption>{inline_markdown(captions[name])}</figcaption></figure>"
+        for name in ILLUSTRATIONS
+    ]
+    return "<div class='bscans'>" + "".join(figures) + "</div>"
+
+
 PLACEHOLDER = re.compile(r"\{\{\s*(!?)([\w.]+)(?::([^}]+))?\s*\}\}")
 
 
@@ -777,6 +809,7 @@ def render(d: dict) -> bytes:
         "fluid_table": fluid_table(d),
         "flow": flow_block(d),
         "downloads": downloads(d),
+        "illustrations": illustrations_block(),
         # The charts read per-scan rows with presence: the chart input, not the download.
         "data_json": json.dumps(
             {"per_scan": d["chart_scans"], **{k: d[k] for k in ("results", "training", "facts")}},
@@ -806,7 +839,7 @@ def build(do_extract: bool) -> list[str]:
                 changed.append(rel)
     if write_if_changed(SITE / "index.html", render(load_data())):
         changed.append("site/index.html")
-    for name in FALLBACKS:
+    for name in (*FALLBACKS, *ILLUSTRATIONS):
         if write_if_changed(SITE / "figures" / name, (FIGURES / name).read_bytes()):
             changed.append(f"site/figures/{name}")
     return changed

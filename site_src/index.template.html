@@ -136,6 +136,10 @@
 
   <h3>With few patients, the score is fragile</h3>
   <p>If one scan without a fluid type flips between "nothing marked" and "a few voxels marked", its Dice jumps from 1 to 0, and a {{facts.in_domain_n}}-patient average moves by {{facts.fragility.one_flip:.4f}}. I saw a shift of about that size between two equally valid evaluations of the same model, before I made evaluation reproducible: Cirrus familiar-brand SRF moved from {{facts.fragility.unseeded:.4f}} to {{facts.fragility.seeded:.4f}}, a change of {{facts.fragility.shift:.4f}}, in a group with {{facts.fragility.absent}} SRF-free scans. The older run did not keep per-scan scores, so I cannot confirm that a single scan caused it (docs/10 §7.2).</p>
+
+  <h3 id="what-the-outlines-look-like">What the outlines look like</h3>
+  <p>These B-scans were chosen by a rule I committed before rendering any image (<a href="{{github}}/blob/main/docs/07_vv_protocol.md">docs/07</a> §21), from the numbers in the sealed records alone: the worst, median and best unseen-brand scans by Dice, and the largest false-positive case for each fluid type. Each shows the prediction that was evaluated, regenerated and checked to match its sealed record exactly before it was saved. They are illustrations, not results, and they are not typical. The challenge organiser gave written permission for a very small number of illustrative images (docs/06 §2.2.2); no case identifier, brand or date appears in them.</p>
+  {{!illustrations}}
 </section>
 
 <section id="training">

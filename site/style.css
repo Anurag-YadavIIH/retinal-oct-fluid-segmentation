@@ -135,6 +135,13 @@ figure.chart[data-chart="detection"] .plot { min-width: 760px; }
 figure.chart[data-chart="difference"] .plot,
 figure.chart[data-chart="headline"] .plot { min-width: 520px; }
 
+/* Illustrative B-scans (docs/07 section 21): two per row on wide screens, one on phones */
+.bscans { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 12px 0; }
+@media (min-width: 1100px) { .bscans { grid-template-columns: 1fr 1fr; } }
+figure.bscan { margin: 0; border: 1px solid var(--border); border-radius: 8px; padding: 10px; break-inside: avoid; }
+figure.bscan img { display: block; width: 100%; height: auto; background: #ffffff; border-radius: 4px; }
+figure.bscan figcaption { font-size: 14px; color: var(--muted); margin-top: 8px; }
+
 /* Study flow diagrams */
 .flows { display: grid; grid-template-columns: 1fr; gap: 12px; }
 .flowfig svg.flow { max-width: 760px; margin: 0 auto; }

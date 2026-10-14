@@ -1574,7 +1574,7 @@ shows.
 
 ### 21.7 The run and the author's decisions — recorded 2026-10-14
 
-**The run.** Launched by the author from his own terminal on 2026-10-14 at 22:05 local time;
+**The run.** Launched by the author from the author's own terminal on 2026-10-14 at 22:05 local time;
 the images were written at 22:23. The rule gave six picks: worst, median, best, and one
 false-positive case each for IRF, SRF and PED, two from the Spectralis held-out run and four
 from the Topcon one. Two sealed buckets were opened, each with an `Unlock` naming the reason
@@ -1589,7 +1589,7 @@ image shows the prediction that was evaluated. The PNGs carry no metadata chunks
 captions contain no identifier, brand or date (checked by reading the files' bytes and text;
 no image was opened in a Claude Code session, DMP-C12).
 
-**The author's review, on his own screen, outside any session:** all six **approved**:
+**The author's review, on the author's own screen, outside any session:** all six **approved**:
 `bscan_worst.png`, `bscan_median.png`, `bscan_best.png`, `bscan_fp_irf.png`,
 `bscan_fp_srf.png`, `bscan_fp_ped.png`. None was declined, so §21.6's rule that a declined
 image is left out, not replaced, did not need to be applied. The selection record, which holds

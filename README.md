@@ -32,6 +32,12 @@ An OCT scan uses light to take cross-section pictures of the back of the eye, a 
 
 **3. With only 7 patients, the score is fragile.** If one scan without fluid flips between "nothing marked" and "a few pixels marked", its score jumps from 1 to 0, and a 7-patient average moves by about 0.14. I saw a shift of about that size (0.1431) between two equally valid runs of the same model, before I made the evaluation reproducible. The older run did not keep per-scan scores, so I cannot confirm that a single scan caused it. [`docs/10`](docs/10_analytical_validation_report.md) §7.2.
 
+**What an outline looks like.** This is the median unseen-brand scan. I chose it by a rule I fixed before rendering any image, so it was not picked for looking good. The full set, including the worst scan and the largest false positives, is in [`docs/10`](docs/10_analytical_validation_report.md) §7.4. The challenge organiser gave written permission for a very small number of illustrative images.
+
+![One B-scan from the median unseen-brand scan: the expert's fluid outline on the left and the model's on the right.](docs/figures/bscan_median.png)
+
+*The median held-out scan by mean Dice over the fluid types its expert outline contains, shown on its B-scan with the most expert-outlined fluid. Left, the expert's outline; right, the model's. Chosen by the rule pre-registered in [`docs/07`](docs/07_vv_protocol.md) §21, from the numbers alone, before any image was rendered.*
+
 ## Why you can trust it
 
 The test scans were sealed: the code refuses to read them without a recorded reason and approval, and every access is logged. I wrote down the analysis before seeing any result, and anything decided afterwards is labelled post-hoc wherever it appears. Training and evaluation are reproducible: two runs of the evaluation had to match exactly, value for value, before any sealed scan was opened, and they did. Every requirement traces to a test, and the traceability counts are checked in CI. [`docs/07`](docs/07_vv_protocol.md) §17; [`docs/08`](docs/08_vv_report.md) §5g; [`docs/09`](docs/09_traceability_matrix.md).
