@@ -12,7 +12,9 @@ jobs:
     # decision in docs/13, never by a label moving underneath it.
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      # Actions are pinned by commit SHA, with the release tag as a comment: a tag can be
+      # moved, a SHA cannot. Updated only by a recorded decision (docs/13).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # TC-108 checks that every commit SHA cited in the documents still resolves
           # to a commit reachable from main. actions/checkout defaults to fetch-depth 1,
@@ -21,7 +23,7 @@ jobs:
           # repository is small; the cost is negligible.
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
           cache: pip

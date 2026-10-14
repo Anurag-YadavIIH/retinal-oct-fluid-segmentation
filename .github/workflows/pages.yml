@@ -31,7 +31,8 @@ jobs:
     # Pinned for the same reason as CI (.github/workflows/ci.yml): no silent runner change.
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      # Pinned by commit SHA, release tag in the comment, as in ci.yml.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Deploy exactly the commit CI passed, not whatever main points at by now.
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
@@ -46,8 +47,8 @@ jobs:
              docs/figures/fig5_per_volume_dice.png _site/figures/
           find _site -type f | sort
 
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: _site
 
@@ -59,4 +60,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
