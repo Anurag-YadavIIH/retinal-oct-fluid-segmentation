@@ -170,10 +170,17 @@ Accuracy alone is never reported. The classes are imbalanced and it is misleadin
 
 ## 7. Current status
 
-**Phase: results published, tagged `v1.0` (2026-10-06).** All three folds are trained and
-evaluated once, under one seeded, reproducible procedure (`docs/08` §5g). `docs/10`, the
-analytical validation report, is complete as v0.1 (`4a860d1`). `README.md` is rewritten for
-publication (`df5e9db`). What remains open is listed below, without softening.
+**Phase: complete and published, 2026-10-15.** All three folds are trained and evaluated
+once, under one seeded, reproducible procedure (`docs/08` §5g). Tags: `v1.0` on `9195d4c`
+(2026-10-06), `v1.1` on `8b5eab6` (2026-10-14, the six illustrative B-scans), `v1.1.1` on
+`dc6ce2a` (2026-10-14, the author's two caption additions; same results as `v1.1`). Published:
+`docs/10` with the six B-scans in §7.4, `README.md` with the median B-scan, and the report page
+at <https://anurag-yadaviih.github.io/retinal-oct-fluid-segmentation/>, deployed by the Pages
+workflow after CI. The B-scans are shown under the organiser's written permission of
+2026-10-08 (`docs/06` §2.2.2, DMP-C2), selected by the rule pre-registered in `docs/07` §21.
+**Closed out 2026-10-15:** the tag, the live page's six images and captions, the README image
+and the latest CI and Pages runs were all checked. What remains open is listed below, without
+softening.
 
 ### Milestones
 
@@ -202,9 +209,10 @@ publication (`df5e9db`). What remains open is listed below, without softening.
 6. SEG/SR output and Orthanc round-trip. **Objects done and tested; the round-trip
    (TC-080..TC-082) has never been executed**, because Docker is not installed.
    `scripts/06_push_to_pacs.py` is a stub that raises `NotImplementedError`.
-7. FastAPI service, Docker, full document set, GitHub Pages. **Partly done.** `docs/10` and
-   `README.md` are complete. **Not done:** the inference service (`service/api.py` is a
-   stub), `docs/12` (model card, still a template), the Docker image and GitHub Pages.
+7. FastAPI service, Docker, full document set, GitHub Pages. **Partly done.** `docs/10`,
+   `README.md` and the GitHub Pages report page (SRS-092, `scripts/08_build_site.py`) are
+   complete. **Not done:** the inference service (`service/api.py` is a stub), `docs/12`
+   (model card, still a template) and the Docker image.
 
 ### What is actually blocked, and on what
 
@@ -217,13 +225,14 @@ publication (`df5e9db`). What remains open is listed below, without softening.
 | ~~Two GPU runs, open buckets~~ | **Done 2026-10-05:** seeded `val` evaluations of spectralis and topcon; §19.2 applied to all folds (`docs/08` §5g.7) |
 | **Neither** — open, simply not done | `scripts/06_push_to_pacs.py`, `service/api.py` and `eval/report.py` are stubs; `docs/12` is a template |
 
-### Numbers, as of 2026-10-05
+### Numbers, as of 2026-10-15
 
 Identifiers: URS-001..011, **SRS-001..093**, NFR-001..008, **HAZ-001..016, RC-001..032**,
 SOUP-001..025, TC-000..TC-134 (**120 registered**).
 
-**114 test cases registered, 90 written, 87 executed, 3 written but never run, 24
-registered and unwritten** (`docs/09`, enforced by TC-104). Those states are kept separate deliberately. A written test
+**120 test cases registered, 96 written, 93 executed, 3 written but never run, 24
+registered and unwritten** (read from `docs/09` 2026-10-15; TC-104 passed against them in the
+CI run below). Those states are kept separate deliberately. A written test
 nobody has executed is not verification. The three are TC-080..082, blocked on Docker.
 
 **These figures are now recomputed by TC-104, not maintained by hand.** It parses what
@@ -234,9 +243,11 @@ happened twice on the same artefact; on its first run it caught `docs/09` claimi
 against 88, plus two bugs of its own (`docs/13`, 2026-10-01). Do not recount by hand — run
 the test.
 
-Suite, measured locally 2026-10-05 on CPU: **562 passed, 17 skipped, 0 failed, 42
-deselected** (`requires_pacs` and `slow`). Risk controls: 32 of 32 allocated a test, 27
-verified by an executed test (`docs/09`, recomputed 2026-10-05; not checked by TC-104).
+Suite, measured in CI on `b7a12eb` (run 38622962858, Linux, 2026-10-14): **609 passed, 18
+skipped, 28 deselected** (`requires_data` and `requires_pacs`). Local runs use the same marker
+filter as CI unless a task needs the excluded tests, and every run's full summary line is
+kept. Risk controls: 32 of 32 allocated a test, 27 verified by an executed test (`docs/09`,
+recomputed 2026-10-05; not checked by TC-104).
 
 **CI state is not asserted here.** The previous version of this line read "CI is green on
 `main`" and was **false**: the two most recent runs before 2026-10-01 both failed on TC-099,
@@ -255,9 +266,13 @@ as the coverage counts did. **Read it from `gh run list`**, never from this file
 | **3** | `spectralis_holdout`, then `topcon_holdout` | **done.** Both trained and evaluated; topcon trained 2026-10-04 in one session from `d35e8e4`, early stopping after epoch 54, best 29, 265.3 s/epoch (`docs/08` §5f); all three folds evaluated seeded 2026-10-05 (`docs/08` §5g). History: **`spectralis_holdout` trained, 2026-10-03/04.** Session 1 (Claude Code, WMI, `5f66359`) was **terminated externally after epoch 9** (`docs/08` D8). Session 2 (the author, VS Code terminal, `7be924f`; training path identical) resumed at 10 and ended by **early stopping at epoch 54**, best epoch **29**, `fold_complete: true` (`docs/08` §5e). **338.8 s/epoch measured** over all 55 epochs; 5.18 h train time. Run dir `artifacts/runs/spectralis_holdout_stage3`. Secondary analyses pre-registered in `docs/07` §19 before it trained. Topcon's frame cache was placed on D: via `OCUVAL_CACHE_DIR`, because C: was short of space |
 | **4** | Uncertainty, subgroup analysis, `docs/10` | **done in substance, 2026-10-05.** All §17 results; §19.1, §19.2 (all folds), §19.3 under the post-hoc §19.5 rule; `docs/10` v0.1. Calibration not evaluated. `eval/report.py` is still a stub |
 
-### What remains open at `v1.0` — written 2026-10-06
+### What remains open at `v1.1.1` — written 2026-10-06, updated 2026-10-15
 
-**Every sealed bucket has been evaluated once under the seeded procedure.** Nothing sealed
+**Every sealed bucket has been evaluated once under the seeded procedure.** The illustrative
+B-scan run (`docs/07` §21.7) was the second access of the spectralis and topcon `test` buckets,
+each with a logged `Unlock`; it was not an evaluation, and each bucket's evaluation count stays
+at one. All six regenerated predictions reproduced their sealed Dice and predicted voxel counts
+exactly. Nothing sealed
 remains to unlock, and nothing about the models may change (`docs/07` §17.7b). Retraining any
 fold would be a new experiment with its own pre-registration, never a replacement for this one.
 
@@ -278,14 +293,19 @@ fold would be a new experiment with its own pre-registration, never a replacemen
 
 **Optional analyses, not done:**
 
-- **RETOUCH leaderboard submission.** The official test partition was deliberately not taken
-  (`docs/06` §2.1); the online submission stays planned and is not a dependency of anything.
+- **RETOUCH leaderboard submission. On hold.** The official test partition was deliberately
+  not taken (`docs/06` §2.1). A plan is drafted for `docs/07` §20 and **not committed**; §20 is
+  reserved for it. No action until the author says so. It is not a dependency of anything.
 - **The dtype-scaling ablation** (`docs/10` §8.1), which would measure how much of the vendor
   gap per-volume normalisation removes. Not run, so §8.1 stands as a stated bound.
 - **The native-resolution comparison** (`docs/10` §8.2), which would price axial
   downsampling. Not run.
 - **AUROC intervals for the sealed records.** Not recoverable without re-unlocking, because the
   scores were not persisted (D9). Declined by the author.
+
+**Possible next phase: a paper.** Named by the author on 2026-10-15 as a possible next phase.
+No plan for it is recorded in the repository and nothing has been started; its scope is the
+author's to set.
 
 **Seeded evaluation costs time:** 2.4× the unseeded duration on `val` (measured). The six sealed
 buckets took 4 h 54 min, plus 37 min for step 0 (measured, `docs/08` §5g.1).
