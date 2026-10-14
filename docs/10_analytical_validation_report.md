@@ -1,8 +1,8 @@
 <!--
 Document: Analytical Validation Report
-Status: DRAFT v0.4 — results from committed records only; illustrative B-scans added 2026-10-14 (§7.4)
+Status: DRAFT v0.4 — results from committed records only; illustrative B-scans added 2026-10-14 (§7.4); a qualitative observation added 2026-10-15 (§7.4)
 Owner: Anurag Yadav
-Last reviewed: 2026-10-14
+Last reviewed: 2026-10-15
 Change history: docs/13_change_control_log.md
 -->
 
@@ -479,6 +479,18 @@ shows the typical sizes. No case identifier, brand or date appears in an image o
 ![Largest PED false-positive case: one B-scan with the expert's outline on the left and the model's on the right.](figures/bscan_fp_ped.png)
 
 **Figure 11.** The largest false-positive case for PED among the held-out scans: of the scans whose expert outline contains no PED, the one in which the model marked the most PED, shown on its B-scan with the most model-marked PED. **This is the largest such case, not a typical one**; for typical sizes, see the predicted-voxel figure. Left, the expert's outline; right, the model's. Chosen by the rule pre-registered in `docs/07` §21, from the numbers alone, before any image was rendered.
+
+**A qualitative observation from six rule-selected extreme cases, not a measured finding.**
+Made by the author on reviewing the six published images, 2026-10-15:
+
+- In the IRF false-positive case (Figure 9), the predicted IRF lies within or beneath the PED,
+  below the retinal pigment epithelium (RPE), where intraretinal fluid cannot occur.
+- In the PED false-positive case (Figure 11), the predicted fluid lies below the RPE, in the
+  choroid.
+
+**How often this
+happens across the held-out scans has not been measured**: it is seen in two images chosen
+as the largest false positives of their kind, which are by construction not typical.
 
 ## 8. Limitations
 
