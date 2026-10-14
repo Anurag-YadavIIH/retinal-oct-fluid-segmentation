@@ -223,7 +223,46 @@ decided them on 2026-10-13 and the corrections are in this change.
 | The signed agreement PDF | Compliant | Never in git history; kept in the author's Downloads folder only |
 | Licence | Compliant | MIT, code only; the README and the report page say it does not extend to the data |
 | §8 retention statement | **Issue, fixed** | It said split and evaluation records are committed and pseudonymised; both are local and keyed on RETOUCH identifiers. Corrected in §8, and §8.1 is now a path-by-path deletion list |
-| Per-scan reference presence in the report page's downloads | **Judgement call, decided** | Presence derives from the reference annotations (DMP-C4). The author decided to keep it in the page's charts and drop it from the downloadable files; applied in the commit that publishes the page |
+| Per-scan reference presence in the report page's downloads | **Judgement call, decided** | Presence derives from the reference annotations (DMP-C4). The author decided to keep it in the page's charts and drop it from the downloadable files; applied in the commit that publishes the page. **Found 2026-10-14:** dropping the column did not keep it out of the downloads, because the remaining columns determine it exactly (§2.5.1) |
+
+### 2.5.1 Per-scan reference presence is public, unlinked — recorded 2026-10-14
+
+**Where it is.** Whether each fluid type is present in each scan's reference is public in
+two places: in `site_src/chart_scans.json`, which is committed and readable in the public
+repository though not deployed, and embedded in the report page, which needs it for its
+charts. That is 273 yes-or-no values: 70 held-out and 21 familiar-brand scans, times three
+fluid types.
+
+**It is also in the downloads, by derivation.** The downloadable `per_scan.csv` and
+`per_scan.json` carry no presence column, as J2 decided, but they carry each scan's Dice,
+HD95 and predicted voxel count, and those determine presence exactly. With nothing
+predicted, Dice is 1 when the reference is empty and 0 when it is not; with something
+predicted, HD95 is undefined only when the reference is empty. Checked on 2026-10-14: the
+rule recovers presence for all 273 rows. So J2 removed a column, not the information, and
+the downloads disclose nothing beyond what the chart input already does. Per-scan Dice and
+HD95 are themselves computed against the reference: they are the results whose publication
+the organiser confirmed in §2.2.1.
+
+**Unlinked.** No row carries a RETOUCH subject identifier, a UID or a reference voxel count.
+Rows are sorted by value, every published field is in the sort key, and every tie on the
+key is between rows identical in every published field, so the row order carries nothing of
+the records' subject order. One scan's three fluid rows cannot be joined to one another.
+TC-131 checks all of this, and is shown able to fail.
+
+**Why this is acceptable.**
+
+- It is a result of the evaluation, not part of the dataset. Publishing results outside the
+  challenge is permitted (§2.2.1).
+- It is a yes-or-no per scan and fluid type. It carries no image, no mask, no location, no
+  extent and no volume, so nothing of the annotations can be rebuilt from it, and it cannot
+  stand in for the dataset (DMP-C4).
+- The same information is already published in aggregate: the counts of scans containing
+  each fluid type per brand (`docs/10` §5.2, the report page's dataset table).
+- It cannot be joined to a subject, to a scan's other fluid types or to anything outside this
+  project (DMP-C11).
+
+If the organisers ask for it to be withdrawn, it goes with the chart input and the
+per-scan downloads, and the agreement governs (§8.1).
 
 ---
 

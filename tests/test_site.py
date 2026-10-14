@@ -120,6 +120,19 @@ def unsorted_groups(rows: list[dict], key=None) -> list[tuple]:
     return [key(a)[:4] for a, b in zip(rows, rows[1:], strict=False) if key(a) > key(b)]
 
 
+def order_leaks(rows: list[dict], order, fields) -> list[tuple]:
+    """Sort keys shared by rows that differ in a published field.
+
+    A stable sort leaves tied rows in their input order, which is the records' subject order.
+    That order reveals nothing only if every tie is between rows identical in every
+    published field, so that swapping them changes nothing a reader can see.
+    """
+    seen: dict[tuple, set] = {}
+    for r in rows:
+        seen.setdefault(order(r), set()).add(tuple(r[k] for k in fields))
+    return [k for k, v in seen.items() if len(v) > 1]
+
+
 def presence_in_downloads(folder: Path = SITE / "data") -> list[str]:
     """Downloadable files that carry reference presence as a field or a column (J2)."""
     found = []
@@ -263,6 +276,9 @@ def test_TC_131_per_scan_rows_carry_only_permitted_fields_and_are_ordered_by_val
         swapped[0], swapped[1] = swapped[1], swapped[0]
         if order(swapped[0]) != order(swapped[1]):
             assert unsorted_groups(swapped, order), "the order check cannot fail"
+        # Ties keep subject order, so a tie must be between indistinguishable rows.
+        assert order_leaks(published["rows"], order, fields) == []
+        assert order_leaks(published["rows"], lambda r: r["run"], fields), "cannot fail"
 
 
 def test_TC_131_downloads_carry_no_reference_presence_and_their_order_cannot_either(tmp_path):
