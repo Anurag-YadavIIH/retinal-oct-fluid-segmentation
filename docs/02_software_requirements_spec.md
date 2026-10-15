@@ -277,7 +277,7 @@ implemented by one of them. TC-001 verifies it.
 
 1. RETOUCH is obtained by manual registered download (`docs/06` §2.1); no requirement here implies automated acquisition.
 2. The reference standard's fluid definitions are inherited, not independently specified (`docs/01` §2).
-3. Training executes on Kaggle; this specification governs the pipeline, not the training host.
+3. Training executes on the author's local workstation, and the dataset is never uploaded anywhere (`docs/06` §7.1); this specification governs the pipeline, not the training host. **Corrected 2026-10-15:** this item previously read "Training executes on Kaggle", which the local-training decision of 2026-09-25 superseded and this item was not updated for (`docs/13`, 2026-10-15). The Kaggle notebook is kept, never used, as `docs/06` §7.1 records.
 4. Orthanc in Docker is the DICOMweb peer for SRS-043..SRS-045. No other PACS is assumed conformant.
 5. MONAI provides transforms, networks and metrics; `pydicom` and `highdicom` provide DICOM read, write and de-identification primitives. SOUP entries in `docs/04` govern.
 6. The UID root in `configs/data.yaml` is a placeholder, as that file states, and will remain one. SRS-007 requires UIDs to be generated under the configured root; it asserts nothing about that root being registered, and the objects this software creates are confined to the local Orthanc instance in consequence (`docs/06` §7.1).

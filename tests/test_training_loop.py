@@ -4,7 +4,7 @@ Covers TC-050 (dataloaders only from a resolved split) and TC-057 (run provenanc
 
 No real data and no real training: the loop is exercised on synthetic frames for two
 epochs on CPU, which verifies that it runs, checkpoints, resumes and records, not that
-it learns anything. Training happens on Kaggle (CLAUDE.md §6).
+it learns anything. Real training runs on the local workstation (CLAUDE.md §6; docs/06 §7.1).
 """
 
 from __future__ import annotations

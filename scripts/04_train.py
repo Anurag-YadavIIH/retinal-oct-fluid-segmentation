@@ -3,8 +3,9 @@
 Traces to: SRS-024, SRS-031, SRS-075
 Implements risk control: RC-018
 
-Training runs on Kaggle, not in a development session (CLAUDE.md §6). This script is the
-entry point that notebook calls.
+Training runs on the local workstation, launched by the author from an interactive
+terminal, not in a development session (CLAUDE.md §6; docs/06 §7.1). The Kaggle notebook
+that would have called this entry point is kept for the record and was never used.
 
 The cache pre-pass runs first by default (SRS-078). Without it the first epoch pays
 ~1.9 h of per-frame volume decoding; with it, ~53 s of per-volume decoding.

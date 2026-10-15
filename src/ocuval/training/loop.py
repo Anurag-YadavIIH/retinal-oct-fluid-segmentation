@@ -4,9 +4,10 @@ Traces to: SRS-024, SRS-031, SRS-075, SRS-076, SRS-077
 Implements risk control: RC-018 (run provenance), RC-028 (checkpoint integrity)
 Verifies: TC-050, TC-057
 
-**Resume is the normal path, not an exception.** Kaggle sessions are preemptible, so the
-loop looks for a checkpoint in the run directory and continues from it rather than
-requiring a flag. An absent checkpoint already means a fresh run, unambiguously, and a
+**Resume is the normal path, not an exception.** Training sessions end before a fold does:
+a session is bounded by `--max-epochs-this-session` or a `STOP` file, and one was killed
+externally mid-epoch (docs/08 D8). So the loop looks for a checkpoint in the run directory
+and continues from it rather than requiring a flag. An absent checkpoint already means a fresh run, unambiguously, and a
 flag would be the thing forgotten at the moment it mattered.
 
 **Validation order is fixed, training order is shuffled.** A metric computed over a
