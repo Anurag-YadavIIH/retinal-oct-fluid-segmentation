@@ -7,8 +7,8 @@ Verifies: TC-050, TC-057
 **Resume is the normal path, not an exception.** Training sessions end before a fold does:
 a session is bounded by `--max-epochs-this-session` or a `STOP` file, and one was killed
 externally mid-epoch (docs/08 D8). So the loop looks for a checkpoint in the run directory
-and continues from it rather than requiring a flag. An absent checkpoint already means a fresh run, unambiguously, and a
-flag would be the thing forgotten at the moment it mattered.
+and continues from it rather than requiring a flag. An absent checkpoint already means a
+fresh run, unambiguously, and a flag would be the thing forgotten at the moment it mattered.
 
 **Validation order is fixed, training order is shuffled.** A metric computed over a
 shuffled loader is identical in expectation and different in floating-point detail, so
