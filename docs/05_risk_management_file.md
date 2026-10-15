@@ -2,7 +2,7 @@
 Document: Risk Management File (ISO 14971)
 Status: DRAFT v0.1
 Owner: Anurag Yadav
-Last reviewed: 2026-09-17
+Last reviewed: 2026-10-15 (reopened, §6.4)
 Change history: docs/13_change_control_log.md
 
 Allocates HAZ-001..HAZ-011 and RC-001..RC-020. Supersedes the interim identifiers
@@ -240,7 +240,7 @@ be written up as though it were one.
 |---|---|---|
 | HAZ-001, HAZ-002 | ALARP | RC-006 makes a systematic version of this visible in evaluation; RC-009 flags the low-confidence cases; RC-017 catches gross cases only. The residual is the subtle, individually plausible error that passes review — irreducible with the controls available |
 | HAZ-003 | ALARP | RC-020 and TC-001 make index reordering a hard failure rather than a silent one. Residual is genuine model confusion between compartments, which RC-006 surfaces per class |
-| HAZ-004 | ALARP | RC-012, RC-013 and RC-015 address the mechanisms. Residual is dominated by the unregistered UID root (`docs/06` §7.1): UIDs carry no claim of global uniqueness, which is accepted only because objects never leave the local Orthanc instance |
+| HAZ-004 | ALARP | RC-012, RC-013 and RC-015 address the mechanisms. Residual is dominated by the unregistered UID root (`docs/06` §7.2): UIDs carry no claim of global uniqueness, which is accepted only because objects never leave the local Orthanc instance, or, from 2026-10-15, an ephemeral CI instance that holds only synthetic test objects, is bound to loopback and is destroyed with its job (`docs/06` §7.2.1, SRS-094). **Updated under the re-evaluation of §6.4**, which found the residual unchanged |
 | HAZ-005 | **ALARP — the highest residual in this file** | RC-006 is the only control that can surface it, and RC-006 is *inside the software whose failure is assumed*. There is no external control for this hazard: §2.4 escalates it for invisibility, ERC-5 aggregation is ineffective against systematic bias, and RC-017 cannot see it case by case. See §5.2 |
 | HAZ-006 | ALARP | RC-010 is the control; its criteria are unresolved until milestone 3 (`docs/02` §6 item 2), so the residual is currently larger than the table implies |
 | HAZ-007 | ALARP | RC-009 is single-point: if the confidence path fails, nothing else detects it. No independent check exists |
@@ -339,7 +339,11 @@ software:
 1. **The structural bound.** No individual's care depends on any output (`docs/01` §5).
    This is what holds severity at S2 across the entire file.
 2. **The bounded deployment.** Objects never leave the local Orthanc instance
-   (`docs/06` §7.1), which is what makes the unregistered UID root tolerable.
+   (`docs/06` §7.2), which is what makes the unregistered UID root tolerable. The one
+   exception, from 2026-10-15, is an ephemeral CI instance that receives synthetic test
+   objects only and is destroyed with its job (`docs/06` §7.2.1); it holds nothing that could
+   collide with anyone else's objects, so the bound is kept. **Updated under the
+   re-evaluation of §6.4.**
 3. **The control set in §4.2** — which is largely specified rather than implemented
    (§5.3).
 
@@ -366,11 +370,49 @@ be reopened rather than amended:
 
 - `docs/01` §2 indications widen, or any output comes to inform an individual's care
   (`docs/03` §5.2 and §8 item 6).
-- Objects are transmitted beyond the local Orthanc instance.
+- Objects are transmitted beyond the local Orthanc instance, other than to the ephemeral CI
+  instance permitted by `docs/06` §7.2.1, or any condition of that permission is relaxed.
+  **Amended under the re-evaluation of §6.4, 2026-10-15**; it previously read "Objects are
+  transmitted beyond the local Orthanc instance."
 - The per-vendor reporting in RC-006 is weakened, aggregated or dropped — it is the only
   control reaching HAZ-005.
 - TC-004 is skipped, weakened or removed, which would return HAZ-008 to an uncontrolled
   state.
+
+### 6.4 Re-evaluation — reopened 2026-10-15 on the `docs/06` §7.2.1 amendment
+
+**Why the file was reopened.** `docs/06` §7.2.1 permits one destination beyond the local
+Orthanc instance: an Orthanc container started for a single CI job, at the SOUP-014 digest,
+bound to the runner's loopback address, receiving only synthetic objects created by the tests,
+uploading no artifact, and removed when the job ends (SRS-094, checked by TC-135). Transmitting
+objects beyond the local instance is a void condition of §6.3, and §6.3 requires the file to be
+reopened rather than amended. This section is that reopening.
+
+**What was reviewed.** Every hazard in §3.2, each against one question: does sending this
+software's synthetic test objects to that CI instance change the foreseeable sequence of events,
+the hazardous situation, the severity, the probability or the residual?
+
+| Hazard | Affected by the amendment? | Reasoning |
+|---|---|---|
+| HAZ-001, HAZ-002, HAZ-003 | No | They concern the model's segmentation of real volumes. The CI job runs no model and reads no RETOUCH volume. |
+| **HAZ-004** | **No: probability, severity and residual unchanged** | Its residual is dominated by the unregistered UID root (§5.1). The CI instance receives synthetic test objects only, so it holds nothing that could collide with another party's objects or be mistaken for them, and it is destroyed with the job, so nothing it holds outlives the run. No object from it is attached to any study a person could be recorded against. Sev S2, Prob P-B and ALARP stand. |
+| HAZ-005 | No | Vendor-correlated bias is surfaced by RC-006 in evaluation. The CI job evaluates nothing. |
+| HAZ-006, HAZ-007 | No | Scope rejection and confidence flagging act on real inputs and model outputs, neither of which reaches the CI job. |
+| HAZ-008 | No | Splits are not involved. TC-004 continues to gate CI in the `quality` job. |
+| HAZ-009 | No | No real identifier exists in the CI objects: they are synthetic, with a fixture patient identifier, and RETOUCH data cannot reach the job (`docs/06` §7.2.1). The de-identification control is unchanged. |
+| HAZ-010 | No | The round-trip includes a check that a SEG's source references survive the PACS (TC-081), which, once executed, would add evidence for RC-013. **Nothing is credited until a green run exists**; the residual is unchanged. |
+| HAZ-011 | No | The CI objects never leave the job and are destroyed with it, so none can be copied out of context without its designation. |
+| HAZ-012 | No | The round-trip checks that spacing survives the PACS (TC-081), which, once executed, would add evidence for RC-024. Not credited until a green run exists; the residual is unchanged. |
+| HAZ-013 | No | No checkpoint is loaded in the CI job. |
+| HAZ-014 | No | RC-027 makes the client ignore ambient environment configuration on any host, the CI runner included; the endpoint is passed explicitly. The CI instance has no credentials (`docker/orthanc/orthanc.json`, authentication off), so there is nothing to leak. |
+| HAZ-015 | No | The round-trip fixture supplies acquisition context explicitly, as a caller would, for a synthetic object. No code path in the software fabricates a value, and the objects are destroyed with the job. |
+| HAZ-016 | No | Reproducibility of reported results is not involved. The CI job produces no result. |
+
+**Conclusion of the re-evaluation.** No hazard's severity, probability or residual changes. The
+overall residual risk statement of §6.1 stands. The two passages that rested on objects never
+leaving the local instance, HAZ-004 in §5.1 and item 2 of §6.1, are updated as consequences of
+this re-evaluation, and the void condition in §6.3 is amended to name the permitted exception and
+to void the evaluation if any of its conditions is relaxed.
 
 ## 7. Open items
 

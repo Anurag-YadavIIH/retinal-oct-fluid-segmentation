@@ -59,7 +59,8 @@ appears in this document.
 The decision taken is to document the placeholder rather than to register a root,
 and not to substitute a different-looking value. In consequence this implementation
 makes **no claim of global UID uniqueness**, and objects it creates are confined to
-the local Orthanc instance.
+the local Orthanc instance, with one exception from 2026-10-15: an ephemeral Orthanc in CI
+that receives synthetic test objects only and is destroyed with its job (`docs/06` §7.2.1).
 
 `1.2.826.0.1.3680043.10` is a real, allocated arc; `.9999` beneath it is **not**
 allocated to this project. The prefix therefore looks legitimate on inspection, which is
@@ -73,7 +74,8 @@ reader to discover.
 ## 10. Known limitations
 
 1. **Unregistered UID root.** UIDs are structurally valid but globally unclaimed
-   (§7, `docs/06` §7.1). Objects must not leave the local Orthanc instance.
+   (§7, `docs/06` §7.2). Objects must not leave the local Orthanc instance, other than
+   synthetic test objects sent to the ephemeral CI instance of `docs/06` §7.2.1.
 2. **Research-use designation mechanism unresolved.** URS-011 and SRS-042 require an
    in-object designation that a result is research-use-only, not clinically validated,
    and automated. The conformant means of expressing this in a SEG and an SR is not yet
@@ -134,7 +136,8 @@ reader to discover.
 
    **This sits alongside the unregistered UID root in item 1.** Both are reasons the
    objects this project creates must not be transmitted beyond the local Orthanc
-   instance.
+   instance, the only exception being synthetic test objects sent to the ephemeral CI
+   instance of `docs/06` §7.2.1.
 
 4. **Frame of Reference is present although its condition is not met.** Table A.52.3-1
    makes the module conditional — "Required if Ophthalmic Photography Reference Image

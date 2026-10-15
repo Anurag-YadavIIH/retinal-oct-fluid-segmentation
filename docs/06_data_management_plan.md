@@ -2,7 +2,7 @@
 Document: Data Management Plan
 Status: DRAFT v0.2 — audited against the agreement 2026-10-08 (§2.5)
 Owner: Anurag Yadav
-Last reviewed: 2026-10-13
+Last reviewed: 2026-10-15
 Change history: docs/13_change_control_log.md
 
 Ordering note: this document is drafted ahead of docs/01-03, out of the
@@ -776,6 +776,56 @@ Consequences, binding on the whole project:
   control.
 
 Carried into `docs/11` §7 and §10. Resolves `docs/02` §6 item 3.
+
+#### 7.2.1 Amendment, 2026-10-15: an ephemeral Orthanc in CI
+
+**What changes.** One further destination is permitted for objects this project produces: an
+Orthanc container started for a single CI job, under all of the following conditions. TC-135
+checks each of them against the workflow file (SRS-094).
+
+- It is started from the image digest pinned in SOUP-014 and configured from
+  `docker/orthanc/orthanc.json`, the same image and configuration as the local instance.
+- Its HTTP port is published on the runner's loopback address only, and no other port is
+  published.
+- It receives only synthetic objects created by the tests in that job. No RETOUCH data, and no
+  object derived from it, can reach the job: the CI checkout holds nothing under `data/` but
+  `.gitkeep`, nothing in CI downloads the dataset, and the job has no secrets.
+- No artifact is uploaded from the job.
+- It is removed when the job ends, pass or fail. Independently, a GitHub-hosted runner is a fresh
+  virtual machine for each job and is discarded afterwards.
+
+Every other use beyond the local Orthanc instance still requires a registered root first.
+
+**Why this is an amendment, not an interpretation.** The rule above says objects must not be
+transmitted beyond "the local Orthanc instance", and that means the one on this workstation. A
+container on a GitHub-hosted runner is the same software at the same digest, but it runs on
+third-party hardware. The letter of the rule does not cover it, so the rule is changed here,
+with its reasoning, rather than read as already permitting it.
+
+**Why the purpose of the rule is kept.** The rule exists because UIDs under an unregistered root
+carry no claim of global uniqueness. They could collide with, or be mistaken for, other parties'
+objects in an archive that holds anything else, or keep circulating if published. An Orthanc that
+exists for one job, holds only that job's synthetic objects, is reachable only from inside the
+runner and is destroyed with the job has nothing to collide with and nothing that outlives it.
+
+**What it adds to existing exposure.** The CI suite already writes synthetic DICOM files on the
+same runners, in the DICOM writer, SEG and SR tests. The round-trip adds sending them over
+loopback to a process on the same machine. Nothing is published as a DICOM file.
+
+**Not a custody question.** §7.1 declined Kaggle because the RETOUCH data would have been stored
+on a third party's servers. That argument concerns who holds the dataset. It does not arise here,
+because no RETOUCH data is involved.
+
+**Loopback, rather than an assumption about the runner's network.** Whether a port published on
+all interfaces of a GitHub-hosted runner is reachable from outside it has not been verified here.
+Binding to 127.0.0.1 removes the question instead of resting on an answer to it.
+
+**The root itself.** The configured root, `1.2.826.0.1.3680043.10.9999`, sits under the arc
+`1.2.826.0.1.3680043`, whose holder issues sub-roots to others: pydicom's own prefix,
+`1.2.826.0.1.3680043.8.498.`, was obtained from that service (pydicom 2.4.4, `uid.py:238-240`).
+**Whether `.10.9999` has been issued to anyone is not known.** Nothing above depends on it,
+since the root is already treated as unregistered, but it is the concrete reason a collision
+cannot be ruled out.
 
 ### 7.3 What has passed through coding-assistant sessions — recorded 2026-10-13
 

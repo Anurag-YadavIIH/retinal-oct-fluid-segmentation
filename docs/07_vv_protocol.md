@@ -45,8 +45,8 @@ but it means §10's coverage figures describe a plan, not a result.
 |---|---|
 | Runtime | Python 3.11, dependencies exactly as pinned in `pyproject.toml` (SOUP-016, NFR-001) |
 | Runner | `pytest`, with `--strict-markers` |
-| Markers | `slow`, `requires_data`, `requires_pacs` — CI excludes the last two, never the leakage gate |
-| PACS | Orthanc at the digest pinned in SOUP-014, via `docker compose` |
+| Markers | `slow`, `requires_data`, `requires_pacs` — CI's `quality` job excludes the last two, never the leakage gate; CI's `pacs` job runs `requires_pacs` (SRS-094, from 2026-10-15) |
+| PACS | Orthanc at the digest pinned in SOUP-014: locally via `docker compose`; in CI, an ephemeral container bound to loopback that receives synthetic objects only (`docs/06` §7.2.1) |
 | Hardware | CPU only. No test in this protocol requires a GPU (NFR-003) |
 | Data | Synthetic fixtures by default. Tests needing RETOUCH carry `requires_data` and do not run in CI |
 
@@ -363,6 +363,7 @@ lists SRS, NFR and RC identifiers.
 | TC-084 | DICOMweb URL construction and multipart wire format | SRS-043, SRS-044 | U | Instance URLs built from all three UIDs with an empty segment refused; multipart/related assembled with CRLF delimiters, per-part media type and length, and a closing boundary; parsing round-trips binary payloads exactly and **raises on a truncated body** rather than returning the parts received so far | yes |
 | TC-085 | STOW-RS response parsing | SRS-043 | U | Referenced and failed instance UIDs both read; a response reporting failures is not treated as success | yes |
 | TC-086 | Client exposes no mutating operation | SRS-045, RC-017 | U | Static check: no delete, modify, reconcile or sign-off method, and the source issues only GET and POST | yes |
+| TC-135 | **CI runs the PACS round-trip against an ephemeral, loopback-only Orthanc at the pinned digest** | SRS-094 | D | Read from `.github/workflows/ci.yml`: a `pacs` job exists and CI's `quality` job does not run `requires_pacs`; the `pacs` job starts Orthanc at exactly the SOUP-014 digest, mounts `docker/orthanc/orthanc.json`, publishes port 8042 on 127.0.0.1 and no other port, runs `pytest -m requires_pacs`, removes the container in a step that runs whether or not the tests pass, has no `upload-artifact` step, and pins its actions to the same commit SHAs as the `quality` job. **Shown able to fail:** each condition is reported as violated on a mutated copy of the job (wrong digest, port on all interfaces, an upload step, no teardown, marker missing) | yes |
 
 **TC-080, TC-081 and TC-082 have never been run.** They were written on 2026-09-19 in
 an environment with no Docker, so no Orthanc existed to execute them against. They are
