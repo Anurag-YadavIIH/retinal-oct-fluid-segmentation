@@ -1,6 +1,6 @@
 <!--
 Document: Model Card
-Status: DRAFT v0.1 — drafted 2026-10-15 from docs/10 v0.4, docs/08, docs/06, docs/01 and docs/03
+Status: DRAFT v0.1 — drafted 2026-10-15 from docs/10 v0.4, docs/08, docs/06, docs/01 and docs/03; per-vendor fluid prevalence added 2026-10-15 (docs/06 §3.2)
 Owner: Anurag Yadav
 Last reviewed: 2026-10-15
 Change history: docs/13_change_control_log.md
@@ -13,7 +13,7 @@ Change history: docs/13_change_control_log.md
 > no clinical claim of any kind. It carries no regulatory clearance (`docs/01` §5).
 
 > **How to read this card.** It adds no result. Every figure is copied from `docs/10` or
-> `docs/08` and cited by section; where they differ in presentation, `docs/10` governs. Each
+> `docs/08`, or for measured dataset figures from `docs/06` §3.2, and cited by section; where they differ in presentation, `docs/10` governs. Each
 > figure keeps its standing from `docs/10`: **primary, pre-registered** (`docs/07` §17),
 > **secondary, pre-registered** (`docs/07` §19) or **post-hoc**, declared after the results it
 > touches were visible.
@@ -98,7 +98,22 @@ be deployed.
 | Reference standard | Manual, voxel-wise, from two clinical centres; not double-graded, with no published per-case inter-rater agreement | `docs/06` §1.2; `docs/10` §8.4 |
 | Per model | Patients of the two training vendors, split at patient level into `train`, `val` (7 patients) and an in-domain reference (7 patients); the held-out vendor is not seen in training | `docs/10` §2; `docs/06` §6 |
 | Training frames | cirrus fold 2610 train and 580 validation frames; spectralis fold 4032 train frames; topcon fold 3088 train and 659 validation frames | `docs/08` §5.1, §5e.4, §5f.1 |
-| Class imbalance | Fluid occupies a very small fraction of voxels in every vendor, and most volumes lack at least one fluid type | `docs/06` §3.2, §3.2.1 |
+| Class imbalance | Fluid occupies a very small fraction of voxels in every vendor (table below), and most volumes lack at least one fluid type | `docs/06` §3.2, §3.2.1 |
+
+**Fluid prevalence per vendor**, voxel-wise, % of all voxels, pooled over all 70 reference
+volumes. Measured 2026-09-23 and copied unchanged from `docs/06` §3.2:
+
+| Vendor | Background | IRF | SRF | PED |
+|---|---|---|---|---|
+| Cirrus | 98.8437 | 0.4019 | 0.3515 | 0.4029 |
+| Spectralis | 98.5173 | 0.5821 | 0.5777 | 0.3229 |
+| Topcon | 99.4011 | 0.2043 | 0.0963 | 0.2983 |
+
+These are pooled voxel counts. For Cirrus and Spectralis they equal the mean of per-volume
+percentages. For Topcon, whose volumes have three geometries, the per-volume mean differs: IRF
+0.1955%, SRF 0.1071%, PED 0.3360% (`docs/06` §3.2). A prevalence table that circulates in the
+literature for this dataset does not match these measured figures and is not used here
+(`docs/06` §3.2; `docs/13`, 2026-10-14 and 2026-10-15).
 
 **Terms of use.** The data is used under a signed Agreement of Data Confidentiality with the
 RETOUCH organisers (`docs/06` §2.1):
