@@ -36,9 +36,10 @@ Change history: docs/13_change_control_log.md
 
 ## Summary
 
-**The pre-registered question** (`docs/07` §17; CLAUDE.md §1): when a fluid-segmentation model
-is trained on two OCT vendors, how much worse does it perform on the third, unseen vendor? The
-comparison is against unseen patients from the vendors it was trained on.
+**The pre-registered question** (`docs/07` §17.1 and §17.7(c); the leave-one-vendor-out design
+is described in `docs/06` §6): when a fluid-segmentation model is trained on two OCT vendors, how
+much worse does it perform on the third, unseen vendor? The comparison is against unseen patients
+from the vendors it was trained on.
 
 **Headline — primary, pre-registered.** **No cross-vendor difference in Dice is established at
 95%, in either direction.** In all three folds, and for each of the three fluid classes, the
@@ -100,7 +101,7 @@ design cannot see a smaller one.
 Quantify the cross-vendor generalisation of retinal OCT fluid segmentation (IRF, SRF, PED).
 Train on two vendors, evaluate on the third, and compare against unseen patients of the
 training vendors. Report every figure per class, per vendor, with a patient-level 95% interval
-and its `n` (CLAUDE.md §5).
+and its `n` (`docs/07` §17.2).
 
 ## 2. Method
 
@@ -115,6 +116,10 @@ and its `n` (CLAUDE.md §5).
 | Gap | in-domain − held-out, **a point difference with no interval**: the two arms are bootstrapped separately | `docs/07` §17.2 |
 | Sealed access | each `test` and `in_domain_ref` bucket evaluated once under the seeded procedure. Cirrus also has an earlier unseeded draw, kept and labelled (§3.1) | `docs/07` §17.10, `docs/08` §5g.1 |
 | Reproducibility | two seeded evaluations of the open `val` bucket at the evaluation commit were IDENTICAL on every one of 466 compared values before any unlock | `docs/08` §5g.1, HAZ-016, RC-032 |
+
+`docs/07` §17.5 names the comparison arm as "in-domain validation"; the arm pre-registered for
+the headline comparison is the in-domain reference (§17.7(c)), and that is the arm used
+throughout.
 
 ![Training loss and in-domain validation Dice per epoch for the three folds.](figures/fig1_training_curves.png)
 
@@ -177,7 +182,7 @@ reproducible record, and the only ones carried into any cross-fold statement.
 Sensitivity and specificity are at the fixed threshold of 10 predicted voxels, reported as they
 fell (§17.7a). **AUROC is primary, because it is threshold-free.** It carries **no interval**,
 because the per-volume detection score was not persisted in any sealed record (`docs/08` D9).
-That is a gap against CLAUDE.md §5, stated rather than hidden (§8.7).
+That is a gap against `docs/07` §17.2, stated rather than hidden (§8.7).
 
 | Held-out vendor | Class | Arm | AUROC (positives/negatives) | Sensitivity | Specificity |
 |---|---|---|---|---|---|
@@ -591,7 +596,7 @@ fold, so the held-out arms are unaffected.
 - **Cirrus also has an unseeded figure, kept on the record.** It is a single draw that cannot
   be reproduced (§3.1).
 - **The sealed AUROCs have no intervals, because the detection score was not persisted**
-  (`docs/08` D9), against CLAUDE.md §5. A patient-level AUROC bootstrap needs each volume's
+  (`docs/08` D9), against `docs/07` §17.2. A patient-level AUROC bootstrap needs each volume's
   MC-dropout mean probability. The per-volume rows of every sealed record carry Dice, HD95,
   voxel counts and reference presence, but not that score: the pipeline used it only inside
   the aggregate. This is the D7 defect repeated for a second field. **It is repaired for future
