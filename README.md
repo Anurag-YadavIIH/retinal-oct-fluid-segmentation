@@ -139,7 +139,6 @@ python scripts/08_build_site.py
 - **The PACS round-trip.** The tests that store and retrieve the DICOM outputs through a local PACS (TC-080 to TC-082) are written but have never run, because Docker is not installed here.
 - **Writing the model's results as DICOM files.** The builders exist and are tested, but no pipeline step calls them yet; `scripts/06_push_to_pacs.py` is a stub.
 - **The inference service and `eval/report.py`** are stubs.
-- **The model card, [`docs/12`](docs/12_model_card.md),** is still a template.
 - **Optional analyses not run:** a RETOUCH leaderboard submission; the ablation that would measure how much of the brand difference the per-scan brightness normalisation removes ([`docs/10`](docs/10_analytical_validation_report.md) §8.1); and confidence intervals for AUROC, which the sealed records cannot provide ([`docs/08`](docs/08_vv_report.md) D9).
 
 **Known weaknesses:** the familiar-brand comparison groups hold 7 patients per fold, so only large differences are detectable; the per-scan score is fragile when a fluid type is absent; and the reproducibility claims are proven on this machine's GPU and software versions only.
