@@ -16,20 +16,21 @@ A stale matrix is worse than no matrix (CLAUDE.md rule 5).
 | URS-001 | SRS-001, SRS-002, SRS-005, SRS-006, SRS-011, SRS-027, SRS-038, SRS-050 | HAZ-003 | RC-020 | TBD | `docs/02` §3 |
 | URS-002 | SRS-003, SRS-040, SRS-046, SRS-054, SRS-055, SRS-056, SRS-057, SRS-058, SRS-059 | HAZ-012 | RC-021, RC-022, RC-023, RC-024, RC-025, RC-026 | TBD | `docs/02` §3 |
 | URS-003 | SRS-045, SRS-047, SRS-060, NFR-006 | HAZ-001, HAZ-002, HAZ-003, HAZ-014 | RC-017, RC-027 | TBD | `docs/02` §3 |
-| URS-004 | SRS-038, SRS-039 | HAZ-004, HAZ-010 | RC-013 | TBD | `docs/02` §3 |
+| URS-004 | SRS-038, SRS-039, SRS-095 | HAZ-004, HAZ-010 | RC-013 | TBD | `docs/02` §3 |
 | URS-005 | SRS-028, SRS-029, SRS-030, SRS-041, SRS-046, SRS-052 | HAZ-001, HAZ-002, HAZ-007 | RC-009 | TBD | `docs/02` §3 |
 | URS-006 | SRS-001, SRS-009, SRS-017, SRS-054 | HAZ-004, HAZ-005, HAZ-012 | RC-008, RC-021 | TBD | `docs/02` §3 |
 | URS-007 | SRS-018, SRS-019, SRS-020, SRS-021, SRS-022, SRS-024, SRS-032, SRS-033, SRS-035, SRS-036, SRS-037, SRS-050, SRS-051, SRS-052, SRS-053, SRS-092, SRS-093, NFR-003, NFR-005 | HAZ-001, HAZ-002, HAZ-003, HAZ-005, HAZ-008, HAZ-009, HAZ-016 | RC-001, RC-002, RC-003, RC-005, RC-006, RC-007, RC-030, RC-032 | TBD | `docs/02` §3 |
 | URS-008 | SRS-003, SRS-010, SRS-025, SRS-026 | HAZ-005 | RC-016 | TBD | `docs/02` §3 |
 | URS-009 | SRS-004, SRS-048, SRS-056 | HAZ-006, HAZ-012 | RC-010, RC-023 | TBD | `docs/02` §3 |
 | URS-010 | SRS-007, SRS-008, SRS-012, SRS-013, SRS-014, SRS-015, SRS-016, SRS-023, SRS-031, SRS-034, SRS-043, SRS-044, SRS-049, SRS-051, SRS-057, SRS-059, SRS-060, SRS-061, SRS-094, NFR-001, NFR-002, NFR-004, NFR-007, NFR-008 | HAZ-004, HAZ-008, HAZ-009, HAZ-010, HAZ-011, HAZ-012, HAZ-013, HAZ-014, HAZ-016 | RC-004, RC-011, RC-012, RC-015, RC-018, RC-019, RC-024, RC-026, RC-027, RC-028, RC-032 | TBD | `docs/02` §3 |
-| URS-011 | SRS-042, SRS-044 | HAZ-006, HAZ-011 | RC-014 | TBD | `docs/02` §3 |
+| URS-011 | SRS-042, SRS-044, SRS-095 | HAZ-006, HAZ-011 | RC-014 | TBD | `docs/02` §3 |
 | — | — | — | — | TC-000 | `src/ocuval/__init__.py` — smoke test, allocated to no requirement (`docs/02` §3) |
 | URS-001 | SRS-002 | HAZ-003 | RC-020 | TC-001 | `configs/data.yaml` |
 | URS-007 | SRS-019, SRS-020, SRS-021 | HAZ-008 | RC-002, RC-003, RC-005 | TC-004 | `src/ocuval/data/splits.py` |
 | URS-007 | SRS-087, SRS-033, SRS-034 | HAZ-008 | RC-006 | TC-124 | `src/ocuval/eval/metrics.py`, `eval/subgroup.py` — patient-level cluster bootstrap |
 | URS-007 | SRS-088 | HAZ-008 | RC-006 | TC-125 | `src/ocuval/eval/sealed.py` — the test split is read once, and the count is durable |
 | URS-007 | SRS-089 | HAZ-008 | RC-006 | TC-126 | `src/ocuval/eval/pipeline.py` — per-volume rows, from which every aggregate is recomputable |
+| URS-004, URS-011 | SRS-095 | — | — | TC-136 | `io/dicom_writer.py`, `report/seg_object.py`, `report/sr_object.py`, `report/coding.py` — every text value in an emitted object is encodable in its declared character set, ASCII where none is declared, with no substitution |
 | URS-010 | SRS-094 | HAZ-004 | — | TC-135 | `.github/workflows/ci.yml`, job `pacs` — the PACS round-trip runs in CI against an ephemeral Orthanc at the SOUP-014 digest, bound to loopback, receiving synthetic objects only and destroyed with the job (`docs/06` §7.2.1) |
 | URS-010 | SRS-090 | HAZ-016 | RC-032 | TC-127 | `scripts/compare_evaluation_records.py` — exact record comparison; NaN in both is equal, NaN in one is a difference |
 | URS-007 | SRS-093 | HAZ-009, HAZ-016 | RC-030, RC-032 | TC-132, TC-133, TC-134 | `scripts/09_illustrative_bscans.py` — at most six B-scans selected by `docs/07` §21, saved only if each regenerated prediction reproduces its sealed record exactly, with no metadata or identifier |
@@ -78,10 +79,10 @@ implemented.
 
 - User requirements with at least one software requirement: **11 of 11**. Every URS in
   `docs/01` derives at least one SRS or NFR in `docs/02`.
-- Software requirements with a verifying test case **allocated**: **94 of 94**
+- Software requirements with a verifying test case **allocated**: **95 of 95**
   SRS and **8 of 8** NFR. Every SRS names a test case in its own row; each NFR is named by
   at least one row of `docs/07` §6 instead, the allocation running in that direction.
-- Test cases **registered** in `docs/07` §6: **121**.
+- Test cases **registered** in `docs/07` §6: **122**.
   Test cases **written**: **97**. Of those,
   **97 are executed** by the suite and
   **0 have never been run**. TC-080, TC-081 and TC-082 need a PACS, which is not available
@@ -89,7 +90,7 @@ implemented.
   against an ephemeral Orthanc (SRS-094), and their first run passed (`docs/08` §5h). A
   written test that nobody has executed is not verification, and is not counted as such here.
   The remaining
-  **24** are registered and unwritten.
+  **25** are registered and unwritten.
 
 > **These figures are recomputed by TC-104, not maintained by hand** (since 2026-10-01).
 > `tests/test_traceability_current.py` parses the numbers this section claims, recomputes

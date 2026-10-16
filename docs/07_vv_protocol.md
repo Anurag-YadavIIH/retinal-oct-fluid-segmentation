@@ -351,6 +351,7 @@ lists SRS, NFR and RC identifiers.
 | TC-075 | SR records voxel count and voxel volume | SRS-059, RC-026 | U | Derivation recomputable from the object alone | yes |
 | TC-076 | SR carries confidence and review flag | SRS-041, RC-009 | U | Both present in the SR, not only in logs | yes |
 | TC-077 | Research-use designation present | SRS-042, RC-014 | U | Designation present in SEG and SR, readable by software and by a person | yes |
+| TC-136 | **Every text value in an emitted object is encodable without substitution** | SRS-095 | U | An OPT object from `io/dicom_writer`, a SEG from `report/seg_object` and an SR from `report/sr_object`, each built by the real builder from synthetic input, are serialised with pydicom's "Failed to encode value" warning raised as an error. In each, where Specific Character Set is absent, every text value, including those nested in sequences, is ASCII. **Shown able to fail** on the scheme declaration's em dash before it was removed | yes |
 
 ### 6.9 PACS communication
 
