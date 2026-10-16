@@ -8,6 +8,21 @@ Change history: docs/13_change_control_log.md
 
 # Analytical Validation Report
 
+> **KNOWN DEFECT, found 2026-10-16: do not rely on the segmentation results in this document.**
+> The evaluation returned each prediction to native geometry with `invert_axial_resample`,
+> which resized the whole padded frame without first removing the symmetric padding that
+> preprocessing adds to reach `roi_size`. Predictions were therefore compressed towards the
+> middle of each B-scan: by 500/576 for cirrus and 480/576 for spectralis, and barely for
+> topcon (569 or 575 of 576). **Every Dice and HD95 figure below, and the cross-vendor
+> comparison they support, is affected, and affected differently by vendor.** Measured on
+> synthetic frames, a *perfect* prediction scored Dice 0.000 to 0.938 for cirrus and 0.000
+> to 0.913 for spectralis depending on where the structure sat, against 0.906 to 1.000 for
+> topcon (`docs/13`, 2026-10-16). Training, checkpoint selection and the AUROC figures
+> (computed before inversion) are not affected; sensitivity and specificity use predicted
+> voxel counts after inversion and probably are. The figures stay here unchanged and marked,
+> because the record states what happened; corrected figures require a fixed inversion and a
+> re-evaluation recorded beside these under `docs/07` §17.7(b).
+
 > **Every figure in this document is copied from the committed record of the run that
 > produced it**: `docs/08` §5c–§5g, built from the evaluation records under `artifacts/`. None
 > is computed here for the first time. Each is labelled with its standing:

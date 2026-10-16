@@ -12,6 +12,8 @@ A study of whether software that finds fluid in eye scans still works on a scann
 - **How:** test data sealed until the end, the analysis written down before any results, training and evaluation reproducible, documented following medical device software standards (IEC 62304, ISO 14971).
 - **Built with:** Python, PyTorch, MONAI, pydicom, highdicom, GitHub Actions.
 
+> **Known defect, found after publication: do not rely on the segmentation results below.** The evaluation put each prediction back into the scanner's own geometry without first removing the padding added during preprocessing. That shifts and squeezes predictions for the Cirrus and Spectralis scans and barely affects Topcon, so every Dice and HD95 figure, and the comparison between brands, is affected. The figures are kept and marked until corrected results replace them. Details: [`docs/10`](docs/10_analytical_validation_report.md) and [`docs/13`](docs/13_change_control_log.md), 2026-10-16.
+
 > **Not for clinical use.** This is a research and portfolio project built on public challenge data. It has never been used on patients, has not been validated for patient care, and makes no clinical claim of any kind.
 
 ![Dice score with 95% intervals on the unseen scanner brand and on new patients from the familiar brands, for each run and fluid type, with the three runs combined in the bottom rows.](docs/figures/fig2_dice_intervals.svg)

@@ -12,6 +12,12 @@ Change history: docs/13_change_control_log.md
 > data. It has never been used on patients, has not been validated for patient care, and makes
 > no clinical claim of any kind. It carries no regulatory clearance (`docs/01` §5).
 
+> **Known defect, found 2026-10-16: the segmentation figures in this card are not
+> reliable.** They are copied from `docs/10`, whose evaluation returned predictions to native
+> geometry without removing the preprocessing padding. Cirrus and spectralis predictions were
+> compressed towards the middle of each B-scan; topcon barely. See the `docs/10` notice and
+> `docs/13`, 2026-10-16. The trained models themselves are not affected.
+
 > **How to read this card.** It adds no result. Every figure is copied from `docs/10` or
 > `docs/08`, or for measured dataset figures from `docs/06` §3.2, and cited by section; where they differ in presentation, `docs/10` governs. Each
 > figure keeps its standing from `docs/10`: **primary, pre-registered** (`docs/07` §17),

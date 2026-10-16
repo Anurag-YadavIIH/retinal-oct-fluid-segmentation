@@ -819,6 +819,12 @@ moved between 8.50 and 14.65 GB with the page file, and no threshold was approac
 
 ## 5g. Stage 3 — seeded evaluation of all three folds
 
+> **KNOWN DEFECT, found 2026-10-16, affecting §5d and §5g.** Every segmentation figure
+> here was measured after `invert_axial_resample` returned predictions to native geometry
+> without removing the preprocessing padding, compressing cirrus and spectralis predictions
+> towards the middle of each B-scan and barely affecting topcon. The figures are kept as
+> recorded and are not reliable (`docs/10` notice; `docs/13`, 2026-10-16).
+
 Run 2026-10-04 21:36 to 2026-10-05 03:07 local, under `docs/07` §17 as amended in §17.10
 **before any unlock**. One chain, `scripts/run_remaining.ps1` at **`5d0dc3c`**, was launched by
 the author from the VS Code integrated terminal. Records:
