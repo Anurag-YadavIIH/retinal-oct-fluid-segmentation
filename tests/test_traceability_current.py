@@ -17,10 +17,14 @@ document and the repository disagree, whichever of them is wrong. So editing `do
 without changing reality fails, and adding a test without updating `docs/09` fails too.
 
 **What "executed" means here, stated rather than assumed.** A test case counts as *never
-executed* when every test function carrying its identifier is marked `requires_pacs` -- the
-documented reason the three Docker-blocked cases cannot run. That is computed from the test
-sources, not from a pytest collection, because running pytest inside pytest makes the answer
-depend on which invocation is in progress.
+executed* when every test function carrying its identifier is marked `requires_pacs` **and no
+CI job runs `pytest -m requires_pacs`**. Until 2026-10-16 no job did, because no Orthanc was
+available, and that was the documented reason the three Docker-blocked cases could not run.
+From then CI's `pacs` job runs them (SRS-094, `docs/08` §5h), so the marker no longer means
+"never run". The job is read from `.github/workflows/ci.yml`, so removing it returns the three
+to "never executed" here without anyone editing this file. That is computed from the sources,
+not from a pytest collection, because running pytest inside pytest makes the answer depend on
+which invocation is in progress.
 """
 
 from __future__ import annotations
@@ -120,12 +124,30 @@ def written_test_cases() -> dict[str, set[str]]:
     return out
 
 
-def never_executed(written: dict[str, set[str]]) -> set[str]:
-    """Written cases no invocation here can run: every carrier needs a PACS.
+CI_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "ci.yml"
+PACS_PYTEST = re.compile(r"""\bpytest\b[^\n]*\s-m\s+["']?requires_pacs["']?(\s|$)""")
 
-    A case counts as never executed when `requires_pacs` is on it, since CI and every local
-    sweep deselect that marker and Docker is not installed (`docs/08` D3's sibling).
+
+def ci_runs_requires_pacs(workflow_text: str | None = None) -> bool:
+    """Whether any CI job runs `pytest -m requires_pacs` (SRS-094's `pacs` job)."""
+    import yaml
+
+    workflow = yaml.safe_load(workflow_text if workflow_text is not None else text(CI_WORKFLOW))
+    for job in (workflow.get("jobs") or {}).values():
+        for step in job.get("steps", []):
+            if PACS_PYTEST.search(step.get("run", "")):
+                return True
+    return False
+
+
+def never_executed(written: dict[str, set[str]], workflow_text: str | None = None) -> set[str]:
+    """Written cases no invocation can run: every carrier needs a PACS and no CI job has one.
+
+    Locally Docker is not installed, so `requires_pacs` cases run only in CI's `pacs` job. If
+    that job exists they are executed; if it is removed, they are never executed again.
     """
+    if ci_runs_requires_pacs(workflow_text):
+        return set()
     return {identifier for identifier, marks in written.items() if "requires_pacs" in marks}
 
 
@@ -198,11 +220,24 @@ def test_TC_104_the_never_run_cases_are_the_ones_named():
     """The identifiers, not just the count. A different three would keep the count right."""
     blocked = never_executed(written_test_cases())
     stated = re.search(r"have never been run\*\* \(([^)]+)\)", text(MATRIX))
+    if not blocked:
+        assert not stated, f"docs/09 still names {stated.group(1)!r} as never run; none are"
+        return
     assert stated, "docs/09 no longer names the never-run cases"
     named = {part.strip() for part in stated.group(1).split(",")}
     assert (
         named == blocked
     ), f"docs/09 names {sorted(named)} as never run; the test sources say {sorted(blocked)}"
+
+
+def test_TC_104_removing_the_pacs_job_returns_the_pacs_cases_to_never_executed():
+    """Shown able to fail: the executed count follows the workflow, not a decision in here."""
+    written = written_test_cases()
+    pacs_cases = {i for i, marks in written.items() if "requires_pacs" in marks}
+    assert {"TC-080", "TC-081", "TC-082"} <= pacs_cases
+    assert never_executed(written) == set(), "CI's pacs job is not recognised"
+    without_job = "jobs:\n  quality:\n    steps:\n      - run: pytest -m 'not requires_pacs'\n"
+    assert never_executed(written, without_job) == pacs_cases
 
 
 def test_TC_104_the_unwritten_count_is_current():

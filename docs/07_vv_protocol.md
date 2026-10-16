@@ -356,9 +356,9 @@ lists SRS, NFR and RC identifiers.
 
 | ID | Title | Verifies | Method | Acceptance criterion | Auto |
 |---|---|---|---|---|---|
-| TC-080 | STOW-RS store and WADO-RS retrieve | SRS-043 | S | Object stored and retrieved against the pinned Orthanc | written, **never executed** (`requires_pacs`) |
-| TC-081 | Round-trip fidelity | SRS-044, RC-014 | S | Retrieved object matches sent in pixel data, spacing, vendor and source references | written, **never executed** (`requires_pacs`) |
-| TC-082 | No action beyond store and retrieve | SRS-045, RC-017 | S | No delete, modify or reconcile; retrieving twice yields the same object | written, **never executed** (`requires_pacs`) |
+| TC-080 | STOW-RS store and WADO-RS retrieve | SRS-043 | S | Object stored and retrieved against the pinned Orthanc | yes (`requires_pacs`; run by CI's `pacs` job, first 2026-10-16) |
+| TC-081 | Round-trip fidelity | SRS-044, RC-014 | S | Retrieved object matches sent in pixel data, spacing, vendor and source references | yes (`requires_pacs`; run by CI's `pacs` job, first 2026-10-16) |
+| TC-082 | No action beyond store and retrieve | SRS-045, RC-017 | S | No delete, modify or reconcile; retrieving twice yields the same object | yes (`requires_pacs`; run by CI's `pacs` job, first 2026-10-16) |
 | TC-083 | Client ignores ambient environment | SRS-060, RC-027 | U | With `.netrc`, proxy and certificate variables set in the environment, the client uses none of them | yes |
 | TC-084 | DICOMweb URL construction and multipart wire format | SRS-043, SRS-044 | U | Instance URLs built from all three UIDs with an empty segment refused; multipart/related assembled with CRLF delimiters, per-part media type and length, and a closing boundary; parsing round-trips binary payloads exactly and **raises on a truncated body** rather than returning the parts received so far | yes |
 | TC-085 | STOW-RS response parsing | SRS-043 | U | Referenced and failed instance UIDs both read; a response reporting failures is not treated as success | yes |
@@ -375,6 +375,12 @@ not implement. The second is a `docs/11` finding, not a defect.
 
 Until someone reports a run, these three carry no evidence and must not be counted as
 verification.
+
+**First executed 2026-10-16**, in CI's `pacs` job (SRS-094), run 38854956053: all 8 test
+functions passed against Orthanc 1.12.4 with DICOMweb 1.17 (`docs/08` §5h). Neither failure
+mode above occurred. TC-081 does not check the fluid volumes, confidence value or research-use
+designation that SRS-044 names, so its pass is evidence for pixel data, spacing, identity and
+source references only.
 
 ### 6.10 Inference API
 

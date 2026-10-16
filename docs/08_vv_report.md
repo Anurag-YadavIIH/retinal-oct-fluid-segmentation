@@ -1184,6 +1184,64 @@ positives, would have been informative. Their AUROCs are 0.95–1.00 as point va
 
 ---
 
+## 5h. First execution of the PACS round-trip, TC-080 to TC-082 — in CI, 2026-10-16
+
+> **What this is.** The first execution of TC-080, TC-081 and TC-082, written 2026-09-19 and
+> never run until now because no Orthanc existed here. They ran in CI's `pacs` job (SRS-094)
+> against an ephemeral Orthanc that received synthetic objects only (`docs/06` §7.2.1). No
+> RETOUCH data and no model were involved.
+
+### 5h.1 The run
+
+| Field | Value | Source |
+|---|---|---|
+| Run | GitHub Actions run **38854956053**, job `pacs` **116824237375**, on pull request #1 | `gh run view` |
+| Commit | the head of branch `pacs-ci` when the run started, recorded by the run itself (`gh run view 38854956053`). Not cited by SHA: before the merge it is not reachable from `main`, and TC-108 rejects a citation that is not | run record |
+| Date | 2026-10-16, job 05:17:00 → 05:18:24 UTC | job timestamps |
+| Runner | `ubuntu-24.04`, GitHub-hosted | workflow |
+| Image | `orthancteam/orthanc:24.7.3`, the SOUP-014 digest | workflow, TC-135 |
+| **Orthanc** | **1.12.4**, `Name` "OcuVal", read from `docker/orthanc/orthanc.json` | `GET /system`, container log |
+| **DICOMweb plugin** | **`dicom-web` 1.17**, REST API at `/dicom-web/` | container log |
+| Readiness | `GET /dicom-web/studies: 200` | job log |
+| **Tests** | **8 passed, 659 deselected, 71 warnings in 6.09s** (`pytest -m requires_pacs`) | job log |
+| Teardown | container log printed, container removed | job log |
+
+The 8 are every test function in `tests/test_dicomweb_roundtrip.py`: TC-080 (2), TC-081 (4),
+TC-082 (2). The `quality` job of the same run passed: 618 passed, 21 skipped, 28 deselected;
+three of those skips were TC-108 failing to run on a pull request, a defect since fixed
+(`docs/13`, 2026-10-16).
+
+### 5h.2 Expected entries in the Orthanc log
+
+Each was read and is expected, not a fault:
+
+| Entry | Why it is expected |
+|---|---|
+| `E … Accessing an inexistent Instance with WADO-RS: 1.2.826.0.1.3680043.10.9999.404/…` and `Exception inside the plugin engine: Accessing an inexistent item`, 05:18:20 | TC-081's `test_TC_081_unknown_instance_raises_rather_than_returning_empty` deliberately requests UIDs ending `.404`; Orthanc refuses and the client raises, as the test requires |
+| `E … Inexistent path to plugins: /run/orthanc/plugins` | The image probes two plugin directories; the plugins load from the second, `/usr/share/orthanc/plugins`, including `dicom-web` |
+| `W … Remote access is enabled while user authentication is explicitly disabled, your setup is POSSIBLY INSECURE` | What `orthanc.json` sets for a local-only instance. In CI the port is published on 127.0.0.1 only (TC-135) |
+| `W … DICOM server listening with AET OCUVAL on port: 4242` | Inside the container only; port 4242 is not published (TC-135) |
+| `W001: Accessing Dicom tags from storage when accessing series` | An Orthanc performance notice on a series search (TC-082's search test), not an error |
+
+### 5h.3 What this establishes, and what it does not
+
+- **Established:** against Orthanc 1.12.4 with DICOMweb 1.17, the client stores instances and a
+  SEG with STOW-RS, retrieves them with WADO-RS, raises on an unknown instance, and leaves the
+  archive unchanged by retrieval and search. The retrieved OPT instance matched what was sent in
+  SOP Instance UID, manufacturer, number of frames, pixel data, pixel spacing and slice
+  thickness; the retrieved SEG kept its source references.
+- **Not established:** SRS-044 also names the fluid volumes, the confidence value and the
+  research-use designation. **TC-081 checks none of them**, so the round-trip of those three is
+  unverified, and RC-014, allocated to TC-081 and to the unwritten TC-077, is **not** counted as
+  verified (`docs/13`, 2026-10-16).
+- **One warning, open:** the SEG test emitted pydicom's `Failed to encode value with
+  encodings: iso8859 - using replacement characters`. Some text in the SEG built by
+  `report/seg_object.py` was not representable in its declared character set and was replaced,
+  so the stored object differs from what was intended. Investigated next, as a `docs/11`
+  conformance finding.
+- **One server, one version.** This is evidence against this Orthanc and plugin version only,
+  not against DICOMweb servers in general.
+
 ## 6. Conclusion
 
 **Not drafted.** The validation conclusion requires the cross-vendor result, which is
