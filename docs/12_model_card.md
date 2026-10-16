@@ -86,7 +86,9 @@ be deployed.
   could not detect one smaller than about 0.14 Dice (`docs/10` Summary, §5.4). That is not
   evidence of robustness.
 - **Not outside a local PACS.** DICOM objects carry UIDs under an unregistered root and must
-  not leave the local Orthanc instance or be published as DICOM files (`docs/06` §7.2).
+  not leave the local Orthanc instance or be published as DICOM files (`docs/06` §7.2). The
+  one exception is synthetic test objects sent to an ephemeral Orthanc in CI, which is
+  destroyed with its job (`docs/06` §7.2.1).
 
 ## Training data
 

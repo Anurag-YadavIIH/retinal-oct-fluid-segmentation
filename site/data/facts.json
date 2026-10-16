@@ -109,13 +109,13 @@
   "eval_differ": 49
  },
  "docs": {
-  "srs": 93,
-  "registered": 120,
-  "written": 96,
-  "executed": 93,
+  "srs": 94,
+  "registered": 121,
+  "written": 97,
+  "executed": 97,
   "hazards": 16,
   "controls": 32,
   "safety_class": "B",
-  "never_run": 3
+  "never_run": 0
  }
 }

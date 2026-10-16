@@ -45,8 +45,8 @@ but it means §10's coverage figures describe a plan, not a result.
 |---|---|
 | Runtime | Python 3.11, dependencies exactly as pinned in `pyproject.toml` (SOUP-016, NFR-001) |
 | Runner | `pytest`, with `--strict-markers` |
-| Markers | `slow`, `requires_data`, `requires_pacs` — CI excludes the last two, never the leakage gate |
-| PACS | Orthanc at the digest pinned in SOUP-014, via `docker compose` |
+| Markers | `slow`, `requires_data`, `requires_pacs` — CI's `quality` job excludes the last two, never the leakage gate; CI's `pacs` job runs `requires_pacs` (SRS-094, from 2026-10-15) |
+| PACS | Orthanc at the digest pinned in SOUP-014: locally via `docker compose`; in CI, an ephemeral container bound to loopback that receives synthetic objects only (`docs/06` §7.2.1) |
 | Hardware | CPU only. No test in this protocol requires a GPU (NFR-003) |
 | Data | Synthetic fixtures by default. Tests needing RETOUCH carry `requires_data` and do not run in CI |
 
@@ -356,13 +356,14 @@ lists SRS, NFR and RC identifiers.
 
 | ID | Title | Verifies | Method | Acceptance criterion | Auto |
 |---|---|---|---|---|---|
-| TC-080 | STOW-RS store and WADO-RS retrieve | SRS-043 | S | Object stored and retrieved against the pinned Orthanc | written, **never executed** (`requires_pacs`) |
-| TC-081 | Round-trip fidelity | SRS-044, RC-014 | S | Retrieved object matches sent in pixel data, spacing, vendor and source references | written, **never executed** (`requires_pacs`) |
-| TC-082 | No action beyond store and retrieve | SRS-045, RC-017 | S | No delete, modify or reconcile; retrieving twice yields the same object | written, **never executed** (`requires_pacs`) |
+| TC-080 | STOW-RS store and WADO-RS retrieve | SRS-043 | S | Object stored and retrieved against the pinned Orthanc | yes (`requires_pacs`; run by CI's `pacs` job, first 2026-10-16) |
+| TC-081 | Round-trip fidelity | SRS-044, RC-014 | S | Retrieved object matches sent in pixel data, spacing, vendor and source references | yes (`requires_pacs`; run by CI's `pacs` job, first 2026-10-16) |
+| TC-082 | No action beyond store and retrieve | SRS-045, RC-017 | S | No delete, modify or reconcile; retrieving twice yields the same object | yes (`requires_pacs`; run by CI's `pacs` job, first 2026-10-16) |
 | TC-083 | Client ignores ambient environment | SRS-060, RC-027 | U | With `.netrc`, proxy and certificate variables set in the environment, the client uses none of them | yes |
 | TC-084 | DICOMweb URL construction and multipart wire format | SRS-043, SRS-044 | U | Instance URLs built from all three UIDs with an empty segment refused; multipart/related assembled with CRLF delimiters, per-part media type and length, and a closing boundary; parsing round-trips binary payloads exactly and **raises on a truncated body** rather than returning the parts received so far | yes |
 | TC-085 | STOW-RS response parsing | SRS-043 | U | Referenced and failed instance UIDs both read; a response reporting failures is not treated as success | yes |
 | TC-086 | Client exposes no mutating operation | SRS-045, RC-017 | U | Static check: no delete, modify, reconcile or sign-off method, and the source issues only GET and POST | yes |
+| TC-135 | **CI runs the PACS round-trip against an ephemeral, loopback-only Orthanc at the pinned digest** | SRS-094 | D | Read from `.github/workflows/ci.yml`: a `pacs` job exists and CI's `quality` job does not run `requires_pacs`; the `pacs` job starts Orthanc at exactly the SOUP-014 digest, mounts `docker/orthanc/orthanc.json`, publishes port 8042 on 127.0.0.1 and no other port, runs `pytest -m requires_pacs`, removes the container in a step that runs whether or not the tests pass, has no `upload-artifact` step, and pins its actions to the same commit SHAs as the `quality` job. **Shown able to fail:** each condition is reported as violated on a mutated copy of the job (wrong digest, port on all interfaces, an upload step, no teardown, marker missing) | yes |
 
 **TC-080, TC-081 and TC-082 have never been run.** They were written on 2026-09-19 in
 an environment with no Docker, so no Orthanc existed to execute them against. They are
@@ -374,6 +375,12 @@ not implement. The second is a `docs/11` finding, not a defect.
 
 Until someone reports a run, these three carry no evidence and must not be counted as
 verification.
+
+**First executed 2026-10-16**, in CI's `pacs` job (SRS-094), run 38854956053: all 8 test
+functions passed against Orthanc 1.12.4 with DICOMweb 1.17 (`docs/08` §5h). Neither failure
+mode above occurred. TC-081 does not check the fluid volumes, confidence value or research-use
+designation that SRS-044 names, so its pass is evidence for pixel data, spacing, identity and
+source references only.
 
 ### 6.10 Inference API
 
@@ -462,7 +469,7 @@ about each other and about the code, and nothing else checks them.
 | TC-105 | Intended use change gate | — (`docs/03` open item 6) | D | See §7.3 | yes |
 | TC-106 | Image digests match the SOUP list | — (`docs/04` open item 9) | D | Digests in `docker/Dockerfile.api` and `docker/docker-compose.yml` equal SOUP-017 and SOUP-014 | yes |
 | TC-107 | Change control log touched | NFR-007 | D | A commit introducing a new `URS`/`SRS`/`NFR`/`HAZ`/`RC`/`TC`/`SOUP` identifier in `docs/` also stages `docs/13`. Implemented as a `commit-msg` hook, `scripts/check_change_control.py` | partial — implemented 2026-09-19 |
-| TC-108 | Cited commit SHAs resolve | NFR-008 | D | Every commit SHA cited in `docs/`, `scripts/`, `CLAUDE.md` or `.pre-commit-config.yaml` resolves to a commit reachable from `main` | yes |
+| TC-108 | Cited commit SHAs resolve | NFR-008 | D | Every commit SHA cited in `docs/`, `scripts/`, `CLAUDE.md` or `.pre-commit-config.yaml` resolves to a commit reachable from `main`, falling back to `origin/main` and then `HEAD` where a ref cannot be resolved, as in a pull-request checkout. **In CI (`CI` set), any reason the check cannot run is a failure, never a skip**; shown on a simulated checkout where no ref resolves (amended 2026-10-16) | yes |
 | TC-097 | **The shipped config matches the recorded hardware decisions** | SRS-031; `docs/13` 2026-09-26 | D | `configs/train_seg.yaml` has `train.amp: false`, matching the measured AMP decision and the run conditions pre-registered in §15; `micro_batch_size` divides `batch_size`; `cache_dir` is not on the system volume. A decision recorded only in prose is one nothing enforces — §3 rule 8 | yes |
 | TC-098 | **Every module under  imports** | NFR-001, NFR-008 | U | Walking the package and importing every module succeeds. A module that cannot be imported is not covered by any test that never imports it, so a green suite says nothing about it — §3 rule 8 | yes |
 | TC-099 | **The installed environment matches `requirements.lock`** | NFR-002, NFR-001 | D | Every applicable locked entry is installed at the locked version and nothing installed is absent from the lock; the lock carries no local build label on torch; Windows-only entries carry platform markers; and where the installed torch build differs from the lock, the build variant is **recorded** in `docs/04` and the README rather than tolerated | yes |

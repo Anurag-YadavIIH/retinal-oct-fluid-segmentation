@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-093 and NFR-001..NFR-008. Every requirement here derives
+Allocates SRS-001..SRS-094 and NFR-001..NFR-008. Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -195,6 +195,7 @@ reported for detection either, and the prevalence figures in `docs/06` §3.2 are
 | SRS-044 | A stored object shall be retrievable and shall match what was sent in its pixel data, its fluid volumes, its confidence value and its research-use designation. | URS-010, URS-011 | TC-081, TC-112 |
 | SRS-045 | The software shall perform no action against the PACS beyond storing and retrieving its own objects. It shall not delete, modify or reconcile existing content, and it shall not mark any object as final, verified or signed off. | URS-003 | TC-082 |
 | SRS-060 | The DICOMweb client shall take its entire configuration from the run configuration and shall not read ambient environment configuration — no `.netrc`, no environment-supplied proxy or certificate settings. Sessions shall be constructed with `trust_env=False`. | URS-003, URS-010 | TC-083 |
+| SRS-094 | Continuous integration shall execute the PACS round-trip tests (`requires_pacs`) in a job of their own that gates CI, against an Orthanc container started from the image digest pinned in SOUP-014 and configured from `docker/orthanc/orthanc.json`. The container's HTTP port shall be published on the runner's loopback address only, and no other port shall be published. The job shall send only synthetic objects created by its tests, shall upload no artifact, and shall remove the container when it ends, pass or fail (`docs/06` §7.2.1). **Added 2026-10-15.** | URS-010 | TC-135 |
 
 ### 3.9 Inference API
 
@@ -236,6 +237,7 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `scripts/05_evaluate.py` | SRS-091 |
 | `scripts/08_build_site.py` | SRS-092 |
 | `scripts/09_illustrative_bscans.py` | SRS-093 |
+| `.github/workflows/ci.yml`, job `pacs` | SRS-094 |
 | `data/datamodule.py` | SRS-024 |
 | `data/transforms.py` | SRS-025, SRS-026 |
 | `models/seg_unet.py` | SRS-027, SRS-028, SRS-061 |
@@ -280,7 +282,7 @@ implemented by one of them. TC-001 verifies it.
 3. Training executes on the author's local workstation, and the dataset is never uploaded anywhere (`docs/06` §7.1); this specification governs the pipeline, not the training host. **Corrected 2026-10-15:** this item previously read "Training executes on Kaggle", which the local-training decision of 2026-09-25 superseded and this item was not updated for (`docs/13`, 2026-10-15). The Kaggle notebook is kept, never used, as `docs/06` §7.1 records.
 4. Orthanc in Docker is the DICOMweb peer for SRS-043..SRS-045. No other PACS is assumed conformant.
 5. MONAI provides transforms, networks and metrics; `pydicom` and `highdicom` provide DICOM read, write and de-identification primitives. SOUP entries in `docs/04` govern.
-6. The UID root in `configs/data.yaml` is a placeholder, as that file states, and will remain one. SRS-007 requires UIDs to be generated under the configured root; it asserts nothing about that root being registered, and the objects this software creates are confined to the local Orthanc instance in consequence (`docs/06` §7.2).
+6. The UID root in `configs/data.yaml` is a placeholder, as that file states, and will remain one. SRS-007 requires UIDs to be generated under the configured root; it asserts nothing about that root being registered, and the objects this software creates are confined to the local Orthanc instance in consequence (`docs/06` §7.2). The one exception, from 2026-10-15, is synthetic test objects sent to an ephemeral Orthanc in CI that is destroyed with its job (`docs/06` §7.2.1, SRS-094).
 
 ## 6. Open items
 

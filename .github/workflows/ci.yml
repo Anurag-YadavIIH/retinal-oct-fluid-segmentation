@@ -71,3 +71,65 @@ jobs:
       # those groups and must always run here. See CLAUDE.md rule 2.
       - name: Test
         run: pytest -m "not requires_data and not requires_pacs"
+
+  pacs:
+    # SRS-094: the PACS round-trip (TC-080..TC-082) against an Orthanc that exists only for
+    # this job. docs/06 section 7.2.1 permits objects to leave the local Orthanc instance for
+    # this destination alone, and only under the conditions below; TC-135 checks each of them
+    # in this file. Change one and the amendment no longer covers the job.
+    #   - the image is the SOUP-014 digest, configured from docker/orthanc/orthanc.json;
+    #   - port 8042 is published on loopback only, and no other port is published;
+    #   - the tests send synthetic objects only (tests/test_dicomweb_roundtrip.py), and
+    #     nothing in CI holds or downloads RETOUCH data;
+    #   - no artifact is uploaded;
+    #   - the container is removed whether or not the tests pass, and the runner is a fresh
+    #     virtual machine per job.
+    # It gates CI like the quality job, so a failure here fails the run.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      # The same install as the quality job, for the same reasons (see there).
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install --index-url https://download.pytorch.org/whl/cpu "torch==2.3.1"
+          pip install -r requirements.lock
+          pip install -e ".[dev]" --no-deps
+
+      # Started after checkout, not as a services: container, so it can mount the same
+      # orthanc.json the local docker compose setup uses.
+      - name: Start Orthanc
+        run: |
+          docker run -d --name ocuval-orthanc \
+            -p 127.0.0.1:8042:8042 \
+            -v "$PWD/docker/orthanc/orthanc.json:/etc/orthanc/orthanc.json:ro" \
+            orthancteam/orthanc:24.7.3@sha256:57a3d037729897331027ddc00c12695b50f1effbbf805f855396f3d0248d2d5f
+
+      # Fails the job here, not in every test, if Orthanc or its DICOMweb plugin is absent.
+      - name: Wait for Orthanc and its DICOMweb endpoint
+        run: |
+          for i in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:8042/system > /dev/null && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8042/system
+          echo
+          curl -fsS -o /dev/null -w "GET /dicom-web/studies: %{http_code}\n" \
+            http://127.0.0.1:8042/dicom-web/studies
+
+      - name: PACS round-trip
+        env:
+          OCUVAL_PACS_URL: http://127.0.0.1:8042/dicom-web
+        run: pytest -m requires_pacs
+
+      - name: Orthanc log, then remove the container
+        if: always()
+        run: |
+          docker logs ocuval-orthanc || true
+          docker rm -f ocuval-orthanc
