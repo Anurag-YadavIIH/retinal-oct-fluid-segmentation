@@ -56,6 +56,12 @@ markers = [
     "requires_data: tests that need RETOUCH data present under data/",
     "requires_pacs: tests that need the Orthanc container running",
 ]
+# pydicom substitutes a character it cannot encode and only warns. A substituted value is a
+# stored object that differs from the one built (SRS-095, docs/11 section 10 item 7), so in
+# every test it is an error.
+filterwarnings = [
+    "error:Failed to encode value:UserWarning",
+]
 
 [tool.ruff]
 line-length = 100
