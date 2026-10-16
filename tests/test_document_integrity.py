@@ -10,7 +10,9 @@ claims about each other and about the code, and nothing else checks them.
 from __future__ import annotations
 
 import hashlib
+import os
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -199,18 +201,40 @@ CITING_FILES = (
 )
 
 
-def git_output(*args: str) -> str:
+def skip_unless_ci(reason: str) -> None:
+    """Skip locally; fail in CI, where TC-108 must always run.
+
+    A skip in CI is the guard switching itself off in the one place it exists to protect.
+    On 2026-10-16 TC-108 skipped on every pull request, because a pull-request checkout
+    has no local `main` and a failed probe for it skipped instead of falling back
+    (`docs/13`). GitHub Actions sets `CI`; a fresh clone on a workstation does not.
+    """
+    if os.environ.get("CI"):
+        pytest.fail(f"TC-108 cannot run in CI: {reason}")
+    pytest.skip(reason)
+
+
+def _git(*args: str):
     import subprocess
 
-    result = subprocess.run(
+    return subprocess.run(
         ["git", "-C", str(REPO_ROOT), *args],
         capture_output=True,
         check=False,
         encoding="utf-8",
         errors="replace",
     )
+
+
+def git_ok(*args: str) -> bool:
+    """Whether a git command succeeds. A probe: its failure is an answer, not an error."""
+    return _git(*args).returncode == 0
+
+
+def git_output(*args: str) -> str:
+    result = _git(*args)
     if result.returncode != 0:
-        pytest.skip(f"git unavailable or not a repository: {' '.join(args)}")
+        skip_unless_ci(f"git unavailable or not a repository: {' '.join(args)}")
     return result.stdout
 
 
@@ -270,11 +294,17 @@ def reachable_commits() -> set[str]:
     The fallback exists for CI, where the checkout can be detached and `main` may not
     be a local branch. HEAD last rather than first so that a citation to a commit that
     exists only on an unmerged branch still fails when main is available.
+
+    **Each ref is probed with `git_ok`, not `git_output`.** Until 2026-10-16 the probe
+    went through `git_output`, which skips on any non-zero exit, so a missing local `main`
+    skipped the whole test before `origin/main` was tried. A pull-request checkout has no
+    local `main`, so TC-108 skipped on every pull request (`docs/13`).
     """
     for ref in ("main", "origin/main", "HEAD"):
-        if git_output("rev-parse", "--verify", "--quiet", ref).strip():
+        if git_ok("rev-parse", "--verify", "--quiet", ref):
             return set(git_output("rev-list", ref).split())
-    pytest.skip("no main, origin/main or HEAD to resolve citations against")
+    skip_unless_ci("no main, origin/main or HEAD to resolve citations against")
+    return set()  # not reached: skip_unless_ci always raises
 
 
 def test_TC_108_every_cited_sha_resolves_to_a_commit_on_main():
@@ -318,6 +348,49 @@ def test_TC_108_the_check_detects_a_dangling_citation():
     reachable = reachable_commits()
     impossible = "deadbee"
     assert not any(full.startswith(impossible) for full in reachable)
+
+
+def _without_refs(monkeypatch, missing: set[str]) -> None:
+    """Make git itself fail to resolve the named refs, as in a pull-request checkout.
+
+    Patched at `_git`, which every git call here goes through, not at the probe: a
+    simulation that replaced the probe would pass whether or not the probe was the bug.
+    """
+    import subprocess
+
+    real = _git
+
+    def git(*args: str):
+        if args[:1] in (("rev-parse",), ("rev-list",)) and args[-1] in missing:
+            return subprocess.CompletedProcess(["git", *args], 128, "", "unknown revision")
+        return real(*args)
+
+    monkeypatch.setattr(sys.modules[__name__], "_git", git)
+
+
+def test_TC_108_falls_back_to_origin_main_when_there_is_no_local_main(monkeypatch):
+    """The pull-request case: no local `main`, so `origin/main` must be used, not a skip."""
+    if not git_ok("rev-parse", "--verify", "--quiet", "origin/main"):
+        skip_unless_ci("no origin/main in this clone to fall back to")
+    expected = set(git_output("rev-list", "origin/main").split())
+    _without_refs(monkeypatch, {"main"})
+    assert reachable_commits() == expected
+
+
+def test_TC_108_in_ci_an_unresolvable_main_fails_rather_than_skips(monkeypatch):
+    """Shown able to fail: in CI, nothing to resolve against is an error, never a skip."""
+    monkeypatch.setenv("CI", "true")
+    _without_refs(monkeypatch, {"main", "origin/main", "HEAD"})
+    with pytest.raises(pytest.fail.Exception, match="TC-108 cannot run in CI"):
+        reachable_commits()
+
+
+def test_TC_108_outside_ci_an_unresolvable_main_still_skips(monkeypatch):
+    """A workstation clone without history may skip; only CI is held to failing."""
+    monkeypatch.delenv("CI", raising=False)
+    _without_refs(monkeypatch, {"main", "origin/main", "HEAD"})
+    with pytest.raises(pytest.skip.Exception):
+        reachable_commits()
 
 
 def test_TC_108_finds_the_citations_that_are_actually_there():
