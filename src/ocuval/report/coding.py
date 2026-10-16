@@ -86,8 +86,11 @@ def coding_scheme_identification(*, scheme_uid: str = DEFAULT_SCHEME_UID) -> Dat
     item.CodingSchemeDesignator = OCUVAL_SCHEME_DESIGNATOR
     item.CodingSchemeUID = scheme_uid
     item.CodingSchemeName = OCUVAL_SCHEME_NAME
+    # ASCII only (SRS-095): no Specific Character Set is declared, so a character outside
+    # the default repertoire is substituted on writing. Until 2026-10-16 an em dash here
+    # was stored as "?" in every SEG and SR (docs/11 section 10 item 7).
     item.CodingSchemeResponsibleOrganization = (
-        "OcuVal research project — not a registered coding scheme authority"
+        "OcuVal research project, not a registered coding scheme authority"
     )
     return item
 

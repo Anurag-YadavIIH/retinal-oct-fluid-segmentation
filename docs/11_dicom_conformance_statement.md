@@ -221,3 +221,29 @@ reader to discover.
 6. **Out-of-scope input criteria unresolved.** SRS-048 requires rejection of
    out-of-scope acquisitions; which attributes establish that is not known until the
    conversion in milestone 3 exists (`docs/02` §6 item 2).
+
+7. **Finding, 2026-10-16: every SEG and SR emitted before the fix stored a substituted
+   value.** Coding Scheme Responsible Organization (0008,0116), in the Coding Scheme
+   Identification Sequence that declares the private `99OCUVAL` scheme, was built as
+   "OcuVal research project — not a registered coding scheme authority". The em dash
+   (U+2014) is outside the default repertoire, and neither object declares Specific Character
+   Set (0008,0005). pydicom 2.4.4 encoded the value with its default, ISO 8859-1, which does
+   not contain the character either, and wrote `?` in its place with only a warning. **The
+   stored object differed from the one built**, in every SEG and SR the software emitted.
+   - **Found** in the first CI run of the PACS round-trip (`docs/08` §5h), as a warning that
+     no test treated as a failure. No unit test serialised an object, so none could see it.
+   - **Where the affected objects went.** Only to the local Orthanc instance and to the
+     ephemeral CI instances of `docs/06` §7.2.1, which were destroyed with their jobs. None
+     left either. The objects in CI were synthetic.
+   - **Fixed** by removing the character: the value is now "OcuVal research project, not a
+     registered coding scheme authority", which is ASCII. Declaring a character set was
+     rejected: the dash is not in ISO 8859-1, so it would need UTF-8 (ISO_IR 192) for every
+     text value in both objects, and every reader to support it, for one punctuation mark in a
+     value this project writes itself.
+   - **Guarded** by SRS-095 and TC-136: an OPT object, a SEG and an SR from the real builders
+     are serialised with the warning as an error, every text value must be ASCII where no
+     character set is declared, and the stored text must equal the built text. The suite
+     treats pydicom's "Failed to encode value" warning as an error everywhere.
+   - **One assumption stated:** that an absent Specific Character Set means the default
+     repertoire (ISO-IR 6, ASCII). That is this project's understanding of PS3.5; it was not
+     checked against the normative text in the session that recorded this finding.
