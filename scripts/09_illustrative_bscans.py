@@ -328,7 +328,7 @@ def main(argv: list[str] | None = None) -> int:
 
     request_determinism(seed)  # first, before any CUDA context (as 05_evaluate.py:145)
 
-    from ocuval.data.transforms import eval_transforms, invert_axial_resample
+    from ocuval.data.transforms import axial_target, eval_transforms, invert_axial_resample
     from ocuval.eval import sealed
     from ocuval.eval.pipeline import measure_volume
     from ocuval.io.retouch_reader import apply_intensity_window, read_volume
@@ -386,7 +386,10 @@ def main(argv: list[str] | None = None) -> int:
                 model, np.stack(frames), "cuda", passes, FRAMES_PER_CHUNK
             )
             prediction = invert_axial_resample(
-                labels, tuple(row["spacing_mm"]), (reference.shape[1], reference.shape[2])
+                labels,
+                tuple(row["spacing_mm"]),
+                (reference.shape[1], reference.shape[2]),
+                target_axial_mm=axial_target(cfg),
             )
             prediction = np.asarray(prediction).astype(np.uint8).reshape(reference.shape)
             seg = measure_volume(prediction, reference, tuple(row["spacing_mm"]))

@@ -265,10 +265,25 @@ def eval_transforms(cfg: dict, keys: tuple[str, ...] = (IMAGE, LABEL)):
     return Compose(_base_chain(cfg, keys))
 
 
+def axial_target(cfg: dict) -> float:
+    """The declared axial target spacing (SRS-072), read exactly as the chain reads it."""
+    return _preprocessing(cfg)[0]
+
+
+def resampled_height(native_height: int, native_axial_mm: float, target_axial_mm: float) -> int:
+    """The axial size `ResampleAxiald` gives a frame, by the same formula it uses."""
+    factor = native_axial_mm / target_axial_mm
+    if np.isclose(factor, 1.0):
+        return int(native_height)
+    return max(1, int(round(native_height * factor)))
+
+
 def invert_axial_resample(
     prediction: np.ndarray | torch.Tensor,
     native_spacing_mm: tuple[float, float, float],
     native_shape: tuple[int, int],
+    *,
+    target_axial_mm: float,
 ) -> np.ndarray:
     """Return a prediction to the acquisition's native grid (SRS-074).
 
@@ -279,12 +294,35 @@ def invert_axial_resample(
 
     Nearest-neighbour throughout: this inverts a label map, and any interpolation would
     invent boundary voxels in exactly the place HD95 measures.
+
+    **The padding is removed first, then the frame is resized.** The chain resamples the
+    axial axis and then pads symmetrically to `roi_size`, placing `width // 2` rows before
+    the content (MONAI `SpatialPad`, method symmetric). Until 2026-10-16 this function
+    resized the padded frame whole, which compressed every cirrus and spectralis prediction
+    towards the middle of the B-scan (`docs/13`). It now crops back to the resampled size,
+    computed by `ResampleAxiald`'s own formula from the native height, native axial spacing
+    and the declared target, and only then resizes. `target_axial_mm` is required rather
+    than defaulted, because it is a declared constant (SRS-072).
     """
     array = (
         prediction
         if isinstance(prediction, torch.Tensor)
         else torch.as_tensor(np.asarray(prediction))
     )
+    native_height, native_width = (int(v) for v in native_shape)
+    content_height = resampled_height(
+        native_height, float(native_spacing_mm[AXIAL]), float(target_axial_mm)
+    )
+    height, width = array.shape[-2], array.shape[-1]
+    if height < content_height or width < native_width:
+        raise ValueError(
+            f"prediction {tuple(array.shape[-2:])} is smaller than the resampled frame "
+            f"({content_height}, {native_width}); the chain pads and never crops, so this "
+            f"is not a prediction this chain produced"
+        )
+    top = (height - content_height) // 2
+    left = (width - native_width) // 2
+    array = array[..., top : top + content_height, left : left + native_width]
     working = array.float()
     while working.ndim < 4:
         working = working.unsqueeze(0)

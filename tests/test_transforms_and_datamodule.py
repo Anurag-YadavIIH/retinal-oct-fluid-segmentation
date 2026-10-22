@@ -327,8 +327,67 @@ def test_TC_048_inversion_returns_the_native_shape():
         }
     )
     assert out["image"].shape[-2] == 576
-    back = invert_axial_resample(out["image"], out["native_spacing_mm"], (native_height, width))
+    back = invert_axial_resample(
+        out["image"], out["native_spacing_mm"], (native_height, width), target_axial_mm=TARGET
+    )
     assert back.shape[-2:] == (native_height, width)
+
+
+TARGET = CFG["data"]["preprocessing"]["axial_spacing_mm"]
+
+INVERSION_CASES = [
+    ("cirrus", SPACING["cirrus"], 1024),
+    ("spectralis", SPACING["spectralis"], 496),
+    ("topcon T-2000", SPACING["topcon"], 885),
+    ("topcon T-1000", (0.0035, 0.011720, 0.046880), 650),
+]
+BAND_POSITIONS = [(0.05, 0.12), (0.30, 0.37), (0.47, 0.54), (0.63, 0.70), (0.85, 0.92)]
+
+
+@pytest.mark.parametrize(("vendor", "spacing", "height"), INVERSION_CASES, ids=lambda v: v)
+@pytest.mark.parametrize(("low", "high"), BAND_POSITIONS)
+def test_TC_048_a_perfect_prediction_inverts_onto_its_native_position(
+    vendor, spacing, height, low, high
+):
+    """SRS-074: the padding added to reach roi_size must be removed before resizing.
+
+    A label put through the real evaluation chain is a perfect prediction on the prepared
+    frame. Inverted, it must land where it came from, at every height and for every vendor.
+    Until 2026-10-16 the inversion resized the padded frame whole, which compressed cirrus
+    and spectralis predictions towards the middle: a band near the top or bottom scored
+    Dice 0 (`docs/13`). The shape-only test above could not see that.
+    """
+    width = 512
+    label = np.zeros((height, width), dtype=np.uint8)
+    label[int(height * low) : int(height * high), 100:300] = 1
+    out = eval_transforms(CFG, keys=("image", "label"))(
+        {
+            "image": label.astype(np.float32) * 200,
+            "label": label,
+            "spacing_mm": spacing,
+            "intensity_window": (0.0, 220.0),
+        }
+    )
+    prepared = np.asarray(out["label"]).squeeze()
+    assert prepared.shape == (576, width), "the chain no longer pads to roi_size"
+    back = invert_axial_resample(prepared[None], spacing, (height, width), target_axial_mm=TARGET)
+    back = back[0]
+
+    # The padding must contribute nothing: the padded path must give exactly the map a
+    # resample-only round trip gives. What remains is nearest-neighbour resampling loss,
+    # which is the cost of the declared axial target, not a placement error.
+    resampled = ResampleAxiald(keys=("label",), target_axial_mm=TARGET)(
+        {"label": label[None], "spacing_mm": spacing}
+    )["label"]
+    unpadded = invert_axial_resample(
+        np.asarray(resampled), spacing, (height, width), target_axial_mm=TARGET
+    )[0]
+    band = f"{vendor}, band {low:.0%}-{high:.0%}"
+    assert np.array_equal(back, unpadded), f"{band}: the padding changed the inverted map"
+
+    overlap = int(((back == 1) & (label == 1)).sum())
+    dice = 2 * overlap / (int((back == 1).sum()) + int((label == 1).sum()))
+    assert dice > 0.95, f"{band}: Dice {dice:.3f} after inversion"
 
 
 def test_TC_048_native_spacing_is_preserved_bit_identically():
@@ -356,7 +415,9 @@ def test_TC_048_measuring_without_inverting_is_detectably_different():
     resampled_count = int((out["label"] == 1).sum())
     native_count = int((label == 1).sum())
     assert resampled_count != native_count
-    back = invert_axial_resample(out["label"], SPACING["cirrus"], (1024, 64))
+    back = invert_axial_resample(
+        out["label"], SPACING["cirrus"], (1024, 64), target_axial_mm=TARGET
+    )
     # Inverting recovers the native count to within nearest-neighbour rounding.
     assert abs(int((back == 1).sum()) - native_count) / native_count < 0.02
 

@@ -170,7 +170,18 @@ Accuracy alone is never reported. The classes are imbalanced and it is misleadin
 
 ## 7. Current status
 
-**Phase: complete and published, 2026-10-15.** All three folds are trained and evaluated
+**STATUS CHANGED 2026-10-16: the published segmentation results are under a known defect.**
+`invert_axial_resample` resized padded frames whole, misplacing every cirrus and spectralis
+prediction in the evaluation (`docs/13`, 2026-10-16). Fixed in code on branch `fix-inversion`
+(SRS-074 amended, TC-048 extended), with notices on `docs/10`, `docs/08` §5g, `docs/12`, the
+README and the report page. **Every Dice and HD95 in the published record still comes from the
+defective inversion** until the author re-runs the six sealed evaluations under `docs/07`
+§17.7(b), recording both results. Re-evaluation is the author's to launch (§6 long-run rule);
+the illustrative B-scans would need regenerating too. Training, checkpoints and AUROC are not
+affected. Task 5 (wiring model output to DICOM, branch `wire-dicom`, nothing committed) waits
+for this fix to merge.
+
+**Phase before 2026-10-16: complete and published, 2026-10-15.** All three folds are trained and evaluated
 once, under one seeded, reproducible procedure (`docs/08` §5g). Tags: `v1.0` on `9195d4c`
 (2026-10-06), `v1.1` on `8b5eab6` (2026-10-14, the six illustrative B-scans), `v1.1.1` on
 `dc6ce2a` (2026-10-14, the author's two caption additions; same results as `v1.1`). Published:

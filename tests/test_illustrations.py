@@ -201,7 +201,15 @@ def test_TC_133_the_published_illustrations_respect_the_cap_and_carry_no_metadat
     captions = (figures / "illustrations.md").read_text(encoding="utf-8")
     assert not re.search(r"TRAIN\d{3}|cirrus|spectralis|topcon|20\d\d-\d\d-\d\d", captions, re.I)
     workflow = (REPO / ".github" / "workflows" / "pages.yml").read_text(encoding="utf-8")
-    assert all(f"docs/figures/{name}" in workflow for name in on_disk), "not all deployed"
+    page = (REPO / "site" / "index.html").read_text(encoding="utf-8")
+    readme = (REPO / "README.md").read_text(encoding="utf-8")
+    if builder.ILLUSTRATIONS_WITHDRAWN:
+        # Withdrawn until regenerated (docs/13, 2026-10-16): nothing may deploy or show them.
+        assert not any(f"docs/figures/{name}" in workflow for name in on_disk), "still deployed"
+        assert not any(name in page for name in on_disk), "still shown on the page"
+        assert not any(name in readme for name in on_disk), "still shown in the README"
+    else:
+        assert all(f"docs/figures/{name}" in workflow for name in on_disk), "not all deployed"
 
 
 # --- TC-134: nothing is saved unless every prediction reproduces its record ------------------

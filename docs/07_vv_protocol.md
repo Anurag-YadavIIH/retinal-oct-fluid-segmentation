@@ -302,7 +302,7 @@ lists SRS, NFR and RC identifiers.
 | TC-045 | Frames inherit the volume's window | SRS-071 | U | Every expanded frame carries its source volume's window; no frame-level percentile is computed; a frame whose window differs from its volume's is rejected | yes |
 | TC-046 | Target axial spacing is declared, not derived | SRS-072 | U | The target is read from `configs/train_seg.yaml`; the transform chain built for two different folds uses the identical target; no code path computes a target from the data; the value appears in the resolved run configuration | yes |
 | TC-047 | Only the axial axis is resampled | SRS-073 | U | Lateral spacing is unchanged by the chain; B-scan separation is not read by any transform; a volume differing only in separation produces identical frames | yes |
-| TC-048 | Metrics are computed in native geometry | SRS-074, SRS-057 | U | A prediction made at the resampled spacing and inverted returns to the native shape; the spacing used for mm³ is bit-identical to the ingestion spacing; a metric computed without inverting is detectably different | yes |
+| TC-048 | Metrics are computed in native geometry | SRS-074, SRS-057 | U | A prediction made at the resampled spacing and inverted returns to the native shape; the spacing used for mm³ is bit-identical to the ingestion spacing; a metric computed without inverting is detectably different. **Amended 2026-10-16:** a label put through the real evaluation chain, for each vendor geometry and at five heights, inverts to exactly the map a resample-only round trip gives, so the padding contributes nothing, and to Dice above 0.95 against the native label. Shown failing on the inversion as it was | yes |
 | TC-049 | **The DICOM instance and the MetaImage source agree** | SRS-010, SRS-054, SRS-066; HAZ-004 | D | For a sampled subject per vendor, the written instance and the raw volume carry bit-identical pixel data, identical shape, identical element type and bit-identical spacing. Training reads MetaImage while results are reported against DICOM, so a divergence between the two paths would attribute a measurement to an acquisition it did not come from | yes (`requires_data`) |
 
 ### 6.6 Training, uncertainty and checkpoints
@@ -529,7 +529,7 @@ passes every fixture written by the same person who wrote the code, and is wrong
 | TC-129 | **The report page's data equals the records, and two builds are byte-identical** | SRS-092, RC-006 | U | The extraction stage of `scripts/08_build_site.py`, run twice into separate directories, produces byte-identical files, equal byte for byte to the committed `site/data` and chart input (`site_src/chart_scans.json`). Independently of the builder, every per-run Dice, HD95, sensitivity, specificity and AUROC in the results file equals its sealed evaluation record, and every downloadable per-scan row and every chart-input row equals a record row reduced to its permitted fields, with exactly as many rows as the records. Needs the records under `artifacts/` (`requires_data`) | yes |
 | TC-130 | **Every number on the report page comes from the generated data** | SRS-092 | U | Rendering the committed `site/data` reproduces the committed `site/index.html` byte for byte, with no records present. The template's visible text holds no digit outside the allowlist stated in the test (the interval level 95%, the metric name HD95, standard and document names, requirement, test and deviation identifiers, section references, and the definition of Dice's 0-to-1 scale; the citation is marked verbatim), no unresolved placeholder, and no em or en dash. A template with a typed number fails | yes |
 | TC-132 | **The illustrative selection follows `docs/07` §21 and is deterministic** | SRS-093 | U | On synthetic held-out rows with known values: the worst, lower-median and best scans by mean Dice over the fluid types each reference contains, with scans containing none ineligible; one false-positive case per type, the most predicted voxels above the threshold, skipping a scan already chosen; at most six, all distinct; ties broken by run, then identifier. Shuffled rows give the same picks. The B-scan rule picks the most reference fluid, or for a false-positive case the most predicted voxels of its type, and the lowest index on ties | yes |
-| TC-133 | **An illustrative image and its caption carry no metadata and no identifier** | SRS-093, RC-030 | U | A rendered PNG holds no `tEXt`, `iTXt`, `zTXt`, `tIME` or `eXIf` chunk. The figure's text, read before saving, is exactly the panel titles and the fluid-type key. No caption, for any role, contains a subject identifier, a brand, a filename or a date. Every false-positive caption says the case is the largest for its fluid type, not a typical one, and points to the predicted-voxel figure | yes |
+| TC-133 | **An illustrative image and its caption carry no metadata and no identifier** | SRS-093, RC-030 | U | A rendered PNG holds no `tEXt`, `iTXt`, `zTXt`, `tIME` or `eXIf` chunk. The figure's text, read before saving, is exactly the panel titles and the fluid-type key. No caption, for any role, contains a subject identifier, a brand, a filename or a date. Every false-positive caption says the case is the largest for its fluid type, not a typical one, and points to the predicted-voxel figure. **Amended 2026-10-22:** while `ILLUSTRATIONS_WITHDRAWN` is set in `scripts/08_build_site.py`, no B-scan is deployed by the Pages workflow or referenced by the report page or the README; once cleared, all of them are deployed | yes |
 | TC-134 | **No image is saved unless every regenerated prediction reproduces its sealed record exactly** | SRS-093, RC-032 | U | The gate passes only when, for every chosen scan, the Dice and predicted voxel count of all three fluid types equal the record by `==`. One voxel count off by one, or one Dice moved to the next representable double, in any one scan, saves nothing for any scan and names the role, not the identifier. The script refuses to start without an unlock reason and approver, and refuses a CPU device | yes |
 | TC-131 | **The report page carries no image data and nothing that relinks a row to a subject** | SRS-092, RC-030 | U | Tracked files under `site/` are text only: no PNG, SVG, DICOM, MetaImage or other image format. No file contains a RETOUCH subject identifier or the project's UID root. Per-scan rows carry exactly the permitted fields and are sorted by value, and every tie on the sort key is between rows identical in every published field, so the order a stable sort leaves among ties carries nothing of the records' subject order (added 2026-10-14). No downloadable file carries reference presence, as a field, a column or through its row order; presence is only in the chart input, which is not deployed (`docs/06` §2.5, J2). The chart input carries no identifier either. The chart library is loaded from one URL at an exact version with an integrity hash, and every chart has a static fallback. The copied fallback figures are ignored by git | yes |
 | TC-123 | **Two independently configured GPU runs agree exactly while their schedules coincide** | SRS-076, SRS-077, SRS-083, SRS-084, SRS-085; CLAUDE.md rule 4 | U | `cirrus_holdout_stage1b` (`--epochs 20`, two sessions, resumed at epoch 3) and `cirrus_holdout_stage2` (`--epochs 150`, one session) agree **exactly** on `train_loss`, `val_dice` and `per_class_dice` for every epoch whose learning rate they share, and the mean training loss over epochs 0–2 is 1.648121 in both. Divergence begins at the first epoch trained under a differing rate and not before, which the test asserts as a boundary rather than merely tolerating. The strongest evidence for rule 4 on GPU: it spans different fold lengths, different session structures and a resume. Marked `requires_data` — the run directories are gitignored | yes (`requires_data`) |
@@ -1272,6 +1272,90 @@ after its gate has still consumed an unlock, and that will be recorded as such.
 **The §19.1 present/absent decomposition for cirrus** is computed from the seeded re-run's
 per-volume rows. It is labelled **post-hoc**, because it comes after the Stage 2 results
 were seen and after the Stage 3 plan was committed in `cae1f36`.
+
+### 17.11 Re-evaluation after the inversion defect — under §17.7(b), amended before any unlock
+
+**Added 2026-10-22, before any sealed bucket is accessed for this re-evaluation.** This section
+creates no new permission. It applies §17.7(b) as written: *a defect in the evaluation code
+found after unlocking may be fixed and the evaluation re-run; both results are recorded, along
+with the defect, its diagnosis and which figures it changed; the model, the checkpoint, the
+threshold and the metric definitions are not touched.* As in §17.7 and §17.10, the ordering in
+the history is the evidence: this section precedes every unlock it describes.
+
+**The defect** (`docs/13`, 2026-10-16). `invert_axial_resample` returned predictions to native
+geometry by resizing the whole padded frame, without first removing the symmetric padding the
+chain adds to reach `roi_size`. Every cirrus and spectralis prediction was compressed towards the
+middle of its B-scan, and topcon's barely. Every Dice and HD95 in `docs/08` §5d and §5g, and
+the predicted voxel counts from which sensitivity and specificity are derived, were measured on
+misplaced predictions. AUROC was not affected: its score is taken before inversion.
+
+**The fix.** The commit "fix(transforms): remove the preprocessing padding before inverting to
+native geometry" on branch `fix-inversion`, merged into `main` before any unlock. Its SHA is
+recorded here once it is reachable from `main`, because TC-108 rejects a citation that is not.
+It amends SRS-074 and extends TC-048: a label put through the real chain, for every vendor
+geometry at five heights, inverts to exactly the map a resample-only round trip gives.
+
+**Nothing §17.7(b) protects has changed.**
+
+| Item | Unchanged at |
+|---|---|
+| Models and checkpoints | `best.pt` of each fold: cirrus epoch 33, spectralis 29, topcon 29, each verified against its recorded SHA-256 (`docs/08` §5c.5, §5e.4, §5f.4) before loading (SRS-061). Training never inverted, so no checkpoint was selected on a misplaced prediction (`docs/13`, 2026-10-22) |
+| Detection threshold | 10 voxels (§17.7a); AUROC primary |
+| Prediction | the mean of 20 MC-dropout passes, seeded per volume from `(20260916, subject)` (SRS-091) |
+| Metric definitions | Dice per class with the both-empty convention; HD95 as the maximum of the directed distances; sensitivity, specificity and AUROC as §17.2 |
+| Bootstrap | 2000 resamples, α = 0.05, seed 20260916, the patient as the unit (SRS-087) |
+| Secondary rules | §19.1, §19.2 and the §19.5 pooling rule, applied as written |
+
+**Procedure, in this order, launched by the author** from an interactive terminal (§17.8). Any
+step that fails stops the run, and no step is retried.
+
+1. **The reproducibility check, before any unlock.** Two seeded evaluations of the open `val`
+   bucket of `cirrus_holdout`, at the evaluation commit, must be **IDENTICAL** under TC-127's
+   comparator, as in §17.10. If they are not, **no sealed bucket is unlocked.**
+2. **The open `val` buckets of `spectralis_holdout` and `topcon_holdout`**, seeded, so that
+   §19.2's threshold selection is re-applied to corrected validation records for every fold.
+3. **The six sealed buckets**, `test` then `in_domain_ref` for each fold, each opened with an
+   `Unlock` whose reason names this section, §17.7(b) and the inversion defect, and whose
+   approver is the author.
+
+**Records are new files; none is overwritten.** Every record is written under a new
+`corrected/` folder in its fold's run directory. The records of 2026-10-01 and 2026-10-04/05
+stay exactly as written.
+
+**What the re-run brings each bucket to.** A completed run logs two entries under one `run_id`
+and counts once (D6). The spectralis and topcon `test` counts include the illustrative B-scan
+run of 2026-10-14, which was an access but not an evaluation (§21.7).
+
+| Fold | Bucket | Recorded count now → after | Evaluations now → after |
+|---|---|---|---|
+| cirrus | `test` | **4 → 5** | 3 → 4 (killed 2026-10-01; completed 2026-10-01; seeded 2026-10-04; corrected) |
+| cirrus | `in_domain_ref` | **3 → 4** | 2 → 3 |
+| spectralis | `test` | **2 → 3** | 1 → 2 |
+| spectralis | `in_domain_ref` | **1 → 2** | 1 → 2 |
+| topcon | `test` | **2 → 3** | 1 → 2 |
+| topcon | `in_domain_ref` | **1 → 2** | 1 → 2 |
+
+Counts taken from `docs/08` §5g.1 (after the seeded chain) and §21.7 (the illustration run).
+Before the first unlock, the author reads `sealed.access_count` for each bucket; if any differs
+from the "now" column, the run stops and the difference is recorded first.
+
+**Both results are reported side by side; neither replaces the other.**
+
+- The figures of `docs/08` §5d and §5g stay, labelled **measured through the defective
+  inversion**.
+- The corrected figures are reported beside them in `docs/08` and `docs/10`, with every table
+  showing both, and each difference stated.
+- The primary result of §17 is re-read from the corrected figures by the same criterion, the
+  overlap of the two arms' 95% intervals, and its conclusion is stated afresh. **No criterion
+  is edited**, whichever way the corrected figures point.
+- `docs/10`'s notice is replaced only once the corrected figures are in place, and records that
+  the earlier figures were measured through the defect.
+
+**Out of scope here.** The illustrative B-scans are regenerated under §21 as a separate run once
+the corrected records exist. §21 selects from the records, so the corrected records may select
+different scans. That run is a further access to the spectralis and topcon `test` buckets, at
+least, and is recorded when planned. No retraining, no threshold reselection outside §19.2, and
+no change to any model is permitted under this section.
 
 ---
 

@@ -166,7 +166,7 @@ def main(argv: list[str] | None = None) -> int:
     meta = load_verified(run_dir / args.checkpoint, model, map_location=device, restore_rng=False)
     print(f"checkpoint {args.checkpoint} epoch {meta['epoch']} on {device}", flush=True)
 
-    from ocuval.data.transforms import eval_transforms, invert_axial_resample
+    from ocuval.data.transforms import axial_target, eval_transforms, invert_axial_resample
 
     chain = eval_transforms(cfg)
     volumes, volume_seeds = [], {}
@@ -208,9 +208,14 @@ def main(argv: list[str] | None = None) -> int:
                 args.frames_per_chunk,
             )
 
-            # SRS-074: back to the acquisition's grid before anything is measured.
+            # SRS-074: back to the acquisition's grid before anything is measured, removing
+            # the padding first. Before 2026-10-16 the padded frame was resized whole, which
+            # misplaced every cirrus and spectralis prediction (docs/13).
             prediction = invert_axial_resample(
-                labels, tuple(row["spacing_mm"]), (reference.shape[1], reference.shape[2])
+                labels,
+                tuple(row["spacing_mm"]),
+                (reference.shape[1], reference.shape[2]),
+                target_axial_mm=axial_target(cfg),
             )
             prediction = np.asarray(prediction).astype(np.uint8).reshape(reference.shape)
 

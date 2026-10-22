@@ -12,6 +12,8 @@ A study of whether software that finds fluid in eye scans still works on a scann
 - **How:** test data sealed until the end, the analysis written down before any results, training and evaluation reproducible, documented following medical device software standards (IEC 62304, ISO 14971).
 - **Built with:** Python, PyTorch, MONAI, pydicom, highdicom, GitHub Actions.
 
+> **Known defect, found after publication: do not rely on the segmentation results below.** The evaluation put each prediction back into the scanner's own geometry without first removing the padding added during preprocessing. That shifts and squeezes predictions for the Cirrus and Spectralis scans and barely affects Topcon, so every Dice and HD95 figure, and the comparison between brands, is affected. The figures are kept and marked until corrected results replace them. Details: [`docs/10`](docs/10_analytical_validation_report.md) and [`docs/13`](docs/13_change_control_log.md), 2026-10-16.
+
 > **Not for clinical use.** This is a research and portfolio project built on public challenge data. It has never been used on patients, has not been validated for patient care, and makes no clinical claim of any kind.
 
 ![Dice score with 95% intervals on the unseen scanner brand and on new patients from the familiar brands, for each run and fluid type, with the three runs combined in the bottom rows.](docs/figures/fig2_dice_intervals.svg)
@@ -32,11 +34,7 @@ An OCT scan uses light to take cross-section pictures of the back of the eye, a 
 
 **3. With only 7 patients, the score is fragile.** If one scan without fluid flips between "nothing marked" and "a few pixels marked", its score jumps from 1 to 0, and a 7-patient average moves by about 0.14. I saw a shift of about that size (0.1431) between two equally valid runs of the same model, before I made the evaluation reproducible. The older run did not keep per-scan scores, so I cannot confirm that a single scan caused it. [`docs/10`](docs/10_analytical_validation_report.md) §7.2.
 
-**What an outline looks like.** This is the median unseen-brand scan. I chose it by a rule I fixed before rendering any image, so it was not picked for looking good. The full set, including the worst scan and the largest false positives, is in [`docs/10`](docs/10_analytical_validation_report.md) §7.4. The challenge organiser gave written permission for a very small number of illustrative images.
-
-![One B-scan from the median unseen-brand scan: the expert's fluid outline on the left and the model's on the right.](docs/figures/bscan_median.png)
-
-*The median held-out scan by mean Dice over the fluid types its expert outline contains, shown on its B-scan with the most expert-outlined fluid. Left, the expert's outline; right, the model's. Chosen by the rule pre-registered in [`docs/07`](docs/07_vv_protocol.md) §21, from the numbers alone, before any image was rendered.*
+**What an outline looks like: image withdrawn until regenerated.** This section showed one illustrative B-scan with the expert's outline beside the model's. It was rendered from a prediction put back into the scanner's geometry by the same defective step as the results, so the model's outline was misplaced. It is withdrawn here and from the report page until it can be regenerated with the corrected step. The images stay in the project's history and in [`docs/10`](docs/10_analytical_validation_report.md) §7.4, marked.
 
 ## Why you can trust it
 

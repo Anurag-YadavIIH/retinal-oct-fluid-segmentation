@@ -45,10 +45,9 @@ jobs:
           cp docs/figures/fig1_training_curves.png docs/figures/fig2_dice_intervals.svg \
              docs/figures/fig3_predicted_voxels.png docs/figures/fig4_dice_differences.svg \
              docs/figures/fig5_per_volume_dice.png _site/figures/
-          # The illustrative B-scans (docs/07 section 21), approved by the author 2026-10-14.
-          cp docs/figures/bscan_worst.png docs/figures/bscan_median.png \
-             docs/figures/bscan_best.png docs/figures/bscan_fp_irf.png \
-             docs/figures/bscan_fp_srf.png docs/figures/bscan_fp_ped.png _site/figures/
+          # The illustrative B-scans (docs/07 section 21) are NOT deployed from 2026-10-22:
+          # they were rendered from predictions misplaced by the inversion defect (docs/13,
+          # 2026-10-16) and return only once regenerated. The files stay in docs/figures.
           find _site -type f | sort
 
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0

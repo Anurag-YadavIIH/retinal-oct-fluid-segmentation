@@ -8,6 +8,21 @@ Change history: docs/13_change_control_log.md
 
 # Analytical Validation Report
 
+> **KNOWN DEFECT, found 2026-10-16: do not rely on the segmentation results in this document.**
+> The evaluation returned each prediction to native geometry with `invert_axial_resample`,
+> which resized the whole padded frame without first removing the symmetric padding that
+> preprocessing adds to reach `roi_size`. Predictions were therefore compressed towards the
+> middle of each B-scan: by 500/576 for cirrus and 480/576 for spectralis, and barely for
+> topcon (569 or 575 of 576). **Every Dice and HD95 figure below, and the cross-vendor
+> comparison they support, is affected, and affected differently by vendor.** Measured on
+> synthetic frames, a *perfect* prediction scored Dice 0.000 to 0.938 for cirrus and 0.000
+> to 0.913 for spectralis depending on where the structure sat, against 0.906 to 1.000 for
+> topcon (`docs/13`, 2026-10-16). Training, checkpoint selection and the AUROC figures
+> (computed before inversion) are not affected; sensitivity and specificity use predicted
+> voxel counts after inversion and probably are. The figures stay here unchanged and marked,
+> because the record states what happened; corrected figures require a fixed inversion and a
+> re-evaluation recorded beside these under `docs/07` §17.7(b).
+
 > **Every figure in this document is copied from the committed record of the run that
 > produced it**: `docs/08` §5c–§5g, built from the evaluation records under `artifacts/`. None
 > is computed here for the first time. Each is labelled with its standing:
@@ -449,6 +464,14 @@ Every non-degenerate selection rests on a 7-patient `val` split with 1–4 negat
 
 ### 7.4 Illustrative B-scans — selected by `docs/07` §21
 
+> **Affected by the inversion defect (2026-10-16).** These images were rendered from
+> predictions returned to native geometry by the defective `invert_axial_resample`, so for
+> cirrus and spectralis scans the model's outline (right panel) is compressed towards the
+> middle of the B-scan and misplaced. The expert's outline (left panel) is unaffected. The
+> exact-match gate below passed because it compared against records produced the same way.
+> **Withdrawn from the README and the report page from 2026-10-22 until regenerated**; kept
+> here, marked, because the record states what happened (`docs/13`, 2026-10-22).
+
 Six B-scans from the held-out scans, shown under the organiser's written permission for a very
 small number of illustrative images (`docs/06` §2.2.2). **They were chosen by a rule committed
 before any was rendered** (`docs/07` §21), from the sealed records' numbers alone: the worst,
@@ -496,6 +519,14 @@ Made by the author on reviewing the six published images, 2026-10-15:
 **How often this
 happens across the held-out scans has not been measured**: it is seen in two images chosen
 as the largest false positives of their kind, which are by construction not typical.
+
+**Possibly caused by the inversion defect; not retracted (2026-10-22).** The predictions in
+these images were displaced by the defective inversion, which moves a predicted structure
+towards the middle of the B-scan, by a distance that depends on where it sat and on the
+vendor. So the locations described above may be where the defect put the prediction rather
+than where the model put it. Whether that applies to these two cases depends on their vendors
+and positions, which this report does not show. The observation stands as recorded, neither
+confirmed nor refuted, until the images are regenerated with the corrected inversion.
 
 ## 8. Limitations
 

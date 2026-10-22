@@ -85,6 +85,10 @@ ILLUSTRATIONS = (
     "bscan_fp_ped.png",
 )
 ILLUSTRATION_CAPTIONS = FIGURES / "illustrations.md"
+# True from 2026-10-22: the B-scans show predictions misplaced by the inversion defect
+# (docs/13, 2026-10-16), so they are neither shown on the page nor deployed until
+# regenerated. TC-133 checks both directions of this flag.
+ILLUSTRATIONS_WITHDRAWN = True
 WORDS = {6: "Six", 9: "nine"}
 CURVES = ("epoch", "train_loss", "val_dice")
 
@@ -842,7 +846,10 @@ def build(do_extract: bool) -> list[str]:
                 changed.append(rel)
     if write_if_changed(SITE / "index.html", render(load_data())):
         changed.append("site/index.html")
-    for name in (*FALLBACKS, *ILLUSTRATIONS):
+    # The illustrative B-scans are withdrawn from the page until regenerated: they show
+    # predictions misplaced by the inversion defect (docs/13, 2026-10-16). Not copied here,
+    # and not deployed by the Pages workflow; the files stay in docs/figures.
+    for name in FALLBACKS:
         if write_if_changed(SITE / "figures" / name, (FIGURES / name).read_bytes()):
             changed.append(f"site/figures/{name}")
     return changed
