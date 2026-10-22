@@ -1273,6 +1273,90 @@ after its gate has still consumed an unlock, and that will be recorded as such.
 per-volume rows. It is labelled **post-hoc**, because it comes after the Stage 2 results
 were seen and after the Stage 3 plan was committed in `cae1f36`.
 
+### 17.11 Re-evaluation after the inversion defect — under §17.7(b), amended before any unlock
+
+**Added 2026-10-22, before any sealed bucket is accessed for this re-evaluation.** This section
+creates no new permission. It applies §17.7(b) as written: *a defect in the evaluation code
+found after unlocking may be fixed and the evaluation re-run; both results are recorded, along
+with the defect, its diagnosis and which figures it changed; the model, the checkpoint, the
+threshold and the metric definitions are not touched.* As in §17.7 and §17.10, the ordering in
+the history is the evidence: this section precedes every unlock it describes.
+
+**The defect** (`docs/13`, 2026-10-16). `invert_axial_resample` returned predictions to native
+geometry by resizing the whole padded frame, without first removing the symmetric padding the
+chain adds to reach `roi_size`. Every cirrus and spectralis prediction was compressed towards the
+middle of its B-scan, and topcon's barely. Every Dice and HD95 in `docs/08` §5d and §5g, and
+the predicted voxel counts from which sensitivity and specificity are derived, were measured on
+misplaced predictions. AUROC was not affected: its score is taken before inversion.
+
+**The fix.** The commit "fix(transforms): remove the preprocessing padding before inverting to
+native geometry" on branch `fix-inversion`, merged into `main` before any unlock. Its SHA is
+recorded here once it is reachable from `main`, because TC-108 rejects a citation that is not.
+It amends SRS-074 and extends TC-048: a label put through the real chain, for every vendor
+geometry at five heights, inverts to exactly the map a resample-only round trip gives.
+
+**Nothing §17.7(b) protects has changed.**
+
+| Item | Unchanged at |
+|---|---|
+| Models and checkpoints | `best.pt` of each fold: cirrus epoch 33, spectralis 29, topcon 29, each verified against its recorded SHA-256 (`docs/08` §5c.5, §5e.4, §5f.4) before loading (SRS-061). Training never inverted, so no checkpoint was selected on a misplaced prediction (`docs/13`, 2026-10-22) |
+| Detection threshold | 10 voxels (§17.7a); AUROC primary |
+| Prediction | the mean of 20 MC-dropout passes, seeded per volume from `(20260916, subject)` (SRS-091) |
+| Metric definitions | Dice per class with the both-empty convention; HD95 as the maximum of the directed distances; sensitivity, specificity and AUROC as §17.2 |
+| Bootstrap | 2000 resamples, α = 0.05, seed 20260916, the patient as the unit (SRS-087) |
+| Secondary rules | §19.1, §19.2 and the §19.5 pooling rule, applied as written |
+
+**Procedure, in this order, launched by the author** from an interactive terminal (§17.8). Any
+step that fails stops the run, and no step is retried.
+
+1. **The reproducibility check, before any unlock.** Two seeded evaluations of the open `val`
+   bucket of `cirrus_holdout`, at the evaluation commit, must be **IDENTICAL** under TC-127's
+   comparator, as in §17.10. If they are not, **no sealed bucket is unlocked.**
+2. **The open `val` buckets of `spectralis_holdout` and `topcon_holdout`**, seeded, so that
+   §19.2's threshold selection is re-applied to corrected validation records for every fold.
+3. **The six sealed buckets**, `test` then `in_domain_ref` for each fold, each opened with an
+   `Unlock` whose reason names this section, §17.7(b) and the inversion defect, and whose
+   approver is the author.
+
+**Records are new files; none is overwritten.** Every record is written under a new
+`corrected/` folder in its fold's run directory. The records of 2026-10-01 and 2026-10-04/05
+stay exactly as written.
+
+**What the re-run brings each bucket to.** A completed run logs two entries under one `run_id`
+and counts once (D6). The spectralis and topcon `test` counts include the illustrative B-scan
+run of 2026-10-14, which was an access but not an evaluation (§21.7).
+
+| Fold | Bucket | Recorded count now → after | Evaluations now → after |
+|---|---|---|---|
+| cirrus | `test` | **4 → 5** | 3 → 4 (killed 2026-10-01; completed 2026-10-01; seeded 2026-10-04; corrected) |
+| cirrus | `in_domain_ref` | **3 → 4** | 2 → 3 |
+| spectralis | `test` | **2 → 3** | 1 → 2 |
+| spectralis | `in_domain_ref` | **1 → 2** | 1 → 2 |
+| topcon | `test` | **2 → 3** | 1 → 2 |
+| topcon | `in_domain_ref` | **1 → 2** | 1 → 2 |
+
+Counts taken from `docs/08` §5g.1 (after the seeded chain) and §21.7 (the illustration run).
+Before the first unlock, the author reads `sealed.access_count` for each bucket; if any differs
+from the "now" column, the run stops and the difference is recorded first.
+
+**Both results are reported side by side; neither replaces the other.**
+
+- The figures of `docs/08` §5d and §5g stay, labelled **measured through the defective
+  inversion**.
+- The corrected figures are reported beside them in `docs/08` and `docs/10`, with every table
+  showing both, and each difference stated.
+- The primary result of §17 is re-read from the corrected figures by the same criterion, the
+  overlap of the two arms' 95% intervals, and its conclusion is stated afresh. **No criterion
+  is edited**, whichever way the corrected figures point.
+- `docs/10`'s notice is replaced only once the corrected figures are in place, and records that
+  the earlier figures were measured through the defect.
+
+**Out of scope here.** The illustrative B-scans are regenerated under §21 as a separate run once
+the corrected records exist. §21 selects from the records, so the corrected records may select
+different scans. That run is a further access to the spectralis and topcon `test` buckets, at
+least, and is recorded when planned. No retraining, no threshold reselection outside §19.2, and
+no change to any model is permitted under this section.
+
 ---
 
 ## 18. Stage 2 session plan
