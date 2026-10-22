@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-095 and NFR-001..NFR-008. Every requirement here derives
+Allocates SRS-001..SRS-096 and NFR-001..NFR-008. Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -134,6 +134,7 @@ measurement, and that gap is HAZ-012.
 | SRS-089 | The evaluation record shall persist **one row per volume per fluid class**, carrying the volume and patient identifiers, the vendor, Dice, HD95, whether the class is present in the reference, the reference and predicted voxel counts, and **the detection score** (the MC-dropout mean probability AUROC ranks; added 2026-10-05, `docs/08` D9). These rows shall be derived from the same measurements as the aggregate figures, and every aggregate shall be recomputable from them. A record holding aggregates only can answer only the questions asked before it was written, so every later question about a sealed split would spend another unlock. **Added 2026-10-03** as the repair of `docs/08` D7. | URS-007, URS-010, NFR-002 | TC-126 |
 | SRS-090 | Whether two evaluation records report the same result shall be decided by an **exact, leaf-by-leaf comparison**: every scalar compared by equality with no tolerance, list lengths compared, and a leaf present in only one record counted as a difference. Only the run's own provenance shall be excluded: `utc`, `notes`, `bucket_access_count`, and `per_volume`, which records written before SRS-089 lack. **A value undefined (NaN) in both records shall count as equal; NaN in only one shall count as a difference.** The comparison decides whether a sealed bucket may be unlocked for a re-run (`docs/07` §17.7b), so a spurious difference and a missed one are both failures. **Added 2026-10-04**, after its first use reported `nan -> nan` as a difference (`docs/13`). | URS-010, NFR-002 | TC-127 |
 | SRS-091 | Evaluation shall be **reproducible from the committed configuration**. Before any tensor reaches the device, the evaluation path shall make the same determinism request training makes (seeded from `run.seed`) and record what was requested and achieved, including every non-deterministic fallback, in the evaluation record. Each volume's MC-dropout passes shall draw from a generator **re-seeded from `(run.seed, the volume's source subject identifier)`**, so that a volume's result does not depend on processing order, `--limit`, or which other volumes were evaluated. The derived seed shall be recorded per volume. The subject identifier is used rather than the SOP Instance UID, because UIDs are minted per conversion (SRS-023). **The method is unchanged:** the mean of the configured passes, the same threshold and the same metrics. **Added 2026-10-04**, after two unseeded evaluations of one checkpoint differed in 49 aggregate figures (`docs/13`). | URS-010, NFR-002 | TC-128 |
+| SRS-096 | The re-evaluation of `docs/07` §17.11 shall run through one chain that performs its steps in §17.11's order and stops at the first failure without retrying: (1) refuse to start unless the working tree is clean, the inversion fix is an ancestor of `HEAD`, every checkpoint is present, no output exists and the chain has not run before; (2) read `sealed.access_count` for all six sealed buckets and stop on any difference from the counts §17.11 states; (3) run two seeded evaluations of `cirrus_holdout`'s open `val` bucket and stop unless both are seeded and IDENTICAL under SRS-090; (4) evaluate the open `val` buckets of `spectralis_holdout` and `topcon_holdout`; (5) evaluate the six sealed buckets, each opened with an `Unlock` naming §17.11. Every output shall be a new file under a `corrected/` folder of its run directory. **Added 2026-10-22.** | URS-007, URS-010 | TC-137 |
 
 ### 3.5 Training
 
@@ -236,6 +237,7 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `scripts/benchmark_device.py` | SRS-031 |
 | `scripts/compare_evaluation_records.py` | SRS-090 |
 | `scripts/05_evaluate.py` | SRS-091 |
+| `scripts/10_reevaluate.py` | SRS-096 |
 | `scripts/08_build_site.py` | SRS-092 |
 | `scripts/09_illustrative_bscans.py` | SRS-093 |
 | `.github/workflows/ci.yml`, job `pacs` | SRS-094 |
