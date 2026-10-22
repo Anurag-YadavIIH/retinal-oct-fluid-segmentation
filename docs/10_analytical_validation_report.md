@@ -464,6 +464,14 @@ Every non-degenerate selection rests on a 7-patient `val` split with 1–4 negat
 
 ### 7.4 Illustrative B-scans — selected by `docs/07` §21
 
+> **Affected by the inversion defect (2026-10-16).** These images were rendered from
+> predictions returned to native geometry by the defective `invert_axial_resample`, so for
+> cirrus and spectralis scans the model's outline (right panel) is compressed towards the
+> middle of the B-scan and misplaced. The expert's outline (left panel) is unaffected. The
+> exact-match gate below passed because it compared against records produced the same way.
+> **Withdrawn from the README and the report page from 2026-10-22 until regenerated**; kept
+> here, marked, because the record states what happened (`docs/13`, 2026-10-22).
+
 Six B-scans from the held-out scans, shown under the organiser's written permission for a very
 small number of illustrative images (`docs/06` §2.2.2). **They were chosen by a rule committed
 before any was rendered** (`docs/07` §21), from the sealed records' numbers alone: the worst,
@@ -511,6 +519,14 @@ Made by the author on reviewing the six published images, 2026-10-15:
 **How often this
 happens across the held-out scans has not been measured**: it is seen in two images chosen
 as the largest false positives of their kind, which are by construction not typical.
+
+**Possibly caused by the inversion defect; not retracted (2026-10-22).** The predictions in
+these images were displaced by the defective inversion, which moves a predicted structure
+towards the middle of the B-scan, by a distance that depends on where it sat and on the
+vendor. So the locations described above may be where the defect put the prediction rather
+than where the model put it. Whether that applies to these two cases depends on their vendors
+and positions, which this report does not show. The observation stands as recorded, neither
+confirmed nor refuted, until the images are regenerated with the corrected inversion.
 
 ## 8. Limitations
 
