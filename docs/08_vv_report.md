@@ -1325,7 +1325,9 @@ columns are the figures measured through the defect.
 and AUROC with its positive and negative counts equal §5g.2–§5g.4 exactly, in all 18 cells: no
 volume's predicted voxel count crossed the 10-voxel threshold under the corrected inversion, and
 the AUROC score is taken before inversion. The detection tables of §5g.2–§5g.4 therefore stand
-as the detection record, and are not repeated.
+as the detection record, and are not repeated. Unlike §5g's records, these persist each volume's
+score (SRS-089 as amended). **Post-hoc** AUROC intervals computed from those scores are in
+`docs/10` §4; they are an analysis, not part of this record.
 
 ### 5i.3 What the corrected primary figures establish
 

@@ -251,30 +251,55 @@ count crossed the 10-voxel threshold under the corrected inversion, and the AURO
 before inversion. The table is the §5g record.
 
 Sensitivity and specificity are at the fixed threshold of 10 predicted voxels, reported as they
-fell (§17.7a). **AUROC is primary, because it is threshold-free.** It carries **no interval**,
-because the per-volume detection score was not persisted in any sealed record (`docs/08` D9).
-That is a gap against `docs/07` §17.2, stated rather than hidden (§8.7).
+fell (§17.7a). **AUROC is primary, because it is threshold-free.** The pre-registered AUROC
+carries **no interval**: the sealed records of 2026-10-05 did not persist the per-volume score
+(`docs/08` D9), which is a gap against `docs/07` §17.2 (§8.7).
 
-| Held-out vendor | Class | Arm | AUROC (positives/negatives) | Sensitivity | Specificity |
-|---|---|---|---|---|---|
-| cirrus | IRF | held-out | **1.0000** (+18/−6) | 1.0000 [1.0000, 1.0000] n=18 | 0.0000 [0.0000, 0.0000] n=6 |
-| cirrus | IRF | in-domain | **1.0000** (+6/−1) | 1.0000 [1.0000, 1.0000] n=6 | 0.0000 (single patient, no spread) n=1 |
-| cirrus | SRF | held-out | **0.9931** (+12/−12) | 1.0000 [1.0000, 1.0000] n=12 | 0.0000 [0.0000, 0.0000] n=12 |
-| cirrus | SRF | in-domain | **1.0000** (+3/−4) | 1.0000 [1.0000, 1.0000] n=3 | 0.2500 [0.0000, 0.7500] n=4 |
-| cirrus | PED | held-out | **0.9514** (+12/−12) | 1.0000 [1.0000, 1.0000] n=12 | 0.0000 [0.0000, 0.0000] n=12 |
-| cirrus | PED | in-domain | **1.0000** (+2/−5) | 1.0000 [1.0000, 1.0000] n=2 | 0.2000 [0.0000, 0.6000] n=5 |
-| spectralis | IRF | held-out | **1.0000** (+20/−4) | 1.0000 [1.0000, 1.0000] n=20 | 0.2500 [0.0000, 0.7500] n=4 |
-| spectralis | IRF | in-domain | **1.0000** (+5/−2) | 1.0000 [1.0000, 1.0000] n=5 | 0.0000 [0.0000, 0.0000] n=2 |
-| spectralis | SRF | held-out | **0.9929** (+14/−10) | 1.0000 [1.0000, 1.0000] n=14 | 0.9000 [0.7000, 1.0000] n=10 |
-| spectralis | SRF | in-domain | **0.7000** (+2/−5) | 1.0000 [1.0000, 1.0000] n=2 | 0.0000 [0.0000, 0.0000] n=5 |
-| spectralis | PED | held-out | **0.9931** (+12/−12) | 1.0000 [1.0000, 1.0000] n=12 | 0.4167 [0.1667, 0.6667] n=12 |
-| spectralis | PED | in-domain | **1.0000** (+2/−5) | 1.0000 [1.0000, 1.0000] n=2 | 0.0000 [0.0000, 0.0000] n=5 |
-| topcon | IRF | held-out | **1.0000** (+17/−5) | 1.0000 [1.0000, 1.0000] n=17 | 0.0000 [0.0000, 0.0000] n=5 |
-| topcon | IRF | in-domain | **1.0000** (+6/−1) | 1.0000 [1.0000, 1.0000] n=6 | 0.0000 (single patient, no spread) n=1 |
-| topcon | SRF | held-out | **0.9793** (+11/−11) | 1.0000 [1.0000, 1.0000] n=11 | 0.0000 [0.0000, 0.0000] n=11 |
-| topcon | SRF | in-domain | **1.0000** (+2/−5) | 1.0000 [1.0000, 1.0000] n=2 | 0.0000 [0.0000, 0.0000] n=5 |
-| topcon | PED | held-out | **1.0000** (+9/−13) | 1.0000 [1.0000, 1.0000] n=9 | 0.0000 [0.0000, 0.0000] n=13 |
-| topcon | PED | in-domain | **1.0000** (+1/−6) | 1.0000 (single patient, no spread) n=1 | 0.0000 [0.0000, 0.0000] n=6 |
+**The AUROC intervals in the table are post-hoc.** They were computed on 2026-10-24, after every
+result was visible, from the per-volume scores the corrected records persist (SRS-089 as
+amended), and they are not part of the pre-registered result. Method: in each cell the
+positive and the negative volumes are resampled separately, with replacement, keeping both
+counts fixed; 2000 replicates, seed 20260916, scored by the project's own `auroc`
+(`metrics.py:221`), percentile interval. Each patient contributes one volume to a cell, so
+resampling patients is resampling volumes. Before any interval was drawn, the recomputed AUROC
+equalled the stored value in all 18 cells. **What they can and cannot say:**
+
+- **Twelve cells have AUROC 1.0000, and their intervals are [1.0000, 1.0000].** When every
+  positive outranks every negative in the sample, every resample does too, so the percentile
+  bootstrap cannot produce a value below 1. These zero-width intervals state nothing about
+  uncertainty; they are not evidence of perfect detection.
+- **The in-domain arms hold one to six negatives and one to six positives per class**, and a
+  stratified resample of a single negative or positive never varies that side at all.
+  Intervals over so few volumes carry little information.
+- **Six cells have AUROC below 1**, five of them held-out, and there the intervals are
+  informative: lower bounds 0.8472–0.9583 in the held-out arms, and [0.3000, 1.0000] for
+  spectralis in-domain SRF (+2/−5).
+
+An unstratified resample, with the replicates that lacked a positive or a negative dropped,
+gave intervals within 0.005 of these in the five held-out cells below 1, and 0.2000 rather than
+0.3000 as the lower bound for spectralis in-domain SRF (derived, for comparison only; not
+reported as a result).
+
+| Held-out vendor | Class | Arm | AUROC (positives/negatives) | AUROC 95% interval, **post-hoc** | Sensitivity | Specificity |
+|---|---|---|---|---|---|---|
+| cirrus | IRF | held-out | **1.0000** (+18/−6) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=18 | 0.0000 [0.0000, 0.0000] n=6 |
+| cirrus | IRF | in-domain | **1.0000** (+6/−1) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=6 | 0.0000 (single patient, no spread) n=1 |
+| cirrus | SRF | held-out | **0.9931** (+12/−12) | [0.9583, 1.0000] | 1.0000 [1.0000, 1.0000] n=12 | 0.0000 [0.0000, 0.0000] n=12 |
+| cirrus | SRF | in-domain | **1.0000** (+3/−4) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=3 | 0.2500 [0.0000, 0.7500] n=4 |
+| cirrus | PED | held-out | **0.9514** (+12/−12) | [0.8472, 1.0000] | 1.0000 [1.0000, 1.0000] n=12 | 0.0000 [0.0000, 0.0000] n=12 |
+| cirrus | PED | in-domain | **1.0000** (+2/−5) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=2 | 0.2000 [0.0000, 0.6000] n=5 |
+| spectralis | IRF | held-out | **1.0000** (+20/−4) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=20 | 0.2500 [0.0000, 0.7500] n=4 |
+| spectralis | IRF | in-domain | **1.0000** (+5/−2) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=5 | 0.0000 [0.0000, 0.0000] n=2 |
+| spectralis | SRF | held-out | **0.9929** (+14/−10) | [0.9571, 1.0000] | 1.0000 [1.0000, 1.0000] n=14 | 0.9000 [0.7000, 1.0000] n=10 |
+| spectralis | SRF | in-domain | **0.7000** (+2/−5) | [0.3000, 1.0000] | 1.0000 [1.0000, 1.0000] n=2 | 0.0000 [0.0000, 0.0000] n=5 |
+| spectralis | PED | held-out | **0.9931** (+12/−12) | [0.9583, 1.0000] | 1.0000 [1.0000, 1.0000] n=12 | 0.4167 [0.1667, 0.6667] n=12 |
+| spectralis | PED | in-domain | **1.0000** (+2/−5) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=2 | 0.0000 [0.0000, 0.0000] n=5 |
+| topcon | IRF | held-out | **1.0000** (+17/−5) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=17 | 0.0000 [0.0000, 0.0000] n=5 |
+| topcon | IRF | in-domain | **1.0000** (+6/−1) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=6 | 0.0000 (single patient, no spread) n=1 |
+| topcon | SRF | held-out | **0.9793** (+11/−11) | [0.9174, 1.0000] | 1.0000 [1.0000, 1.0000] n=11 | 0.0000 [0.0000, 0.0000] n=11 |
+| topcon | SRF | in-domain | **1.0000** (+2/−5) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=2 | 0.0000 [0.0000, 0.0000] n=5 |
+| topcon | PED | held-out | **1.0000** (+9/−13) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=9 | 0.0000 [0.0000, 0.0000] n=13 |
+| topcon | PED | in-domain | **1.0000** (+1/−6) | [1.0000, 1.0000] zero width | 1.0000 (single patient, no spread) n=1 | 0.0000 [0.0000, 0.0000] n=6 |
 
 **Sensitivity is 1.0000 in every cell, and specificity is 0.0000 in 13 of 18.** At 10 voxels
 the model calls almost every class present in almost every volume, which is the detection face
@@ -707,8 +732,15 @@ fold, so the held-out arms are unaffected.
   bucket's access count for one statistic. The author declined, for a reason the records show:
   **the in-domain arms hold 1–6 negatives and 1–6 positives per class**. Three cells have at
   most 2 negatives and five have at most 2 positives. An interval over one negative or two
-  positives carries almost no information. The held-out arms (4–13 negatives, 9–20 positives)
-  would have given informative intervals. Their AUROCs, 0.95–1.00, stand as point values.
+  positives carries almost no information.
+- **The scores exist now, for a different reason.** The §17.11 re-evaluation, run to correct
+  the inversion defect, wrote records under the amended SRS-089, which persist each volume's
+  score. The AUROC values are unchanged (§4), so §4 now gives **post-hoc** intervals computed
+  from those scores. They bear out the reasoning above: the in-domain intervals carry little
+  information, and twelve of the eighteen cells, held-out and in-domain, have AUROC 1.0000 and
+  a zero-width interval that states nothing about uncertainty. The informative intervals are
+  the five held-out cells below 1, with lower bounds 0.8472–0.9583. The pre-registered AUROC
+  remains a point value without an interval.
 
 ### 8.8 Image quality is not separated from appearance shift
 
