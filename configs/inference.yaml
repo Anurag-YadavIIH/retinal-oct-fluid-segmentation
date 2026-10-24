@@ -1,0 +1,13 @@
+# Inference-only settings: read by ocuval.inference, the push script and the service, and by
+# nothing that trains or evaluates. Kept out of configs/train_seg.yaml on purpose: TC-121
+# compares that file with the configuration its GPU runs recorded and admits no other
+# difference, and nothing here changes training.
+
+review:
+  # SRS-030 as amended 2026-10-16 by the author's decision: review is recommended for EVERY
+  # scan. No validated threshold exists, so none is invented: there is no evidence that the
+  # scan confidence predicts error (calibration was not evaluated, docs/10 section 6), and
+  # every output is reviewed by a grader anyway (URS-003). A threshold, if ever set, is a
+  # change-controlled decision under NFR-007 and must not be tuned on a sealed result.
+  recommended_for_every_scan: true
+  validated_confidence_threshold: null

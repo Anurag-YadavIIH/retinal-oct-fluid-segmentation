@@ -76,11 +76,39 @@ reader to discover.
 1. **Unregistered UID root.** UIDs are structurally valid but globally unclaimed
    (§7, `docs/06` §7.2). Objects must not leave the local Orthanc instance, other than
    synthetic test objects sent to the ephemeral CI instance of `docs/06` §7.2.1.
-2. **Research-use designation mechanism unresolved.** URS-011 and SRS-042 require an
-   in-object designation that a result is research-use-only, not clinically validated,
-   and automated. The conformant means of expressing this in a SEG and an SR is not yet
-   decided; candidates and their trade-offs are listed in `docs/01` §8 item 1. To be
-   settled here before milestone 6.
+2. **Research-use designation: decided 2026-10-16 by the author, A + B + C.** URS-011 and
+   SRS-042 require an in-object designation that a result is research-use-only, not
+   clinically validated, and produced by an automated method needing human review, readable by
+   software and by a person. The options analysis, against PS3.3 and PS3.15 2026d:
+
+   | Option | Allowed in SEG and Comprehensive 3D SR? | Seen by other software | How easily it is stripped |
+   |---|---|---|---|
+   | **A. Content Qualification (0018,9004) = `RESEARCH`** | **Yes, verified.** Type 3 in the SOP Common module (C.12.1), which is mandatory in both IODs (A.51.3, A.35.13.3). Enumerated values PRODUCT, RESEARCH, SERVICE | **Machine-readable and standard.** Its stated purpose (C.8.13.2.1.1) is to allow "an advisory message" that the content "may not be suitable for clinical interpretation"; derived content is "expected" to carry the same value. How many viewers show it: **not verified** | **Not listed** in the Basic Profile table (PS3.15 Table E.1-1). Whether the profile keeps attributes it does not list: **not verified**. Any software that rewrites the header can drop it |
+   | **B. Human-readable text**: SEG Series Description (0008,103E) and Content Description (0070,0081); SR Series Description | **Yes, verified for the SR and for Content Description.** Series Description is Type 3 in SR Document Series (C.17.1); Content Description is Type 2 in the Content Identification macro (10.9), which the Segmentation Image module includes (C.8.20.2). For the SEG's Series Description in General Series, **its type was not confirmed**. Both LO, 64 characters at most, ASCII under SRS-095 | **Readable by people.** Series Description is what series lists usually show: an expectation, **not verified**. Not reliably machine-readable as a designation | **Easy.** The Basic Profile's action for Series Description: **not verified**. Content Description is not listed |
+   | **C. The SR's flags**: Verification Flag UNVERIFIED, Preliminary Flag PRELIMINARY | **Yes, verified.** Verification Flag Type 1, UNVERIFIED meaning "not attested"; Preliminary Flag Type 3, PRELIMINARY or FINAL (C.17.2) | Machine-readable; written by highdicom 0.22.0 by default (`sr/sop.py:197-224`) | Not removed by de-identification as far as checked (Verification Flag's action: **not verified**). **They describe the report's state, not research use**, and the SEG has no equivalent |
+   | D. A private attribute | Allowed in any IOD | **Invisible** to software that does not know the private creator | **Removed** by the Basic Profile (private attributes X, verified). Rejected |
+   | E. The Clinical Trial modules | Allowed: user-optional in both IODs | Visible, but describe a sponsored clinical trial | Its mandatory fields would need an invented sponsor and protocol, which RC-029 forbids. Rejected |
+
+   **The decision, the author's, 2026-10-16:**
+   - **A:** Content Qualification `RESEARCH` on every SEG and SR, **and on the Ophthalmic
+     Tomography Image objects** of `io/dicom_writer.py`, since derived content is expected to
+     carry its source's value.
+   - **B:** the text **"RESEARCH USE ONLY: automated, not validated, review required"** in the
+     SEG's Series Description and Content Description and in the SR's Series Description.
+     ASCII, 60 characters, within LO's 64 (counted, not estimated).
+   - **C:** the SR's Verification Flag UNVERIFIED and Preliminary Flag PRELIMINARY, kept and
+     recorded as part of the designation.
+   - Each SEG also names its algorithm with Segment Algorithm Type AUTOMATIC, which already
+     carried the "automated" part.
+
+   **Not verified, and kept that way:** whether the Basic Profile keeps attributes it does not
+   list; its actions for Series Description and Verification Flag; the type of the SEG's Series
+   Description in General Series; how many viewers display Content Qualification or Series
+   Description.
+
+   **The limit, stated plainly: no option survives software that rewrites headers.** A and B
+   together make the designation visible to standard-aware software and to a person, which is
+   as much as URS-011 can get. Implemented and checked on real builder output by TC-077.
 3. **Objects derived from RETOUCH are non-conformant to the Ophthalmic Tomography
    Image IOD in named respects.** The IOD assumes a real acquisition on a real device
    with a fundus reference image; RETOUCH is a converted archive with that context
@@ -179,7 +207,8 @@ reader to discover.
    | Measurement name, volume | `SCT 118565006 Volume` — verified, used |
    | Units `mm3`, `{counts}`, `1` | UCUM, all three verified, used |
    | Segmented property type for IRF, SRF, PED | **no verified code found for any of the three** — declared private scheme, caller may override |
-   | Measurement names for voxel count and confidence | **no verified generic concept found** — caller-supplied, no default |
+   | Measurement names for voxel count, voxel volume and confidence, and the review-recommended evaluation | **no verified generic concept found** — declared in the private `99OCUVAL` scheme (decided by the author 2026-10-16), caller may override |
+   | Value of the review-recommended evaluation | `SCT 373066001 Yes` — verified, used |
 
    **What was searched.** The concept dictionary pydicom ships, which carries the
    standard's own tables across SCT, DCM, UCUM, LN, FMA and ten other schemes — 10,751
@@ -218,9 +247,13 @@ reader to discover.
    Callers with verified codes from a scheme they trust pass them instead; the private
    scheme is then neither used nor declared (SRS-065, TC-076).
 
-6. **Out-of-scope input criteria unresolved.** SRS-048 requires rejection of
-   out-of-scope acquisitions; which attributes establish that is not known until the
-   conversion in milestone 3 exists (`docs/02` §6 item 2).
+6. **Out-of-scope input criteria: decided 2026-10-16 by the author.** SRS-048's criteria
+   reuse checks that already exist rather than adding new ones: the instances are Ophthalmic
+   Tomography Image Storage; the Manufacturer maps to one of the three vendors; and each
+   spacing component lies within that vendor's measured range (SRS-055, SRS-056). A volume
+   failing any of them is rejected with the reason and no segmentation. **What this does not
+   establish:** disease, scan pattern or laterality, none of which the objects carry (item 3).
+   Those remain the grader's to judge (URS-003).
 
 7. **Finding, 2026-10-16: every SEG and SR emitted before the fix stored a substituted
    value.** Coding Scheme Responsible Organization (0008,0116), in the Coding Scheme

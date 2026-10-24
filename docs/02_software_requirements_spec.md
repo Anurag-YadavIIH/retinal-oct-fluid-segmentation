@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-099 and NFR-001..NFR-008. Every requirement here derives
+Allocates SRS-001..SRS-101 and NFR-001..NFR-008. Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -146,7 +146,7 @@ measurement, and that gap is HAZ-012.
 | SRS-027 | The network shall be 2D or 2.5D as selected by `configs/train_seg.yaml` (`data.mode`). Full 3D architectures shall not be provided. | URS-001 | TC-053 |
 | SRS-028 | The network shall be constructed with non-zero dropout, and the configuration shall be rejected if dropout is zero, since MC-dropout inference depends on it. | URS-005 | TC-054 |
 | SRS-029 | Inference shall support repeated stochastic forward passes with dropout active, returning the mean class probabilities and the per-voxel standard deviation across passes. | URS-005 | TC-055 |
-| SRS-030 | A scan-level confidence value in the range 0 to 1 shall be derived from the per-voxel uncertainty, together with a boolean indication of whether review is recommended, determined against a threshold recorded in the run configuration. | URS-005 | TC-056 |
+| SRS-030 | A scan-level confidence value in the range 0 to 1 shall be derived from the per-voxel uncertainty, together with a boolean indication of whether review is recommended. **Amended 2026-10-16 by the author's decision: review is recommended for every scan.** No threshold is invented, and the inference configuration (`configs/inference.yaml`) records that no validated threshold exists. The reasons: there is no evidence that the confidence predicts error (calibration was not evaluated, `docs/10` §6), and every output is reviewed by a grader anyway (URS-003). A threshold, if ever set, is a change-controlled decision under NFR-007 and must not be tuned on a sealed result. | URS-005 | TC-056 |
 | SRS-031 | The random seed, the resolved configuration and the software version shall be written into the run output directory at the start of every run. | URS-010 | TC-057 |
 | SRS-061 | Model checkpoints shall be loaded only from the project's own `artifacts/` directory. A cryptographic hash of every checkpoint shall be recorded when it is written and verified before it is loaded; a mismatch, or a checkpoint with no recorded hash, shall abort without loading. No checkpoint from any other source shall be loaded. | URS-010 | TC-058 |
 
@@ -187,8 +187,8 @@ reported for detection either, and the prevalence figures in `docs/06` §3.2 are
 | SRS-057 | The voxel spacing used to compute a volume shall be asserted bit-identical to the spacing recorded at ingestion for that acquisition. Any difference shall abort before a volume is emitted. | URS-002, URS-010 | TC-073 |
 | SRS-058 | The Structured Report shall state the units of every quantity it carries explicitly. Units shall not be implied by convention or inferred by a consumer. | URS-002 | TC-074 |
 | SRS-059 | The Structured Report shall record, for each fluid class, the predicted voxel count and the voxel volume used, alongside the resulting volume in cubic millimetres, so that the derivation can be recomputed from the object alone. | URS-002, URS-010 | TC-075 |
-| SRS-041 | The Structured Report shall record the scan-level confidence and the review-recommended indication of SRS-030. These shall not appear only in run logs. | URS-005 | TC-076 |
-| SRS-042 | Every emitted Segmentation and Structured Report object shall carry, within the object, a designation readable both by software and by a person that the result is research-use-only, not clinically validated, and produced by an automated method requiring human review. The means of expressing this is specified in `docs/11` and is unresolved at the time of this draft (§6, item 1). | URS-011 | TC-077 |
+| SRS-041 | The Structured Report shall record the scan-level confidence and the review-recommended indication of SRS-030, as coded content items. These shall not appear only in run logs. **Amended 2026-10-16:** the review-recommended indication is recorded as true for every scan, as SRS-030 now requires; its coded name, and those of the voxel count, voxel volume and confidence, are declared in the private `99OCUVAL` scheme (`docs/11` §10 item 5). | URS-005 | TC-076 |
+| SRS-042 | Every emitted Segmentation and Structured Report object shall carry, within the object, a designation readable both by software and by a person that the result is research-use-only, not clinically validated, and produced by an automated method requiring human review. **Specified 2026-10-16 by the author's decision (`docs/11` §10 item 2), A + B + C:** Content Qualification `RESEARCH` on every SEG, SR and Ophthalmic Tomography Image object; the text "RESEARCH USE ONLY: automated, not validated, review required" in the SEG's Series Description and Content Description and the SR's Series Description; and the SR's Verification Flag UNVERIFIED and Preliminary Flag PRELIMINARY. | URS-011 | TC-077 |
 | SRS-065 | Where a coded concept has no verified code in a standard scheme, the software shall use a coded value from a declared private coding scheme and shall identify that scheme within the emitted object. It shall not borrow an approximately-fitting standard code. A caller-supplied coded concept shall always take precedence. | URS-001, URS-011 | TC-076 |
 | SRS-095 | Every text value in an emitted Ophthalmic Tomography Image, Segmentation or Structured Report object shall be representable in the object's declared character set; where Specific Character Set (0008,0005) is absent, that is the default repertoire, so every text value shall be ASCII. Encoding an object shall never substitute a character. **Added 2026-10-16**, after an em dash in the private coding scheme's declaration was stored as `?` in every SEG and SR (`docs/11` §10 item 7). | URS-004, URS-011 | TC-136 |
 
@@ -199,6 +199,7 @@ reported for detection either, and the prevalence figures in `docs/06` §3.2 are
 | SRS-043 | The software shall store objects to, and retrieve objects from, a DICOMweb endpoint configured at runtime, using STOW-RS and WADO-RS. | URS-010 | TC-080, TC-112 |
 | SRS-044 | A stored object shall be retrievable and shall match what was sent in its pixel data, its fluid volumes, its confidence value and its research-use designation. | URS-010, URS-011 | TC-081, TC-112 |
 | SRS-045 | The software shall perform no action against the PACS beyond storing and retrieving its own objects. It shall not delete, modify or reconcile existing content, and it shall not mark any object as final, verified or signed off. | URS-003 | TC-082 |
+| SRS-101 | `scripts/06_push_to_pacs.py` shall take one volume's Ophthalmic Tomography instances and a checkpoint, run the inference of SRS-100, write the SEG and SR under `artifacts/`, store them through the DICOMweb client and retrieve them to confirm. **It shall refuse any DICOMweb endpoint whose host is not a loopback address**, before any inference or request, so that `docs/06` §7.2's rule that objects never leave the local instance is checked rather than trusted. **Added 2026-10-24.** | URS-010, URS-011 | TC-148 |
 | SRS-060 | The DICOMweb client shall take its entire configuration from the run configuration and shall not read ambient environment configuration — no `.netrc`, no environment-supplied proxy or certificate settings. Sessions shall be constructed with `trust_env=False`. | URS-003, URS-010 | TC-083 |
 | SRS-094 | Continuous integration shall execute the PACS round-trip tests (`requires_pacs`) in a job of their own that gates CI, against an Orthanc container started from the image digest pinned in SOUP-014 and configured from `docker/orthanc/orthanc.json`. The container's HTTP port shall be published on the runner's loopback address only, and no other port shall be published. The job shall send only synthetic objects created by its tests, shall upload no artifact, and shall remove the container when it ends, pass or fail (`docs/06` §7.2.1). **Added 2026-10-15.** | URS-010 | TC-135 |
 
@@ -208,8 +209,9 @@ reported for detection either, and the prevalence figures in `docs/06` §3.2 are
 |---|---|---|---|
 | SRS-046 | The service shall accept one OCT volume per inference request and return the identifiers of the objects it produced, the per-class volumes in cubic millimetres, the scan-level confidence, and the review-recommended indication. | URS-002, URS-005 | TC-090 |
 | SRS-047 | Every inference response shall be identified as a candidate requiring grader review. The service shall expose no endpoint that records, finalises, approves or signs off a result. | URS-003 | TC-091 |
-| SRS-048 | The service shall determine whether the submitted volume falls within the indications of `docs/01` §2 and shall reject an out-of-scope volume with a stated reason and no segmentation. The criteria are unresolved pending milestone 3 (§6, item 2). | URS-009 | TC-092 |
+| SRS-048 | The service shall determine whether the submitted volume falls within the indications of `docs/01` §2 and shall reject an out-of-scope volume with a stated reason and no segmentation. **Criteria specified 2026-10-16 by the author's decision (`docs/11` §10 item 6),** reusing existing checks: the instances are Ophthalmic Tomography Image Storage; the Manufacturer maps to one of the three vendors; and each spacing component lies within that vendor's range (SRS-055, SRS-056). | URS-009 | TC-092 |
 | SRS-049 | A health endpoint shall report the service status, the software version, and the identifier of the loaded model. | URS-010 | TC-093 |
+| SRS-100 | **One inference function**, `ocuval.inference`, shall turn one Ophthalmic Tomography Image object into a SEG and an SR. In order: reject an out-of-scope object by the criteria of SRS-048, with the reason; read the frames and the spacing the object declares; compute the per-volume intensity window (SRS-070) and apply the evaluation transforms; predict with the seeded mean of the configured MC-dropout passes, seeded from the run seed and the object's SOP Instance UID; return the label map to native geometry (SRS-074); compute each class's voxel count and mm³ from the declared spacing, the scan confidence and the review indication (SRS-030); and build the SEG and SR with the research-use designation (SRS-042). **Its label map shall equal that of the evaluation path** (`05_evaluate.predict_volume`, followed by the same inversion) on the same frames and model. The model shall be loaded only through the SRS-061 hash check. `scripts/05_evaluate.py` is not changed. **Added 2026-10-24.** | URS-001, URS-005, URS-010 | TC-147 |
 
 ### 3.10 Module allocation
 
@@ -243,6 +245,8 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `scripts/10_reevaluate.py` | SRS-096 |
 | `eval/report.py`, `scripts/11_report_tables.py` | SRS-097, SRS-098 |
 | `scripts/check_report_tables_hook.py`, `.pre-commit-config.yaml` hook `report-tables` | SRS-099 |
+| `inference.py` | SRS-030, SRS-048, SRS-100 |
+| `scripts/06_push_to_pacs.py` | SRS-101 |
 | `scripts/08_build_site.py` | SRS-092 |
 | `scripts/09_illustrative_bscans.py` | SRS-093 |
 | `.github/workflows/ci.yml`, job `pacs` | SRS-094 |
@@ -296,9 +300,9 @@ implemented by one of them. TC-001 verifies it.
 
 | # | Item | Blocks |
 |---|---|---|
-| 1 | SRS-042: the conformant means of expressing the research-use-only designation inside a SEG and an SR is unresolved. Carried from `docs/01` §8 item 1; to be settled in `docs/11` before milestone 6. | `docs/11`, milestone 6 |
-| 2 | SRS-048: the criteria for judging a volume in or out of scope depend on what the converted DICOM objects carry, which is not known until milestone 3. The requirement is deliberately not narrowed on speculation. Carried from `docs/01` §8 item 2. | Milestone 3 |
+| 1 | ~~SRS-042: the conformant means of expressing the research-use-only designation inside a SEG and an SR is unresolved.~~ **Resolved 2026-10-16** by the author's decision, A + B + C (`docs/11` §10 item 2). | — |
+| 2 | ~~SRS-048: the criteria for judging a volume in or out of scope are unresolved.~~ **Resolved 2026-10-16** by the author's decision: reuse the existing modality, vendor and spacing checks (`docs/11` §10 item 6). | — |
 | 3 | ~~SRS-007: the UID root is a placeholder.~~ **Resolved 2026-09-16:** the placeholder is documented rather than replaced, and no root will be registered. UIDs under it carry no claim of global uniqueness and objects must not leave the local Orthanc instance. Recorded in `docs/06` §7.1, `docs/11` §7 and §10, and the README. | — closed |
-| 4 | SRS-030: the confidence threshold for recommending review has no value yet. It cannot be chosen before evaluation data exists, and choosing it will be a change-controlled decision under NFR-007. | Milestone 5 |
+| 4 | ~~SRS-030: the confidence threshold for recommending review has no value yet.~~ **Resolved 2026-10-16** by the author's decision: no threshold; review is recommended for every scan (SRS-030 as amended). | — |
 | 6 | ~~§3.6 specifies segmentation metrics only.~~ **Resolved 2026-09-17:** SRS-050..SRS-053 specify volume-level detection derived from the segmentation output — no second model, no second training run. scikit-learn (SOUP-008) now supports SRS-053. | — closed |
 | 5 | Hazard and test allocations are absent throughout §3. They are filled as `docs/05` and `docs/07` are drafted; `docs/09` carries the coverage count until then. | `docs/05`, `docs/07` |
