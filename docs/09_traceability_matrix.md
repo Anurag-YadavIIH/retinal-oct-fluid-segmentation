@@ -86,14 +86,14 @@ implemented.
   SRS and **8 of 8** NFR. Every SRS names a test case in its own row; each NFR is named by
   at least one row of `docs/07` §6 instead, the allocation running in that direction.
 - Test cases **registered** in `docs/07` §6: **131**.
-  Test cases **written**: **99**. Of those,
-  **99 are executed** by the suite and
+  Test cases **written**: **106**. Of those,
+  **106 are executed** by the suite and
   **0 have never been run**. TC-080, TC-081 and TC-082 need a PACS, which is not available
   on this workstation; until 2026-10-16 they had never been run. CI's `pacs` job now runs them
   against an ephemeral Orthanc (SRS-094), and their first run passed (`docs/08` §5h). A
   written test that nobody has executed is not verification, and is not counted as such here.
   The remaining
-  **32** are registered and unwritten.
+  **25** are registered and unwritten.
 
 > **These figures are recomputed by TC-104, not maintained by hand** (since 2026-10-01).
 > `tests/test_traceability_current.py` parses the numbers this section claims, recomputes

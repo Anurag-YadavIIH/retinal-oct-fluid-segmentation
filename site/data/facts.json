@@ -137,8 +137,8 @@
  "docs": {
   "srs": 99,
   "registered": 131,
-  "written": 99,
-  "executed": 99,
+  "written": 106,
+  "executed": 106,
   "hazards": 16,
   "controls": 32,
   "safety_class": "B",
