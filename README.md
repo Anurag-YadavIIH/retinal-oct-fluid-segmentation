@@ -36,7 +36,11 @@ An analysis I chose after seeing the results points the other way. Counting only
 
 **3. With only 7 patients, the score is fragile.** If one scan without fluid flips between "nothing marked" and "a few pixels marked", its score jumps from 1 to 0, and a 7-patient average moves by about 0.14. I saw a shift of about that size (0.1431) between two equally valid runs of the same model, before I made the evaluation reproducible. Both runs were measured through the defect described at the top, which does not change this arithmetic. The older run did not keep per-scan scores, so I cannot confirm that a single scan caused it. [`docs/10`](docs/10_analytical_validation_report.md) §7.2.
 
-**What an outline looks like: image withdrawn until regenerated.** This section showed one illustrative B-scan with the expert's outline beside the model's. It was rendered from a prediction put back into the scanner's geometry by the same defective step as the results, so the model's outline was misplaced. It is withdrawn here and from the report page until it can be regenerated with the corrected step. The images stay in the project's history and in [`docs/10`](docs/10_analytical_validation_report.md) §7.4, marked.
+**What an outline looks like.** This is the median unseen-brand scan. I chose it by a rule I fixed before rendering any image, so it was not picked for looking good, and I regenerated it from the corrected results, replacing the image first shown here, which was drawn through the defect described at the top. The full set, including the worst scan and the largest false positives, is in [`docs/10`](docs/10_analytical_validation_report.md) §7.4. The challenge organiser gave written permission for a very small number of illustrative images.
+
+![One B-scan from the median unseen-brand scan: the expert's fluid outline on the left and the model's on the right.](docs/figures/bscan_median.png)
+
+*The median held-out scan by mean Dice over the fluid types its expert outline contains, shown on its B-scan with the most expert-outlined fluid. Left, the expert's outline; right, the model's. Chosen by the rule pre-registered in [`docs/07`](docs/07_vv_protocol.md) §21, from the numbers alone, before any image was rendered.*
 
 ### Earlier figures measured through the defect
 
@@ -146,7 +150,7 @@ python scripts/08_build_site.py
 - **Optional analyses not run:** a RETOUCH leaderboard submission; and the ablation that would measure how much of the brand difference the per-scan brightness normalisation removes ([`docs/10`](docs/10_analytical_validation_report.md) §8.1).
 - **AUROC intervals exist only as a post-hoc analysis.** The corrected records keep each scan's detection score, so intervals were computed after the results were visible. For twelve of the eighteen the interval is not estimable: the model ranked every scan correctly in that group, so every resample scores a perfect 1, which says nothing about uncertainty ([`docs/10`](docs/10_analytical_validation_report.md) §4).
 
-**Known weaknesses:** the familiar-brand comparison groups hold 7 patients per fold, so only large differences are detectable; the per-scan score is fragile when a fluid type is absent; the published results were re-measured after a defect was found, and the illustrative image stays withdrawn until regenerated; and the reproducibility claims are proven on this machine's GPU and software versions only.
+**Known weaknesses:** the familiar-brand comparison groups hold 7 patients per fold, so only large differences are detectable; the per-scan score is fragile when a fluid type is absent; the published results were re-measured after a defect was found, and the illustrative images were regenerated from the corrected results; and the reproducibility claims are proven on this machine's GPU and software versions only.
 
 ## How this was built
 

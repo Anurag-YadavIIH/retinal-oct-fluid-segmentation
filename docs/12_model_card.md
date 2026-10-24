@@ -339,13 +339,13 @@ unreliably (`docs/10` Summary, §5.4).
 
 ### Illustrative cases
 
-Six B-scans, chosen by a rule committed before any was rendered, are kept in `docs/10` §7.4.
-**They were rendered through the defective inversion**, so the model's outline on the cirrus
-and spectralis scans is misplaced, and they are withdrawn from the README and the report page
-until a `docs/07` §21 re-run regenerates them. They are not results and not typical. A
-qualitative observation from the author's review of two of them is recorded there, labelled as
-such: predicted fluid in locations where that fluid type cannot occur. It may be an artefact of
-the defect, and how often it happens has not been measured (`docs/10` §7.4).
+Six B-scans, chosen by a rule committed before any was rendered, are in `docs/10` §7.4. They
+were **regenerated from the corrected records** (`docs/07` §21.9) and approved by the author,
+replacing the images drawn through the defect. They are not results and not typical. A
+qualitative observation the author made on the earlier images (predicted fluid in locations
+where that fluid type cannot occur) is recorded there, labelled as such. It has not yet been
+reassessed against the regenerated images, and how often the pattern occurs has not been
+measured (`docs/10` §7.4).
 
 ## Ethical considerations
 
