@@ -136,11 +136,11 @@ python scripts/08_build_site.py
 
 ## Status and limitations
 
-**Works and is verified:** data conversion to DICOM and de-identification on all 70 scans; patient-level splits with a leakage test that gates CI; training and evaluation of all three folds; the sealed, reproducible evaluation and its report ([`docs/10`](docs/10_analytical_validation_report.md)); DICOM Segmentation and Structured Report objects, built and tested.
+**Works and is verified:** data conversion to DICOM and de-identification on all 70 scans; patient-level splits with a leakage test that gates CI; training and evaluation of all three folds; the sealed, reproducible evaluation and its report ([`docs/10`](docs/10_analytical_validation_report.md)); DICOM Segmentation and Structured Report objects, built and tested; storing and retrieving DICOM objects through a PACS, run in CI ([`docs/08`](docs/08_vv_report.md) §5h).
 
 **Not done:**
 
-- **The PACS round-trip.** The tests that store and retrieve the DICOM outputs through a local PACS (TC-080 to TC-082) are written but have never run, because Docker is not installed here.
+- **Part of the PACS round-trip is unchecked.** The tests that store and retrieve DICOM objects through a PACS (TC-080 to TC-082) first ran on 2026-10-16, in CI, against a throwaway Orthanc archive that receives synthetic objects only, and passed ([`docs/08`](docs/08_vv_report.md) §5h). They do not yet check that the fluid volumes, the confidence value and the research-use label survive the trip.
 - **Writing the model's results as DICOM files.** The builders exist and are tested, but no pipeline step calls them yet; `scripts/06_push_to_pacs.py` is a stub.
 - **The inference service and `eval/report.py`** are stubs.
 - **Optional analyses not run:** a RETOUCH leaderboard submission; and the ablation that would measure how much of the brand difference the per-scan brightness normalisation removes ([`docs/10`](docs/10_analytical_validation_report.md) §8.1).

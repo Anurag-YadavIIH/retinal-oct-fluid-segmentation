@@ -297,9 +297,13 @@ fold would be a new experiment with its own pre-registration, never a replacemen
 
 **Not done, and claimed nowhere as done:**
 
-1. **The Orthanc round-trip.** TC-080, TC-081 and TC-082 are written and have **never been
-   executed**: Docker is not installed. The DICOM SEG and SR objects are built and tested, but
-   storing and retrieving them through a PACS is unverified.
+1. **The Orthanc round-trip, in part.** TC-080, TC-081 and TC-082 were first executed on
+   2026-10-16, in CI's `pacs` job against an ephemeral Orthanc 1.12.4 with DICOMweb 1.17 that
+   receives synthetic objects only: 8 passed (`docs/08` §5h; SRS-094, TC-135). Storage with
+   STOW-RS and retrieval with WADO-RS are verified there. **Still unverified:** that the fluid
+   volumes, the confidence value and the research-use designation survive the round-trip.
+   TC-081 checks none of them, so RC-014 is not counted as verified (`docs/08` §5h.3). Docker
+   is still not installed on this workstation; the round-trip runs only in CI.
 2. **`scripts/06_push_to_pacs.py`** is a stub that raises `NotImplementedError`.
 3. **The inference service.** `service/api.py` has only `GET /health`; `POST /infer` is not
    implemented (`api.py:24-30`). There is no Docker image.

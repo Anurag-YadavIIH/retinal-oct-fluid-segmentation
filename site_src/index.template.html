@@ -167,9 +167,9 @@
 <section id="engineering">
   <h2>Engineering and documentation</h2>
   <ul class="evidence">
-    <li><strong>DICOM.</strong> All {{facts.n_scans}} scans are converted to standard medical imaging files and de-identified, with the result verified. Code for DICOM Segmentation and Structured Report outputs is built and tested; the round trip through a hospital-style image archive (PACS) is written but has never run, because Docker is not installed here. <a href="{{github}}/blob/main/docs/11_dicom_conformance_statement.md">docs/11</a></li>
+    <li><strong>DICOM.</strong> All {{facts.n_scans}} scans are converted to standard medical imaging files and de-identified, with the result verified. Code for DICOM Segmentation and Structured Report outputs is built and tested. The round trip through a hospital-style image archive (PACS) runs in CI, against a throwaway Orthanc archive that receives synthetic objects only (<a href="{{github}}/blob/main/docs/08_vv_report.md">docs/08</a> §5h). <a href="{{github}}/blob/main/docs/11_dicom_conformance_statement.md">docs/11</a></li>
     <li><strong>IEC 62304 and ISO 14971.</strong> The software is documented following IEC 62304 as safety class {{facts.docs.safety_class}}, with a risk file following ISO 14971 that identifies {{facts.docs.hazards}} hazards and {{facts.docs.controls}} risk controls. <a href="{{github}}/blob/main/docs/03_safety_classification.md">docs/03</a>, <a href="{{github}}/blob/main/docs/05_risk_management_file.md">docs/05</a></li>
-    <li><strong>Traceability.</strong> All {{facts.docs.srs}} software requirements trace to a test case. Of {{facts.docs.registered}} registered test cases, {{facts.docs.written}} are written and {{facts.docs.executed}} are executed; {{facts.docs.never_run}} have never run because they need the PACS. A test in CI recomputes these counts and fails if the document disagrees. <a href="{{github}}/blob/main/docs/09_traceability_matrix.md">docs/09</a></li>
+    <li><strong>Traceability.</strong> All {{facts.docs.srs}} software requirements trace to a test case. Of {{facts.docs.registered}} registered test cases, {{facts.docs.written}} are written and {{facts.docs.executed}} are executed, the PACS round trip among them; {{facts.docs.never_run}} are written but have never run. A test in CI recomputes these counts and fails if the document disagrees. <a href="{{github}}/blob/main/docs/09_traceability_matrix.md">docs/09</a></li>
   </ul>
   <h3>Worth a closer look</h3>
   <dl class="closer">
@@ -203,9 +203,9 @@
   </ul>
   <h3>Not done</h3>
   <ul>
-    <li>The PACS round trip: written, never run, because Docker is not installed here.</li>
+    <li>Part of the PACS round trip: it runs in CI and checks storage and retrieval, but not yet that the fluid volumes, the confidence value and the research-use label survive it (docs/08 §5h).</li>
     <li>Writing the model's results as DICOM files: the builders exist and are tested, but no pipeline step calls them yet.</li>
-    <li>The inference service and the report module are stubs. The model card (docs/12) is still a template.</li>
+    <li>The inference service and the report module are stubs. The model card is drafted (<a href="{{github}}/blob/main/docs/12_model_card.md">docs/12</a>).</li>
     <li>Optional analyses not run: a RETOUCH leaderboard submission, and the ablation of brightness normalisation (docs/10 §8.1). AUROC intervals exist only as a <span class="tag">post-hoc</span> analysis (docs/10 §4).</li>
   </ul>
 </section>
