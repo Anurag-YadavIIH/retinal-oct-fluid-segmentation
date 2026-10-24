@@ -93,13 +93,41 @@ def test_TC_145_the_hook_reads_the_staged_text_not_the_working_tree(tmp_path):
     assert HOOK.staged_files(tmp_path) == set(report.DOCS.values())
 
 
-def test_TC_145_no_interpreter_with_the_project_warns_rather_than_skipping(monkeypatch, capsys):
+@pytest.fixture
+def no_project(monkeypatch):
     monkeypatch.setattr(HOOK, "staged_files", lambda: {DOC10})
     monkeypatch.setattr(HOOK, "VENVS", ())
     monkeypatch.setitem(sys.modules, "ocuval.eval.report", None)  # import now raises
+
+
+def test_TC_145_no_interpreter_and_no_records_warns_rather_than_skipping(
+    no_project, monkeypatch, tmp_path, capsys
+):
+    monkeypatch.setattr(HOOK, "RUNS", tmp_path)
     assert HOOK.main() == 0
     out = capsys.readouterr().out
     assert "DID NOT RUN" in out and "no interpreter here can import the project" in out
+
+
+def test_TC_145_no_interpreter_with_records_present_blocks(
+    no_project, monkeypatch, tmp_path, capsys
+):
+    record = tmp_path / "some_run" / "corrected" / "evaluation_test.json"
+    record.parent.mkdir(parents=True)
+    record.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(HOOK, "RUNS", tmp_path)
+    assert HOOK.main() == 1
+    out = capsys.readouterr().out
+    assert "BLOCKED" in out and "records are present" in out
+
+
+def test_TC_145_the_records_probe_sees_only_corrected_evaluation_records(tmp_path):
+    assert not HOOK.records_on_disk(tmp_path)
+    (tmp_path / "run" / "corrected").mkdir(parents=True)
+    (tmp_path / "run" / "evaluation_test.json").write_text("{}", encoding="utf-8")
+    assert not HOOK.records_on_disk(tmp_path)
+    (tmp_path / "run" / "corrected" / "evaluation_val.json").write_text("{}", encoding="utf-8")
+    assert HOOK.records_on_disk(tmp_path)
 
 
 def test_TC_145_the_hook_is_declared_so_that_its_output_is_always_shown():

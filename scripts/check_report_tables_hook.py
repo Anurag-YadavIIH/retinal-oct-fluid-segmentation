@@ -15,8 +15,9 @@ because at that stage pre-commit passes only the message file.
 
 **Standard library only until a watched document is staged.** A `language: system` hook runs
 whichever `python` is first on PATH, which need not have this project installed. If it cannot
-import the check, the hook re-runs itself with the repository's `.venv` interpreter; if there
-is none, it warns that the check did not run, as for absent records.
+import the check, the hook re-runs itself with the repository's `.venv` interpreter. If there
+is none, it **blocks** when records are on disk (the environment that should run the check is
+broken) and warns, as for absent records, when they are not.
 """
 
 from __future__ import annotations
@@ -92,9 +93,25 @@ def main() -> int:
         venv = next((p for p in VENVS if p.is_file() and p.resolve() != here), None)
         if venv is not None:
             return subprocess.call([str(venv), str(Path(__file__).resolve())])
-        print(warning(f"no interpreter here can import the project ({sys.executable})", touched))
+        reason = f"no interpreter here can import the project ({sys.executable})"
+        if records_on_disk(RUNS):
+            # The author's decision, 2026-10-24: records here mean this machine should run
+            # the check, so a broken environment blocks rather than warns.
+            print(f"report tables: BLOCKED (SRS-099): the records are present under {RUNS}, "
+                  f"but {reason}. Fix the environment and commit again.")  # fmt: skip
+            return 1
+        print(warning(reason, touched))
         return 0
     return run(set(touched), RUNS, staged_documents)
+
+
+def records_on_disk(runs: Path) -> bool:
+    """Whether any corrected evaluation record is here, judged with the standard library only.
+
+    Used only where the project cannot be imported. It is deliberately looser than
+    `report.records_present`: any record at all means this machine should run the check.
+    """
+    return any(runs.glob("*/corrected/evaluation_*.json"))
 
 
 if __name__ == "__main__":
