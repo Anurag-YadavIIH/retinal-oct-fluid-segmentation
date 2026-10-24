@@ -37,7 +37,7 @@ Change history: docs/13_change_control_log.md
 > **Figures 1–5 add no result.** They are drawn from the same records by
 > `scripts/07_make_figures.py`, which refuses to draw if a per-fold Dice interval differs from
 > its stored record, a pooled interval from the §5.2 table, or a difference interval from the
-> §5.4 table (`07_make_figures.py:123-186`). They are drawn from the corrected records. Their captions are generated with them
+> §5.4 table (`07_make_figures.py:98-163`). They are drawn from the corrected records. Their captions are generated with them
 > (`docs/figures/captions.md`) and reproduced here unchanged.
 >
 > **Figures 6–11 add no result either.** They are illustrative B-scans (§7.4), chosen by the

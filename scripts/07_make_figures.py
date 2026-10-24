@@ -45,12 +45,11 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
 
-from ocuval.eval import subgroup  # noqa: E402
+from ocuval.eval import report  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[1]
 OUT = REPO / "docs" / "figures"
 RUNS = REPO / "artifacts" / "runs"
-SEED, B = 20260916, 2000
 
 FOLDS = ("cirrus", "spectralis", "topcon")
 CLASSES = ("IRF", "SRF", "PED")
@@ -92,33 +91,8 @@ def load(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def est(values, patients) -> dict:
-    return subgroup.estimate(values, patients, seed=SEED, n_resamples=B, alpha=0.05)
-
-
 def rows(fold: str, arm: str, cls: str, present_only: bool = False) -> list[dict]:
-    out = [r for r in load(RECORDS[fold][arm])["per_volume"] if r["fluid_class"] == cls]
-    return [r for r in out if r["reference_present"]] if present_only else out
-
-
-def per_patient(folds, arm, cls, present_only=False):
-    """One value per patient: the mean of its Dice across the given folds (docs/07 §19.5)."""
-    values: dict[str, list[float]] = {}
-    for fold in folds:
-        for r in rows(fold, arm, cls, present_only):
-            values.setdefault(r["patient_id"], []).append(r["dice"])
-    patients = sorted(values)
-    return patients, np.array([sum(values[p]) / len(values[p]) for p in patients], dtype=float)
-
-
-def difference(h_pts, h, i_pts, i) -> tuple[float, float, float]:
-    """docs/10 §5.4: arms resampled independently, held-out draws first; held-out − in-domain."""
-    rng = np.random.default_rng(SEED)
-    dh = rng.integers(0, len(h), size=(B, len(h)))
-    di = rng.integers(0, len(i), size=(B, len(i)))
-    d = h[dh].mean(axis=1) - i[di].mean(axis=1)
-    low, high = np.percentile(d, [2.5, 97.5])
-    return float(h.mean() - i.mean()), float(low), float(high)
+    return report.rows_of(load(RECORDS[fold][arm]), cls, present_only)
 
 
 def docs10_differences() -> dict:
@@ -152,15 +126,17 @@ def docs10_pooled() -> dict:
 def gather() -> dict:
     """Every value drawn, computed once and checked against the records and docs/10."""
     printed = docs10_differences()
+    records = {f: {a: load(RECORDS[f][a]) for a in report.ARMS} for f in FOLDS}
+    # The arithmetic is report.py's (SRS-098), the one implementation the documents are
+    # checked against; this script keeps its own assertions against the printed tables.
+    comps = report.comparisons(records)
     data = {"arms": {}, "diff": {}}
-    for view, present in (("all-volume", False), ("class-present", True)):
+    for view in ("all-volume", "class-present"):
         for comp in (*FOLDS, "pooled"):
-            folds = FOLDS if comp == "pooled" else (comp,)
             for cls in CLASSES:
-                hp, h = per_patient(folds, "test", cls, present)
-                ip, i = per_patient(folds, "in_domain_ref", cls, present)
-                data["arms"][(view, comp, cls)] = (est(h, hp), est(i, ip))
-                got = difference(hp, h, ip, i)
+                c = comps[(view, comp, cls)]
+                data["arms"][(view, comp, cls)] = (c["held"], c["ref"])
+                got = c["diff"]
                 want = printed[(view, comp, cls)]
                 assert all(
                     abs(round(g, 4) - w) < 1e-12 for g, w in zip(got, want, strict=True)
