@@ -22,9 +22,10 @@ reference mask or patient identifier appears in any figure.**
 files. **One look throughout:** held-out vermillion, in-domain blue (Okabe-Ito, colour-blind
 safe); folds cirrus, spectralis, topcon; classes IRF, SRF, PED.
 
-**Not drawn: ROC curves.** They need each volume's detection score, which no sealed record
-persisted (`docs/08` D9). Drawing ROC from predicted voxel counts would plot a different score
-from the one the reported AUROC ranks.
+**Not drawn: ROC curves.** They need each volume's detection score, which the first sealed
+records did not persist (`docs/08` D9). The corrected records keep it; drawing the curves from
+it is not done. Drawing ROC from predicted voxel counts would plot a different score from the
+one the reported AUROC ranks.
 
 Usage:
     python scripts/07_make_figures.py            # writes docs/figures/*.png, *.svg, captions.md
@@ -461,8 +462,9 @@ def voxels(data: dict) -> str:
         "is the pre-registered presence threshold of 10 voxels (§17.7a). Volumes without the "
         "class (open) mostly sit far above it, which is why specificity at that threshold is "
         "0.0000 in 13 of 18 cells (§4). **ROC curves are not shown:** they need each volume's "
-        "detection score, which the sealed records did not persist (`docs/08` D9). A curve built "
-        "from voxel counts would rank a different score from the one the reported AUROC uses."
+        "detection score, which the first sealed records did not persist (`docs/08` D9); the "
+        "corrected records keep it, and the curves have not been drawn. A curve built from voxel "
+        "counts would rank a different score from the one the reported AUROC uses."
     )
 
 

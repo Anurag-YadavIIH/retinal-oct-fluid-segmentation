@@ -16,7 +16,7 @@
    "fluid": "IRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 245
+   "predicted_voxels": 292
   },
   {
    "run": "cirrus",
@@ -25,7 +25,7 @@
    "fluid": "IRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 704
+   "predicted_voxels": 800
   },
   {
    "run": "cirrus",
@@ -34,7 +34,7 @@
    "fluid": "IRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 3189
+   "predicted_voxels": 3654
   },
   {
    "run": "cirrus",
@@ -43,7 +43,7 @@
    "fluid": "IRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 15498
+   "predicted_voxels": 17920
   },
   {
    "run": "cirrus",
@@ -52,7 +52,7 @@
    "fluid": "IRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 42451
+   "predicted_voxels": 49143
   },
   {
    "run": "cirrus",
@@ -61,169 +61,169 @@
    "fluid": "IRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 49592
+   "predicted_voxels": 57088
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.06898454746136866,
-   "hd95": 12.421833858230405,
-   "predicted_voxels": 2847
+   "dice": 0.3175227328581961,
+   "hd95": 12.47147299441,
+   "predicted_voxels": 3292
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.20110037021801727,
-   "hd95": 0.3997635356186322,
-   "predicted_voxels": 21770
+   "dice": 0.39914702692042203,
+   "hd95": 0.19487447253942514,
+   "predicted_voxels": 25106
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.2324467763265941,
-   "hd95": 4.879673910329876,
-   "predicted_voxels": 56682
+   "dice": 0.4148870264853135,
+   "hd95": 0.33229767912069447,
+   "predicted_voxels": 422212
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.3550043959094905,
-   "hd95": 1.9860051479754528,
-   "predicted_voxels": 96005
+   "dice": 0.4183097840575846,
+   "hd95": 2.0058521010280543,
+   "predicted_voxels": 110667
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.35961346445004755,
-   "hd95": 0.25320388221549844,
-   "predicted_voxels": 366307
+   "dice": 0.5754070792830482,
+   "hd95": 4.6819671352789305,
+   "predicted_voxels": 24747
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.3731074187967701,
-   "hd95": 0.49060277643833206,
-   "predicted_voxels": 96716
+   "dice": 0.625015070772347,
+   "hd95": 4.9810355271835425,
+   "predicted_voxels": 65404
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.3844054065953419,
-   "hd95": 4.0751538701728585,
-   "predicted_voxels": 21411
+   "dice": 0.643460235822669,
+   "hd95": 0.041055,
+   "predicted_voxels": 550220
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.4535181276500364,
-   "hd95": 0.13290677035229725,
-   "predicted_voxels": 883185
+   "dice": 0.6584710296245592,
+   "hd95": 0.029325000000000004,
+   "predicted_voxels": 239050
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.4979705049666315,
-   "hd95": 0.6037095025999374,
-   "predicted_voxels": 103536
+   "dice": 0.6648818994003182,
+   "hd95": 0.16653613197141334,
+   "predicted_voxels": 111369
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.5120818474344753,
-   "hd95": 0.11139678841420879,
-   "predicted_voxels": 207400
+   "dice": 0.6822262934708778,
+   "hd95": 0.01564,
+   "predicted_voxels": 1017646
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.5256773961783708,
-   "hd95": 0.21179857875113328,
-   "predicted_voxels": 168741
+   "dice": 0.708235974074227,
+   "hd95": 0.5677024135274722,
+   "predicted_voxels": 119355
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.5332372927729478,
-   "hd95": 0.2280537988392213,
-   "predicted_voxels": 70302
+   "dice": 0.7480635183645503,
+   "hd95": 0.017595,
+   "predicted_voxels": 1006771
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.5453244988874669,
-   "hd95": 0.153445139760111,
-   "predicted_voxels": 873526
+   "dice": 0.763998777871842,
+   "hd95": 0.011903637637293905,
+   "predicted_voxels": 342078
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.5685132113501087,
-   "hd95": 0.6736333614838774,
-   "predicted_voxels": 56270
+   "dice": 0.7785397326170911,
+   "hd95": 0.013685000000000001,
+   "predicted_voxels": 696711
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.5847423107970998,
-   "hd95": 0.1330727214393019,
-   "predicted_voxels": 477451
+   "dice": 0.7905747957700227,
+   "hd95": 0.6956029143896103,
+   "predicted_voxels": 64767
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.6844412305017769,
-   "hd95": 0.0666825054377091,
-   "predicted_voxels": 557437
+   "dice": 0.7936069497011164,
+   "hd95": 0.10522003484127916,
+   "predicted_voxels": 80917
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.6947725286002052,
-   "hd95": 0.060757499125622345,
-   "predicted_voxels": 604916
+   "dice": 0.8093926338920223,
+   "hd95": 0.012375890432611305,
+   "predicted_voxels": 641924
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.7190040127585142,
-   "hd95": 0.070452,
-   "predicted_voxels": 296806
+   "dice": 0.8105245444016591,
+   "hd95": 0.023565234584022286,
+   "predicted_voxels": 194243
   },
   {
    "run": "cirrus",
@@ -232,7 +232,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 27
+   "predicted_voxels": 32
   },
   {
    "run": "cirrus",
@@ -241,7 +241,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 232
+   "predicted_voxels": 268
   },
   {
    "run": "cirrus",
@@ -250,25 +250,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 761
-  },
-  {
-   "run": "cirrus",
-   "arm": "held_out",
-   "vendor": "cirrus",
-   "fluid": "SRF",
-   "dice": 0.0,
-   "hd95": null,
-   "predicted_voxels": 967
-  },
-  {
-   "run": "cirrus",
-   "arm": "held_out",
-   "vendor": "cirrus",
-   "fluid": "SRF",
-   "dice": 0.0,
-   "hd95": null,
-   "predicted_voxels": 1016
+   "predicted_voxels": 893
   },
   {
    "run": "cirrus",
@@ -286,7 +268,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 1275
+   "predicted_voxels": 1179
   },
   {
    "run": "cirrus",
@@ -295,7 +277,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 2509
+   "predicted_voxels": 1408
   },
   {
    "run": "cirrus",
@@ -304,7 +286,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 2803
+   "predicted_voxels": 1471
   },
   {
    "run": "cirrus",
@@ -313,7 +295,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 4159
+   "predicted_voxels": 2971
   },
   {
    "run": "cirrus",
@@ -322,7 +304,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 9201
+   "predicted_voxels": 3213
   },
   {
    "run": "cirrus",
@@ -331,115 +313,133 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 19615
+   "predicted_voxels": 4816
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "SRF",
-   "dice": 0.1549819574342735,
-   "hd95": 0.30902484236708216,
-   "predicted_voxels": 46805
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 10582
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "SRF",
-   "dice": 0.17546487275496606,
-   "hd95": 0.2837620133351186,
-   "predicted_voxels": 8541
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 22549
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "SRF",
-   "dice": 0.3305503231443642,
-   "hd95": 0.3996155402496255,
-   "predicted_voxels": 570818
+   "dice": 0.22232490758317514,
+   "hd95": 0.3157569518943248,
+   "predicted_voxels": 9828
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "SRF",
-   "dice": 0.3534280345414309,
-   "hd95": 0.3057986090370589,
-   "predicted_voxels": 601377
+   "dice": 0.4061759048040876,
+   "hd95": 0.2363494040610215,
+   "predicted_voxels": 657572
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "SRF",
-   "dice": 0.39142121865500357,
-   "hd95": 0.30522319223807354,
-   "predicted_voxels": 328859
+   "dice": 0.5698847262247838,
+   "hd95": 0.09452338334095026,
+   "predicted_voxels": 3962
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "SRF",
-   "dice": 0.563478588945482,
-   "hd95": 0.09466984931328454,
-   "predicted_voxels": 3460
+   "dice": 0.6682632452621386,
+   "hd95": 0.058710000000000005,
+   "predicted_voxels": 53837
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "SRF",
-   "dice": 0.5703902584546958,
-   "hd95": 2.937977303203204,
-   "predicted_voxels": 15954
+   "dice": 0.6697767313564016,
+   "hd95": 0.09395634156883717,
+   "predicted_voxels": 378608
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "SRF",
-   "dice": 0.6038920851766109,
-   "hd95": 4.868771912661755,
-   "predicted_voxels": 62620
+   "dice": 0.6840260136165024,
+   "hd95": 3.124433713123349,
+   "predicted_voxels": 18445
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "SRF",
-   "dice": 0.6566833342813362,
-   "hd95": 0.22804541902875403,
-   "predicted_voxels": 463362
+   "dice": 0.7112655002064321,
+   "hd95": 4.82788243106516,
+   "predicted_voxels": 72221
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "SRF",
-   "dice": 0.6925196188492806,
-   "hd95": 0.2862851325601803,
-   "predicted_voxels": 147915
+   "dice": 0.7325974781590966,
+   "hd95": 0.027370000000000002,
+   "predicted_voxels": 692879
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "SRF",
-   "dice": 0.7082736977559515,
-   "hd95": 4.508243571858474,
-   "predicted_voxels": 32574
+   "dice": 0.7672511218427047,
+   "hd95": 0.35539937576991837,
+   "predicted_voxels": 171126
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "SRF",
-   "dice": 0.7452328428747867,
-   "hd95": 0.13094001401023295,
-   "predicted_voxels": 363050
+   "dice": 0.8204305322405451,
+   "hd95": 4.5028618884869065,
+   "predicted_voxels": 37433
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.8319381559302549,
+   "hd95": 0.12929509066085998,
+   "predicted_voxels": 534771
+  },
+  {
+   "run": "cirrus",
+   "arm": "held_out",
+   "vendor": "cirrus",
+   "fluid": "SRF",
+   "dice": 0.8594272540228267,
+   "hd95": 0.02346,
+   "predicted_voxels": 417878
   },
   {
    "run": "cirrus",
@@ -448,7 +448,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 454
+   "predicted_voxels": 529
   },
   {
    "run": "cirrus",
@@ -457,7 +457,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 610
+   "predicted_voxels": 686
   },
   {
    "run": "cirrus",
@@ -466,7 +466,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 695
+   "predicted_voxels": 788
   },
   {
    "run": "cirrus",
@@ -475,7 +475,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 1482
+   "predicted_voxels": 1711
   },
   {
    "run": "cirrus",
@@ -484,7 +484,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 1700
+   "predicted_voxels": 1975
   },
   {
    "run": "cirrus",
@@ -493,7 +493,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 2606
+   "predicted_voxels": 3047
   },
   {
    "run": "cirrus",
@@ -502,7 +502,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 2746
+   "predicted_voxels": 3113
   },
   {
    "run": "cirrus",
@@ -511,7 +511,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 5584
+   "predicted_voxels": 6445
   },
   {
    "run": "cirrus",
@@ -520,7 +520,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 8807
+   "predicted_voxels": 10078
   },
   {
    "run": "cirrus",
@@ -529,7 +529,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 14727
+   "predicted_voxels": 16935
   },
   {
    "run": "cirrus",
@@ -538,7 +538,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 15893
+   "predicted_voxels": 18330
   },
   {
    "run": "cirrus",
@@ -547,133 +547,133 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 34292
+   "predicted_voxels": 39633
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "PED",
-   "dice": 0.031235191912809983,
-   "hd95": 2.0393974477222434,
-   "predicted_voxels": 20712
+   "dice": 0.0629287205487623,
+   "hd95": 2.1728360755395895,
+   "predicted_voxels": 23712
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "PED",
-   "dice": 0.07915948816320416,
-   "hd95": 0.6369577652003311,
-   "predicted_voxels": 33619
+   "dice": 0.12976349217488947,
+   "hd95": 8.148602632955516,
+   "predicted_voxels": 9861
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "PED",
-   "dice": 0.12007054824082314,
-   "hd95": 2.223573898822344,
-   "predicted_voxels": 124848
+   "dice": 0.15455505702906205,
+   "hd95": 2.3126689907239264,
+   "predicted_voxels": 143561
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "PED",
-   "dice": 0.14456326020651894,
-   "hd95": 8.11079132627209,
-   "predicted_voxels": 8576
+   "dice": 0.1689432316649204,
+   "hd95": 0.6556769721776112,
+   "predicted_voxels": 38661
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "PED",
-   "dice": 0.2407599175433333,
-   "hd95": 0.30543624985454565,
-   "predicted_voxels": 174031
+   "dice": 0.5614913054774673,
+   "hd95": 0.1163030849258012,
+   "predicted_voxels": 120987
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "PED",
-   "dice": 0.31465649906975673,
-   "hd95": 2.739827083948623,
-   "predicted_voxels": 186861
+   "dice": 0.5803530407260679,
+   "hd95": 0.05450479810989121,
+   "predicted_voxels": 200510
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "PED",
-   "dice": 0.5100617352911176,
-   "hd95": 0.14605243981974564,
-   "predicted_voxels": 105522
+   "dice": 0.5976760949417081,
+   "hd95": 2.943225535399015,
+   "predicted_voxels": 214849
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "PED",
-   "dice": 0.5823538516164862,
-   "hd95": 1.4148469635674772,
-   "predicted_voxels": 41563
+   "dice": 0.6657903328350259,
+   "hd95": 1.4175044760786732,
+   "predicted_voxels": 48120
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "PED",
-   "dice": 0.6102752739667859,
-   "hd95": 0.5502769846680367,
-   "predicted_voxels": 511140
+   "dice": 0.7193809977264706,
+   "hd95": 0.4453678772780503,
+   "predicted_voxels": 1886727
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "PED",
-   "dice": 0.6291585700014541,
-   "hd95": 0.2423532503867031,
-   "predicted_voxels": 374612
+   "dice": 0.7250038052546419,
+   "hd95": 0.056695,
+   "predicted_voxels": 566999
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "PED",
-   "dice": 0.6421555267917468,
-   "hd95": 0.49173131835688483,
-   "predicted_voxels": 1638123
+   "dice": 0.7303312796361408,
+   "hd95": 0.058710000000000005,
+   "predicted_voxels": 431570
   },
   {
    "run": "cirrus",
    "arm": "held_out",
    "vendor": "cirrus",
    "fluid": "PED",
-   "dice": 0.6916754616609423,
-   "hd95": 0.11826672005682749,
-   "predicted_voxels": 492110
+   "dice": 0.7627156554518011,
+   "hd95": 0.530552932023602,
+   "predicted_voxels": 588742
   },
   {
    "run": "cirrus",
    "arm": "in_domain",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.4106822900372572,
-   "hd95": 2.3593913477674704,
-   "predicted_voxels": 34572
+   "dice": 0.59901817286893,
+   "hd95": 2.6694395158765754,
+   "predicted_voxels": 41453
   },
   {
    "run": "cirrus",
    "arm": "in_domain",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.6302906483694395,
-   "hd95": 0.09189852664760192,
-   "predicted_voxels": 25445
+   "dice": 0.7279365302253739,
+   "hd95": 0.10651079393657716,
+   "predicted_voxels": 30533
   },
   {
    "run": "cirrus",
@@ -682,43 +682,43 @@
    "fluid": "IRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 1793
+   "predicted_voxels": 1831
   },
   {
    "run": "cirrus",
    "arm": "in_domain",
    "vendor": "topcon",
    "fluid": "IRF",
-   "dice": 0.6030917190311827,
-   "hd95": 0.0534610623730114,
-   "predicted_voxels": 24675
+   "dice": 0.6018066873959239,
+   "hd95": 0.05239555706355263,
+   "predicted_voxels": 24740
   },
   {
    "run": "cirrus",
    "arm": "in_domain",
    "vendor": "topcon",
    "fluid": "IRF",
-   "dice": 0.627593847202693,
-   "hd95": 3.1903291155615903,
-   "predicted_voxels": 16912
+   "dice": 0.6351037309333671,
+   "hd95": 3.3669161280760522,
+   "predicted_voxels": 17308
   },
   {
    "run": "cirrus",
    "arm": "in_domain",
    "vendor": "topcon",
    "fluid": "IRF",
-   "dice": 0.7139764361133236,
-   "hd95": 0.04940743263922949,
-   "predicted_voxels": 273862
+   "dice": 0.7120737581795266,
+   "hd95": 0.048019729278703766,
+   "predicted_voxels": 274285
   },
   {
    "run": "cirrus",
    "arm": "in_domain",
    "vendor": "topcon",
    "fluid": "IRF",
-   "dice": 0.907249472559965,
-   "hd95": 0.01172,
-   "predicted_voxels": 93681
+   "dice": 0.903426529325205,
+   "hd95": 0.012004932319675941,
+   "predicted_voxels": 93892
   },
   {
    "run": "cirrus",
@@ -727,16 +727,16 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 2323
+   "predicted_voxels": 2836
   },
   {
    "run": "cirrus",
    "arm": "in_domain",
    "vendor": "spectralis",
    "fluid": "SRF",
-   "dice": 0.01026694045174538,
-   "hd95": 17.14204785924039,
-   "predicted_voxels": 6279
+   "dice": 0.0726686507936508,
+   "hd95": 17.251510948677755,
+   "predicted_voxels": 7525
   },
   {
    "run": "cirrus",
@@ -745,7 +745,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 4
+   "predicted_voxels": 2
   },
   {
    "run": "cirrus",
@@ -754,7 +754,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 36
+   "predicted_voxels": 32
   },
   {
    "run": "cirrus",
@@ -763,25 +763,25 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 1239
+   "predicted_voxels": 1266
   },
   {
    "run": "cirrus",
    "arm": "in_domain",
    "vendor": "topcon",
    "fluid": "SRF",
-   "dice": 0.032342657342657344,
-   "hd95": 5.630983490279566,
-   "predicted_voxels": 4288
+   "dice": 0.03389830508474576,
+   "hd95": 5.631349373739074,
+   "predicted_voxels": 4314
   },
   {
    "run": "cirrus",
    "arm": "in_domain",
    "vendor": "topcon",
    "fluid": "SRF",
-   "dice": 0.850909090909091,
-   "hd95": 0.0355424478616766,
-   "predicted_voxels": 42982
+   "dice": 0.8400385027673865,
+   "hd95": 0.04688,
+   "predicted_voxels": 43379
   },
   {
    "run": "cirrus",
@@ -790,16 +790,16 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 385
+   "predicted_voxels": 440
   },
   {
    "run": "cirrus",
    "arm": "in_domain",
    "vendor": "spectralis",
    "fluid": "PED",
-   "dice": 0.2696394223913657,
-   "hd95": 0.22152000000000002,
-   "predicted_voxels": 103527
+   "dice": 0.6583505019978982,
+   "hd95": 0.03289666171513456,
+   "predicted_voxels": 124804
   },
   {
    "run": "cirrus",
@@ -808,7 +808,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 125
+   "predicted_voxels": 127
   },
   {
    "run": "cirrus",
@@ -817,7 +817,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 863
+   "predicted_voxels": 875
   },
   {
    "run": "cirrus",
@@ -826,16 +826,16 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 22210
+   "predicted_voxels": 22533
   },
   {
    "run": "cirrus",
    "arm": "in_domain",
    "vendor": "topcon",
    "fluid": "PED",
-   "dice": 0.6494665406459413,
-   "hd95": 0.04212402639824451,
-   "predicted_voxels": 58902
+   "dice": 0.6293434985175773,
+   "hd95": 0.04024435861086619,
+   "predicted_voxels": 59511
   },
   {
    "run": "cirrus",
@@ -852,17 +852,8 @@
    "vendor": "spectralis",
    "fluid": "IRF",
    "dice": 0.0,
-   "hd95": 3.09605705815324,
-   "predicted_voxels": 537
-  },
-  {
-   "run": "spectralis",
-   "arm": "held_out",
-   "vendor": "spectralis",
-   "fluid": "IRF",
-   "dice": 0.0,
-   "hd95": 10.633530526680103,
-   "predicted_voxels": 53
+   "hd95": 10.713086212521652,
+   "predicted_voxels": 88
   },
   {
    "run": "spectralis",
@@ -871,7 +862,7 @@
    "fluid": "IRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 20
+   "predicted_voxels": 22
   },
   {
    "run": "spectralis",
@@ -889,169 +880,178 @@
    "fluid": "IRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 139
+   "predicted_voxels": 143
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.02364864864864865,
-   "hd95": 13.914113196018628,
-   "predicted_voxels": 208
+   "dice": 0.10892480674631061,
+   "hd95": 3.0934722069034337,
+   "predicted_voxels": 630
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.07399539139143033,
-   "hd95": 0.46299299581924236,
-   "predicted_voxels": 39460
+   "dice": 0.2009273570324575,
+   "hd95": 13.911177001666111,
+   "predicted_voxels": 263
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.10438305709023941,
-   "hd95": 2.1283651607214877,
-   "predicted_voxels": 9494
+   "dice": 0.21542079928248725,
+   "hd95": 0.47399753586279325,
+   "predicted_voxels": 47282
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.12056298132247499,
-   "hd95": 0.364768,
-   "predicted_voxels": 13807
+   "dice": 0.24210676359489702,
+   "hd95": 2.1275715067400207,
+   "predicted_voxels": 11318
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.12428818659026117,
-   "hd95": 0.23794444934900247,
-   "predicted_voxels": 21283
+   "dice": 0.3297691406903474,
+   "hd95": 0.1231237738862808,
+   "predicted_voxels": 25490
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.13309272553711768,
-   "hd95": 2.930254143015154,
-   "predicted_voxels": 13542
+   "dice": 0.3392096894712148,
+   "hd95": 1.1281115487488242,
+   "predicted_voxels": 45178
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.16623336970333752,
-   "hd95": 1.1588955775283114,
-   "predicted_voxels": 37701
+   "dice": 0.34921018173713586,
+   "hd95": 1.1688571161097014,
+   "predicted_voxels": 20326
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.19166602746030528,
-   "hd95": 1.1764424959452213,
-   "predicted_voxels": 16939
+   "dice": 0.3554930722818915,
+   "hd95": 0.40348209972686516,
+   "predicted_voxels": 56654
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.22405891339261233,
-   "hd95": 0.41790933554540266,
-   "predicted_voxels": 47262
+   "dice": 0.3868835918779165,
+   "hd95": 2.908348439748982,
+   "predicted_voxels": 16359
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.28299986173931935,
-   "hd95": 3.2429837334115708,
-   "predicted_voxels": 11787
+   "dice": 0.39939931097435294,
+   "hd95": 0.6087591542529521,
+   "predicted_voxels": 7522
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.29164882226980726,
-   "hd95": 0.6155442417997934,
-   "predicted_voxels": 6251
+   "dice": 0.4443146103634459,
+   "hd95": 0.5946431673993575,
+   "predicted_voxels": 13886
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.2944949806110245,
-   "hd95": 0.270583106468317,
-   "predicted_voxels": 17822
+   "dice": 0.44810883470844537,
+   "hd95": 0.1839287604699167,
+   "predicted_voxels": 21339
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.2979425958851918,
-   "hd95": 0.5950958003671031,
-   "predicted_voxels": 11494
+   "dice": 0.4481562476434658,
+   "hd95": 3.3447156731617262,
+   "predicted_voxels": 14202
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.32520846696600386,
-   "hd95": 0.7424360891686232,
-   "predicted_voxels": 10176
+   "dice": 0.4544439824035368,
+   "hd95": 0.7483847397768219,
+   "predicted_voxels": 12215
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.4006061668195829,
-   "hd95": 0.9248443956861068,
-   "predicted_voxels": 30178
+   "dice": 0.6159752339854377,
+   "hd95": 0.14150302205122814,
+   "predicted_voxels": 45124
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.42527218487971985,
-   "hd95": 0.20594570040182922,
-   "predicted_voxels": 37616
+   "dice": 0.637375023482018,
+   "hd95": 0.09630936320005444,
+   "predicted_voxels": 16528
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.4967846245486926,
-   "hd95": 0.29200067295984095,
-   "predicted_voxels": 31560
+   "dice": 0.661451255969251,
+   "hd95": 0.960410718376258,
+   "predicted_voxels": 36203
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.5372874966340544,
-   "hd95": 0.9917362457134835,
-   "predicted_voxels": 96983
+   "dice": 0.7121004006488294,
+   "hd95": 1.1856237243818717,
+   "predicted_voxels": 116225
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "IRF",
+   "dice": 0.8260746829868678,
+   "hd95": 0.035037,
+   "predicted_voxels": 37860
   },
   {
    "run": "spectralis",
@@ -1087,142 +1087,133 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 352
+   "predicted_voxels": 561
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "SRF",
-   "dice": 0.0060882800608828,
-   "hd95": 7.133117842460047,
-   "predicted_voxels": 118
+   "dice": 0.03576751117734724,
+   "hd95": 7.252141203120993,
+   "predicted_voxels": 132
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "SRF",
-   "dice": 0.023471996281663954,
-   "hd95": 3.284228641640682,
-   "predicted_voxels": 3322
+   "dice": 0.11119565768782022,
+   "hd95": 1.8783690954245347,
+   "predicted_voxels": 3627
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "SRF",
-   "dice": 0.033610001024695156,
-   "hd95": 1.880529687882358,
-   "predicted_voxels": 3042
+   "dice": 0.14975453598169494,
+   "hd95": 0.4363943462798298,
+   "predicted_voxels": 28442
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "SRF",
-   "dice": 0.08845179458742429,
-   "hd95": 0.46827575776327357,
-   "predicted_voxels": 23970
+   "dice": 0.42970371768258164,
+   "hd95": 19.14077605970974,
+   "predicted_voxels": 5767
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "SRF",
-   "dice": 0.2649838497427922,
-   "hd95": 0.9811109720204025,
-   "predicted_voxels": 9291
+   "dice": 0.45373306611192854,
+   "hd95": 0.2552446944012745,
+   "predicted_voxels": 73522
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "SRF",
-   "dice": 0.30613073487616727,
-   "hd95": 19.013682045610498,
-   "predicted_voxels": 5021
+   "dice": 0.6299884854101722,
+   "hd95": 0.9685923057225883,
+   "predicted_voxels": 11462
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "SRF",
-   "dice": 0.3524625239471484,
-   "hd95": 0.3315320963285455,
-   "predicted_voxels": 61972
+   "dice": 0.6595343793782779,
+   "hd95": 0.059750000000000004,
+   "predicted_voxels": 63216
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "SRF",
-   "dice": 0.39798478104408463,
-   "hd95": 0.18823622989212252,
-   "predicted_voxels": 90792
+   "dice": 0.671615470900384,
+   "hd95": 0.055040000000000006,
+   "predicted_voxels": 129301
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "SRF",
-   "dice": 0.4020435107054704,
-   "hd95": 0.154112,
-   "predicted_voxels": 106857
+   "dice": 0.6818538141320214,
+   "hd95": 0.1004419732233492,
+   "predicted_voxels": 51295
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "SRF",
-   "dice": 0.571659559447288,
-   "hd95": 0.08373956582165924,
-   "predicted_voxels": 52570
+   "dice": 0.6906241680662326,
+   "hd95": 0.06927803391328756,
+   "predicted_voxels": 108831
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "SRF",
-   "dice": 0.5803936715017309,
-   "hd95": 0.14511665396156292,
-   "predicted_voxels": 43131
+   "dice": 0.7183114524952209,
+   "hd95": 0.1091106494527459,
+   "predicted_voxels": 193355
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "SRF",
-   "dice": 0.5822404092071611,
-   "hd95": 0.1502329627744857,
-   "predicted_voxels": 160568
+   "dice": 0.7222415448183753,
+   "hd95": 0.1061892951290289,
+   "predicted_voxels": 26134
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "SRF",
-   "dice": 0.6387315298259107,
-   "hd95": 0.1489167658749728,
-   "predicted_voxels": 21864
+   "dice": 0.7752039151712887,
+   "hd95": 3.4058581601237954,
+   "predicted_voxels": 3911
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "SRF",
-   "dice": 0.6820707412928582,
-   "hd95": 0.078302,
-   "predicted_voxels": 10899
-  },
-  {
-   "run": "spectralis",
-   "arm": "held_out",
-   "vendor": "spectralis",
-   "fluid": "SRF",
-   "dice": 1.0,
-   "hd95": 0.0,
-   "predicted_voxels": 0
+   "dice": 0.8070977029479878,
+   "hd95": 0.07839767590942986,
+   "predicted_voxels": 13337
   },
   {
    "run": "spectralis",
@@ -1282,10 +1273,10 @@
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
-   "fluid": "PED",
-   "dice": 0.0,
-   "hd95": null,
-   "predicted_voxels": 9
+   "fluid": "SRF",
+   "dice": 1.0,
+   "hd95": 0.0,
+   "predicted_voxels": 0
   },
   {
    "run": "spectralis",
@@ -1294,7 +1285,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 21
+   "predicted_voxels": 10
   },
   {
    "run": "spectralis",
@@ -1303,7 +1294,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 44
+   "predicted_voxels": 23
   },
   {
    "run": "spectralis",
@@ -1312,7 +1303,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 51
+   "predicted_voxels": 52
   },
   {
    "run": "spectralis",
@@ -1321,7 +1312,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 83
+   "predicted_voxels": 69
   },
   {
    "run": "spectralis",
@@ -1330,7 +1321,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 123
+   "predicted_voxels": 101
   },
   {
    "run": "spectralis",
@@ -1339,7 +1330,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 242
+   "predicted_voxels": 143
   },
   {
    "run": "spectralis",
@@ -1348,115 +1339,124 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 745
+   "predicted_voxels": 283
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "PED",
-   "dice": 0.07607412630455362,
-   "hd95": 0.36556849527253626,
-   "predicted_voxels": 44647
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 903
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "PED",
-   "dice": 0.11190080531765308,
-   "hd95": 0.47959891249251185,
-   "predicted_voxels": 13454
+   "dice": 0.09675542516185737,
+   "hd95": 0.6198994863040298,
+   "predicted_voxels": 16005
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "PED",
-   "dice": 0.1439950602037666,
-   "hd95": 2.9059295346198604,
-   "predicted_voxels": 2265
+   "dice": 0.2691065662002153,
+   "hd95": 2.90625208707579,
+   "predicted_voxels": 2792
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "PED",
-   "dice": 0.17131677441306567,
-   "hd95": 6.214989834318756,
-   "predicted_voxels": 2784
+   "dice": 0.27672051475966725,
+   "hd95": 0.4458713377825491,
+   "predicted_voxels": 13569
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "PED",
-   "dice": 0.2239509069578558,
-   "hd95": 0.202572,
-   "predicted_voxels": 12842
+   "dice": 0.2833435156900861,
+   "hd95": 0.17176166375533278,
+   "predicted_voxels": 17100
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "PED",
-   "dice": 0.22523293076510773,
-   "hd95": 0.1671575909972383,
-   "predicted_voxels": 14762
+   "dice": 0.3027590135916009,
+   "hd95": 6.33729015860442,
+   "predicted_voxels": 3315
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "PED",
-   "dice": 0.26072353229305156,
-   "hd95": 0.4702852771839663,
-   "predicted_voxels": 16149
+   "dice": 0.3254805131929315,
+   "hd95": 0.47087355160807237,
+   "predicted_voxels": 19387
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "PED",
-   "dice": 0.26084304431256433,
-   "hd95": 0.36871654394263353,
-   "predicted_voxels": 11601
+   "dice": 0.35150498905941,
+   "hd95": 0.15626789080294134,
+   "predicted_voxels": 53932
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "PED",
-   "dice": 0.28340717946344907,
-   "hd95": 0.15800282164569088,
-   "predicted_voxels": 18056
+   "dice": 0.3699968834869329,
+   "hd95": 0.23658477787042853,
+   "predicted_voxels": 21459
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "PED",
-   "dice": 0.5103699811454888,
-   "hd95": 0.11550119253064013,
-   "predicted_voxels": 36576
+   "dice": 0.3710329108678385,
+   "hd95": 0.1013146796866081,
+   "predicted_voxels": 15351
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "PED",
-   "dice": 0.5328777516388387,
-   "hd95": 0.1794172010594302,
-   "predicted_voxels": 55525
+   "dice": 0.5678909476300114,
+   "hd95": 0.1830559244821101,
+   "predicted_voxels": 43979
   },
   {
    "run": "spectralis",
    "arm": "held_out",
    "vendor": "spectralis",
    "fluid": "PED",
-   "dice": 0.7000549579109464,
-   "hd95": 0.06945,
-   "predicted_voxels": 74527
+   "dice": 0.6404602702437968,
+   "hd95": 0.0959131353673729,
+   "predicted_voxels": 66289
+  },
+  {
+   "run": "spectralis",
+   "arm": "held_out",
+   "vendor": "spectralis",
+   "fluid": "PED",
+   "dice": 0.8027291037260825,
+   "hd95": 0.027104,
+   "predicted_voxels": 89350
   },
   {
    "run": "spectralis",
@@ -1501,16 +1501,16 @@
    "fluid": "IRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 3104
+   "predicted_voxels": 3571
   },
   {
    "run": "spectralis",
    "arm": "in_domain",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.4755340369027677,
-   "hd95": 0.1345490886584388,
-   "predicted_voxels": 628374
+   "dice": 0.6892476162289449,
+   "hd95": 0.021505000000000003,
+   "predicted_voxels": 724261
   },
   {
    "run": "spectralis",
@@ -1519,43 +1519,43 @@
    "fluid": "IRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 2078
+   "predicted_voxels": 2160
   },
   {
    "run": "spectralis",
    "arm": "in_domain",
    "vendor": "topcon",
    "fluid": "IRF",
-   "dice": 0.576114067176588,
-   "hd95": 5.884161490996492,
-   "predicted_voxels": 18086
+   "dice": 0.5823542772191365,
+   "hd95": 5.56065225625326,
+   "predicted_voxels": 18405
   },
   {
    "run": "spectralis",
    "arm": "in_domain",
    "vendor": "topcon",
    "fluid": "IRF",
-   "dice": 0.6638790282848445,
-   "hd95": 0.0469520436189949,
-   "predicted_voxels": 36040
+   "dice": 0.6599083460630468,
+   "hd95": 0.04688,
+   "predicted_voxels": 36092
   },
   {
    "run": "spectralis",
    "arm": "in_domain",
    "vendor": "topcon",
    "fluid": "IRF",
-   "dice": 0.7090844611590832,
-   "hd95": 0.054599999999999996,
-   "predicted_voxels": 301350
+   "dice": 0.7077018402218747,
+   "hd95": 0.052,
+   "predicted_voxels": 301924
   },
   {
    "run": "spectralis",
    "arm": "in_domain",
    "vendor": "topcon",
    "fluid": "IRF",
-   "dice": 0.8801660447159281,
+   "dice": 0.8774400034368136,
    "hd95": 0.013,
-   "predicted_voxels": 89586
+   "predicted_voxels": 89831
   },
   {
    "run": "spectralis",
@@ -1564,7 +1564,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 23271
+   "predicted_voxels": 26759
   },
   {
    "run": "spectralis",
@@ -1573,7 +1573,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 104125
+   "predicted_voxels": 119990
   },
   {
    "run": "spectralis",
@@ -1591,7 +1591,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 435
+   "predicted_voxels": 446
   },
   {
    "run": "spectralis",
@@ -1600,286 +1600,286 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 3153
+   "predicted_voxels": 3103
   },
   {
    "run": "spectralis",
    "arm": "in_domain",
    "vendor": "topcon",
    "fluid": "SRF",
-   "dice": 0.007994950557542605,
-   "hd95": 6.38039234343108,
-   "predicted_voxels": 18724
+   "dice": 0.008687460749424326,
+   "hd95": 6.33731934461156,
+   "predicted_voxels": 18820
   },
   {
    "run": "spectralis",
    "arm": "in_domain",
    "vendor": "topcon",
    "fluid": "SRF",
-   "dice": 0.8749445944312366,
+   "dice": 0.8633608925991331,
+   "hd95": 0.02344,
+   "predicted_voxels": 51621
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 20354
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "cirrus",
+   "fluid": "PED",
+   "dice": 0.5918472459635582,
+   "hd95": 4.502878203800581,
+   "predicted_voxels": 65693
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 17
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 262
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 1536
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 61693
+  },
+  {
+   "run": "spectralis",
+   "arm": "in_domain",
+   "vendor": "topcon",
+   "fluid": "PED",
+   "dice": 0.6135024991591249,
+   "hd95": 0.0455,
+   "predicted_voxels": 69304
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 4178
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 6359
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 40668
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 52656
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.0,
+   "hd95": null,
+   "predicted_voxels": 55367
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.04949545682845532,
+   "hd95": 6.152847283098588,
+   "predicted_voxels": 21128
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.40115606936416187,
+   "hd95": 1.0589589121396543,
+   "predicted_voxels": 91319
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.41472114420267736,
+   "hd95": 10.208571865643107,
+   "predicted_voxels": 84639
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.5397804283003524,
+   "hd95": 4.479622205076666,
+   "predicted_voxels": 62068
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.5624497422070858,
+   "hd95": 0.308149765326576,
+   "predicted_voxels": 74287
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.5813798534132897,
+   "hd95": 5.364161224294417,
+   "predicted_voxels": 155267
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.5877734890911511,
+   "hd95": 0.9406021858158268,
+   "predicted_voxels": 226448
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.6675584183069753,
+   "hd95": 7.507917954228579,
+   "predicted_voxels": 54068
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.6724828995900469,
+   "hd95": 0.6529238493388434,
+   "predicted_voxels": 53774
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.6732930910455697,
+   "hd95": 1.1579635211570245,
+   "predicted_voxels": 282783
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.6775148725784664,
+   "hd95": 1.3803994305333778,
+   "predicted_voxels": 400588
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.7019393753228802,
+   "hd95": 0.07887558811191205,
+   "predicted_voxels": 425944
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.7592111845011849,
+   "hd95": 1.5412917869716345,
+   "predicted_voxels": 142080
+  },
+  {
+   "run": "topcon",
+   "arm": "held_out",
+   "vendor": "topcon",
+   "fluid": "IRF",
+   "dice": 0.770293006524245,
    "hd95": 0.0156,
-   "predicted_voxels": 51225
-  },
-  {
-   "run": "spectralis",
-   "arm": "in_domain",
-   "vendor": "cirrus",
-   "fluid": "PED",
-   "dice": 0.0,
-   "hd95": null,
-   "predicted_voxels": 17650
-  },
-  {
-   "run": "spectralis",
-   "arm": "in_domain",
-   "vendor": "cirrus",
-   "fluid": "PED",
-   "dice": 0.4573214485035001,
-   "hd95": 4.448155506650209,
-   "predicted_voxels": 57152
-  },
-  {
-   "run": "spectralis",
-   "arm": "in_domain",
-   "vendor": "topcon",
-   "fluid": "PED",
-   "dice": 0.0,
-   "hd95": null,
-   "predicted_voxels": 21
-  },
-  {
-   "run": "spectralis",
-   "arm": "in_domain",
-   "vendor": "topcon",
-   "fluid": "PED",
-   "dice": 0.0,
-   "hd95": null,
-   "predicted_voxels": 247
-  },
-  {
-   "run": "spectralis",
-   "arm": "in_domain",
-   "vendor": "topcon",
-   "fluid": "PED",
-   "dice": 0.0,
-   "hd95": null,
-   "predicted_voxels": 1545
-  },
-  {
-   "run": "spectralis",
-   "arm": "in_domain",
-   "vendor": "topcon",
-   "fluid": "PED",
-   "dice": 0.0,
-   "hd95": null,
-   "predicted_voxels": 60718
-  },
-  {
-   "run": "spectralis",
-   "arm": "in_domain",
-   "vendor": "topcon",
-   "fluid": "PED",
-   "dice": 0.636279948070341,
-   "hd95": 0.03691013952831932,
-   "predicted_voxels": 68556
+   "predicted_voxels": 391280
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "IRF",
-   "dice": 0.0,
-   "hd95": null,
-   "predicted_voxels": 4182
+   "dice": 0.7805998706478388,
+   "hd95": 0.29462669240697664,
+   "predicted_voxels": 156746
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "IRF",
-   "dice": 0.0,
-   "hd95": null,
-   "predicted_voxels": 6351
+   "dice": 0.7963778756730299,
+   "hd95": 1.1600571210331816,
+   "predicted_voxels": 83396
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "IRF",
-   "dice": 0.0,
-   "hd95": null,
-   "predicted_voxels": 39823
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.0,
-   "hd95": null,
-   "predicted_voxels": 51639
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.0,
-   "hd95": null,
-   "predicted_voxels": 54765
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.04973785551895328,
-   "hd95": 6.1428325248628655,
-   "predicted_voxels": 20780
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.389777319233084,
-   "hd95": 1.0590511287967141,
-   "predicted_voxels": 90575
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.4131429730420903,
-   "hd95": 10.20028948596779,
-   "predicted_voxels": 83373
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.41791759382444243,
-   "hd95": 0.22364932908461851,
-   "predicted_voxels": 114693
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.54168551524473,
-   "hd95": 4.487607553648335,
-   "predicted_voxels": 61956
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.5619093858797338,
-   "hd95": 0.2925915894652258,
-   "predicted_voxels": 74051
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.5857750011914097,
-   "hd95": 5.341316557205272,
-   "predicted_voxels": 154960
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.5864708677843222,
-   "hd95": 0.9410494195311955,
-   "predicted_voxels": 224160
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.6687605552580632,
-   "hd95": 7.490119016239562,
-   "predicted_voxels": 53989
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.6737257799568772,
-   "hd95": 1.1426171847345437,
-   "predicted_voxels": 282285
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.6758937551430922,
-   "hd95": 0.6510830545358404,
-   "predicted_voxels": 53699
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.6789414783389431,
-   "hd95": 1.3647501674367637,
-   "predicted_voxels": 400116
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.7036450256367269,
-   "hd95": 0.078,
-   "predicted_voxels": 425504
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.7610838698362357,
-   "hd95": 1.536074909712612,
-   "predicted_voxels": 141887
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.7723627098054902,
-   "hd95": 0.0156,
-   "predicted_voxels": 390523
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.7981052889378708,
-   "hd95": 1.1407739141477595,
-   "predicted_voxels": 83270
-  },
-  {
-   "run": "topcon",
-   "arm": "held_out",
-   "vendor": "topcon",
-   "fluid": "IRF",
-   "dice": 0.8076399291842571,
-   "hd95": 0.7116708970730831,
-   "predicted_voxels": 80629
+   "dice": 0.7978908695060553,
+   "hd95": 0.7100827897814944,
+   "predicted_voxels": 80749
   },
   {
    "run": "topcon",
@@ -1888,7 +1888,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 70
+   "predicted_voxels": 68
   },
   {
    "run": "topcon",
@@ -1897,7 +1897,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 818
+   "predicted_voxels": 762
   },
   {
    "run": "topcon",
@@ -1906,7 +1906,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 864
+   "predicted_voxels": 854
   },
   {
    "run": "topcon",
@@ -1915,7 +1915,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 4086
+   "predicted_voxels": 4005
   },
   {
    "run": "topcon",
@@ -1924,7 +1924,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 4094
+   "predicted_voxels": 4179
   },
   {
    "run": "topcon",
@@ -1933,7 +1933,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 4854
+   "predicted_voxels": 4898
   },
   {
    "run": "topcon",
@@ -1942,7 +1942,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 4954
+   "predicted_voxels": 4993
   },
   {
    "run": "topcon",
@@ -1951,7 +1951,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 9938
+   "predicted_voxels": 10062
   },
   {
    "run": "topcon",
@@ -1960,7 +1960,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 17089
+   "predicted_voxels": 17145
   },
   {
    "run": "topcon",
@@ -1969,7 +1969,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 39638
+   "predicted_voxels": 40112
   },
   {
    "run": "topcon",
@@ -1978,106 +1978,106 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 240951
+   "predicted_voxels": 240888
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "SRF",
-   "dice": 0.007822685788787484,
-   "hd95": 12.826227628370791,
-   "predicted_voxels": 12751
+   "dice": 0.007903936768505851,
+   "hd95": 12.826544341392767,
+   "predicted_voxels": 12870
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "SRF",
-   "dice": 0.2685387529137529,
-   "hd95": 8.302187280152864,
-   "predicted_voxels": 46699
+   "dice": 0.2654764073601749,
+   "hd95": 8.30106339560185,
+   "predicted_voxels": 46677
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "SRF",
-   "dice": 0.4543670830181579,
-   "hd95": 0.12739999999999999,
-   "predicted_voxels": 107200
+   "dice": 0.5053262198904624,
+   "hd95": 2.2729793346289724,
+   "predicted_voxels": 194029
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "SRF",
-   "dice": 0.48458071170338435,
-   "hd95": 2.2725128341111738,
-   "predicted_voxels": 192135
+   "dice": 0.5230644507498987,
+   "hd95": 9.378484737603019,
+   "predicted_voxels": 8780
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "SRF",
-   "dice": 0.5279740154283394,
-   "hd95": 9.377951611683843,
-   "predicted_voxels": 8760
+   "dice": 0.5825361286383065,
+   "hd95": 1.441399130535793,
+   "predicted_voxels": 33164
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "SRF",
-   "dice": 0.5552893953127023,
-   "hd95": 5.64315129118415,
-   "predicted_voxels": 17431
+   "dice": 0.5849906674390165,
+   "hd95": 5.229182249473612,
+   "predicted_voxels": 17613
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "SRF",
-   "dice": 0.587436126206505,
-   "hd95": 1.4942603138763386,
-   "predicted_voxels": 33350
+   "dice": 0.6864913329348475,
+   "hd95": 0.05883026432033091,
+   "predicted_voxels": 3738
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "SRF",
-   "dice": 0.6942665673864482,
-   "hd95": 0.07075127136666874,
-   "predicted_voxels": 3761
+   "dice": 0.7042352211037001,
+   "hd95": 0.10968318740809824,
+   "predicted_voxels": 146464
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "SRF",
-   "dice": 0.6977932024191305,
-   "hd95": 2.0726325696132935,
-   "predicted_voxels": 294396
+   "dice": 0.7328666357865543,
+   "hd95": 2.0969089489346966,
+   "predicted_voxels": 298032
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "SRF",
-   "dice": 0.7794059063791391,
-   "hd95": 0.16559947946778095,
-   "predicted_voxels": 322419
+   "dice": 0.7713742633269761,
+   "hd95": 0.17140683766991327,
+   "predicted_voxels": 325528
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "SRF",
-   "dice": 0.8538417540514776,
-   "hd95": 0.5473813982955578,
-   "predicted_voxels": 56857
+   "dice": 0.8438061041292639,
+   "hd95": 0.5427846457625791,
+   "predicted_voxels": 57230
   },
   {
    "run": "topcon",
@@ -2086,7 +2086,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 1643
+   "predicted_voxels": 1657
   },
   {
    "run": "topcon",
@@ -2095,7 +2095,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 3488
+   "predicted_voxels": 3496
   },
   {
    "run": "topcon",
@@ -2104,7 +2104,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 3724
+   "predicted_voxels": 3749
   },
   {
    "run": "topcon",
@@ -2113,7 +2113,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 4954
+   "predicted_voxels": 4998
   },
   {
    "run": "topcon",
@@ -2122,7 +2122,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 7578
+   "predicted_voxels": 7593
   },
   {
    "run": "topcon",
@@ -2131,7 +2131,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 7595
+   "predicted_voxels": 7641
   },
   {
    "run": "topcon",
@@ -2140,7 +2140,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 8511
+   "predicted_voxels": 8622
   },
   {
    "run": "topcon",
@@ -2149,7 +2149,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 10044
+   "predicted_voxels": 10188
   },
   {
    "run": "topcon",
@@ -2158,7 +2158,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 16253
+   "predicted_voxels": 16058
   },
   {
    "run": "topcon",
@@ -2167,7 +2167,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 35486
+   "predicted_voxels": 35531
   },
   {
    "run": "topcon",
@@ -2176,7 +2176,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 97043
+   "predicted_voxels": 97422
   },
   {
    "run": "topcon",
@@ -2185,7 +2185,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 323665
+   "predicted_voxels": 326987
   },
   {
    "run": "topcon",
@@ -2194,88 +2194,88 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 444193
+   "predicted_voxels": 444178
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "PED",
-   "dice": 0.3466560814695174,
-   "hd95": 3.48546754606187,
-   "predicted_voxels": 55474
+   "dice": 0.32859957495793857,
+   "hd95": 1.0733446083914269,
+   "predicted_voxels": 122149
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "PED",
-   "dice": 0.3504130018907176,
-   "hd95": 1.0671127183240507,
-   "predicted_voxels": 120758
+   "dice": 0.3846838824577026,
+   "hd95": 3.493080295326483,
+   "predicted_voxels": 56534
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "PED",
-   "dice": 0.4347610978490767,
-   "hd95": 0.896945831023372,
-   "predicted_voxels": 48150
+   "dice": 0.4468297334429088,
+   "hd95": 2.163551680249441,
+   "predicted_voxels": 210949
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "PED",
-   "dice": 0.44145319563379765,
-   "hd95": 0.17586535607671255,
-   "predicted_voxels": 180708
+   "dice": 0.4568180143899025,
+   "hd95": 0.9018970920096061,
+   "predicted_voxels": 48747
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "PED",
-   "dice": 0.4591288350597362,
-   "hd95": 0.08717788939863134,
-   "predicted_voxels": 293514
+   "dice": 0.4725065252886446,
+   "hd95": 0.08211462476319308,
+   "predicted_voxels": 296447
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "PED",
-   "dice": 0.4594496570212095,
-   "hd95": 2.1473364235335537,
-   "predicted_voxels": 209218
+   "dice": 0.4891230277297269,
+   "hd95": 1.877153656896526,
+   "predicted_voxels": 110210
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "PED",
-   "dice": 0.48121274668800945,
-   "hd95": 1.895049211768656,
-   "predicted_voxels": 109356
+   "dice": 0.6214325487883601,
+   "hd95": 0.14906364278387937,
+   "predicted_voxels": 245331
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "PED",
-   "dice": 0.6636705662584172,
-   "hd95": 0.08468507306485601,
-   "predicted_voxels": 947798
+   "dice": 0.6583755828831771,
+   "hd95": 2.5466828703898154,
+   "predicted_voxels": 92027
   },
   {
    "run": "topcon",
    "arm": "held_out",
    "vendor": "topcon",
    "fluid": "PED",
-   "dice": 0.6639796647696433,
-   "hd95": 2.547717855436857,
-   "predicted_voxels": 91321
+   "dice": 0.6655990172273025,
+   "hd95": 0.08211462476319308,
+   "predicted_voxels": 956847
   },
   {
    "run": "topcon",
@@ -2284,61 +2284,61 @@
    "fluid": "IRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 564
+   "predicted_voxels": 640
   },
   {
    "run": "topcon",
    "arm": "in_domain",
    "vendor": "cirrus",
    "fluid": "IRF",
-   "dice": 0.46882457386363635,
-   "hd95": 0.11743627388928857,
-   "predicted_voxels": 859601
+   "dice": 0.7036723219721697,
+   "hd95": 0.011903637637293905,
+   "predicted_voxels": 989885
   },
   {
    "run": "topcon",
    "arm": "in_domain",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.03840682788051209,
-   "hd95": 9.067917620596749,
-   "predicted_voxels": 1022
+   "dice": 0.37775061124694376,
+   "hd95": 9.066918362499171,
+   "predicted_voxels": 1252
   },
   {
    "run": "topcon",
    "arm": "in_domain",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.225374831018803,
-   "hd95": 0.20294784768506416,
-   "predicted_voxels": 67261
+   "dice": 0.6705436713138331,
+   "hd95": 0.22714570393454417,
+   "predicted_voxels": 37184
   },
   {
    "run": "topcon",
    "arm": "in_domain",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.24459221314873467,
-   "hd95": 0.242308,
-   "predicted_voxels": 291405
+   "dice": 0.6850544063218271,
+   "hd95": 0.042592,
+   "predicted_voxels": 81078
   },
   {
    "run": "topcon",
    "arm": "in_domain",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.6034010639225604,
-   "hd95": 0.19284116919631036,
-   "predicted_voxels": 30896
+   "dice": 0.6851932635089192,
+   "hd95": 0.03872,
+   "predicted_voxels": 350153
   },
   {
    "run": "topcon",
    "arm": "in_domain",
    "vendor": "spectralis",
    "fluid": "IRF",
-   "dice": 0.6123788683963739,
-   "hd95": 0.100674,
-   "predicted_voxels": 144756
+   "dice": 0.814437140162446,
+   "hd95": 0.01936,
+   "predicted_voxels": 173653
   },
   {
    "run": "topcon",
@@ -2347,7 +2347,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 39197
+   "predicted_voxels": 45198
   },
   {
    "run": "topcon",
@@ -2356,7 +2356,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 67039
+   "predicted_voxels": 76972
   },
   {
    "run": "topcon",
@@ -2374,7 +2374,7 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 496
+   "predicted_voxels": 556
   },
   {
    "run": "topcon",
@@ -2383,25 +2383,25 @@
    "fluid": "SRF",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 8200
+   "predicted_voxels": 9913
   },
   {
    "run": "topcon",
    "arm": "in_domain",
    "vendor": "spectralis",
    "fluid": "SRF",
-   "dice": 0.5448834059496418,
-   "hd95": 0.121154,
-   "predicted_voxels": 172256
+   "dice": 0.8378867961984169,
+   "hd95": 19.425065997966296,
+   "predicted_voxels": 21682
   },
   {
    "run": "topcon",
    "arm": "in_domain",
    "vendor": "spectralis",
    "fluid": "SRF",
-   "dice": 0.6730922371419942,
-   "hd95": 19.42539092601711,
-   "predicted_voxels": 17800
+   "dice": 0.9000156758142093,
+   "hd95": 0.15758770288318819,
+   "predicted_voxels": 206463
   },
   {
    "run": "topcon",
@@ -2410,16 +2410,16 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 77615
+   "predicted_voxels": 89205
   },
   {
    "run": "topcon",
    "arm": "in_domain",
    "vendor": "cirrus",
    "fluid": "PED",
-   "dice": 0.35784522271008756,
-   "hd95": 4.6798296343132675,
-   "predicted_voxels": 56305
+   "dice": 0.49737358490566036,
+   "hd95": 4.411972859709449,
+   "predicted_voxels": 64226
   },
   {
    "run": "topcon",
@@ -2428,7 +2428,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 584
+   "predicted_voxels": 696
   },
   {
    "run": "topcon",
@@ -2437,7 +2437,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 741
+   "predicted_voxels": 889
   },
   {
    "run": "topcon",
@@ -2446,7 +2446,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 775
+   "predicted_voxels": 924
   },
   {
    "run": "topcon",
@@ -2455,7 +2455,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 818
+   "predicted_voxels": 940
   },
   {
    "run": "topcon",
@@ -2464,7 +2464,7 @@
    "fluid": "PED",
    "dice": 0.0,
    "hd95": null,
-   "predicted_voxels": 6454
+   "predicted_voxels": 7743
   }
  ]
 }

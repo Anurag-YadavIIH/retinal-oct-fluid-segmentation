@@ -310,7 +310,7 @@ never instead of them.
 
 ![Predicted voxel count per volume and class, by whether the class is present in the reference, on a log scale with the 10-voxel threshold marked.](figures/fig3_predicted_voxels.png)
 
-**Figure 3. Predicted voxel count by reference presence, log scale.** One point per patient and class; a volume with no predicted voxels is drawn at 0.5. The dashed line is the pre-registered presence threshold of 10 voxels (§17.7a). Volumes without the class (open) mostly sit far above it, which is why specificity at that threshold is 0.0000 in 13 of 18 cells (§4). **ROC curves are not shown:** they need each volume's detection score, which the sealed records did not persist (`docs/08` D9). A curve built from voxel counts would rank a different score from the one the reported AUROC uses.
+**Figure 3. Predicted voxel count by reference presence, log scale.** One point per patient and class; a volume with no predicted voxels is drawn at 0.5. The dashed line is the pre-registered presence threshold of 10 voxels (§17.7a). Volumes without the class (open) mostly sit far above it, which is why specificity at that threshold is 0.0000 in 13 of 18 cells (§4). **ROC curves are not shown:** they need each volume's detection score, which the first sealed records did not persist (`docs/08` D9); the corrected records keep it, and the curves have not been drawn. A curve built from voxel counts would rank a different score from the one the reported AUROC uses.
 
 ## 5. Generalisation gap
 

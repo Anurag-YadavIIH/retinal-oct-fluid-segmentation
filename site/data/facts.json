@@ -22,42 +22,67 @@
  "threshold": 10,
  "mc_passes": 20,
  "familiar_n": 46,
- "overlap_folds": 9,
+ "overlap_folds": 8,
  "n_fold_comparisons": 9,
  "overlap_pooled": 3,
- "worse_unseen": 3,
- "better_unseen": 6,
+ "apart": [
+  {
+   "run": "Spectralis",
+   "fluid": "SRF",
+   "unseen_higher": true
+  }
+ ],
+ "n_apart": 1,
+ "worse_unseen": 4,
+ "better_unseen": 5,
  "n_differences": 24,
- "n_excluding": 6,
+ "n_excluding": 7,
  "n_pooled_differences": 6,
- "n_pooled_excluding": 0,
+ "n_pooled_excluding": 2,
+ "n_excluding_lower": 6,
+ "pooled_present_excluding": [
+  {
+   "fluid": "IRF",
+   "value": -0.12315960933566783,
+   "ci_low": -0.20995032444098832,
+   "ci_high": -0.034700466822718476,
+   "n_held_out": 55,
+   "n_in_domain": 11
+  },
+  {
+   "fluid": "PED",
+   "value": -0.15234974256776962,
+   "ci_low": -0.23851760109442208,
+   "ci_high": -0.062034526134422056,
+   "n_held_out": 33,
+   "n_in_domain": 3
+  }
+ ],
  "spectralis_srf": {
   "comparison": "spectralis",
   "fluid": "SRF",
-  "value": 0.37096258693503725,
-  "ci_low": 0.05371808599200235,
-  "ci_high": 0.604479507164901
+  "value": 0.4811143897224046,
+  "ci_low": 0.17574461781615544,
+  "ci_high": 0.7067771389597698
  },
- "n_class_present_excluding": 5,
+ "n_class_present_excluding": 4,
  "class_present_strata": [
-  1,
   2,
-  5,
-  6
+  5
  ],
  "halfwidth_fold": [
-  0.14,
-  0.29
+  0.17,
+  0.31
  ],
  "halfwidth_pooled": [
-  0.14,
-  0.18
+  0.16,
+  0.22
  ],
  "halfwidth_present_pooled": [
-  0.15,
-  0.3
+  0.09,
+  0.35
  ],
- "detection_limit": 0.14,
+ "detection_limit": 0.16,
  "unreliable_below": 0.3,
  "n_cells": 18,
  "fp_cells": 14,
@@ -80,7 +105,8 @@
   "seeded": 0.12764552695764195,
   "shift": 0.1430544016630039,
   "one_flip": 0.14285714285714285,
-  "absent": 4
+  "absent": 4,
+  "corrected": 0.13522935123511187
  },
  "step0": {
   "leaves": 466,

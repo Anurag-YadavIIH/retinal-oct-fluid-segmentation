@@ -7,6 +7,10 @@ the per-fold arms equal their records, the pooled arms equal `docs/10` §5.2 and
 differences equal `docs/10` §5.4. Every count the page states is computed here and asserted
 against the document that states it.
 
+The records are the corrected ones of the `docs/07` §17.11 re-evaluation, through
+`07_make_figures.RECORDS`. The one exception is the fragility shift of `docs/10` §7.2, which is
+between two draws measured through the inversion defect and is read from those records.
+
 Two stages, so the page can be rebuilt and tested where the records are absent:
 
 1. **extract** (needs `artifacts/` and `data/splits/`, so it runs on this workstation only):
@@ -89,7 +93,11 @@ ILLUSTRATION_CAPTIONS = FIGURES / "illustrations.md"
 # (docs/13, 2026-10-16), so they are neither shown on the page nor deployed until
 # regenerated. TC-133 checks both directions of this flag.
 ILLUSTRATIONS_WITHDRAWN = True
-WORDS = {6: "Six", 9: "nine"}
+WORDS = {6: "Six", 7: "Seven", 9: "nine"}
+# The cirrus in-domain record of the seeded evaluation of 2026-10-05, measured through the
+# inversion defect. Section 7.2's fragility is the shift between two draws that were both
+# measured that way, so it is read from this record and not from the corrected one.
+FRAGILITY_SEEDED = "cirrus_holdout_stage2/repro/evaluation_in_domain_ref_seeded.json"
 CURVES = ("epoch", "train_loss", "val_dice")
 
 
@@ -419,6 +427,16 @@ def extract() -> dict[str, bytes]:
     facts["overlap_folds"] = sum(overlaps(*p) for p in fold_pairs)
     facts["n_fold_comparisons"] = len(fold_pairs)
     facts["overlap_pooled"] = sum(overlaps(*p) for p in pooled_pairs)
+    # The page's wording names one non-overlapping row, with the unseen brand higher, and says
+    # every pooled row overlaps; it must be rewritten if the data says otherwise.
+    facts["apart"] = [
+        {"run": BRAND[f], "fluid": c, "unseen_higher": h["ci_low"] > r["ci_high"]}
+        for (f, c), (h, r) in zip([(f, c) for f in FOLDS for c in CLASSES], fold_pairs, strict=True)
+        if not overlaps(h, r)
+    ]
+    assert len(facts["apart"]) == 1 and facts["apart"][0]["unseen_higher"], facts["apart"]
+    facts["n_apart"] = len(facts["apart"])
+    assert facts["overlap_pooled"] == len(pooled_pairs), "the page says every pooled row overlaps"
     claim("docs/10_analytical_validation_report.md",
           rf"held-out and in-domain intervals overlap: {facts['overlap_folds']} of "
           rf"{facts['n_fold_comparisons']} comparisons")  # fmt: skip
@@ -436,6 +454,15 @@ def extract() -> dict[str, bytes]:
     facts["n_excluding"] = len(excl)
     facts["n_pooled_differences"] = sum(d["comparison"] == "pooled" for d in differences)
     facts["n_pooled_excluding"] = sum(d["comparison"] == "pooled" for d in excl)
+    facts["n_excluding_lower"] = sum(d["value"] < 0 for d in excl)
+    # The page names the pooled exclusions as class-present, with the unseen brand lower.
+    pooled_excl = [d for d in excl if d["comparison"] == "pooled"]
+    assert all(d["view"] == "class-present" and d["value"] < 0 for d in pooled_excl)
+    assert len(pooled_excl) == 2, "the page's wording names exactly two pooled exclusions"
+    facts["pooled_present_excluding"] = [
+        {k: d[k] for k in ("fluid", "value", "ci_low", "ci_high", "n_held_out", "n_in_domain")}
+        for d in pooled_excl
+    ]
     av = [d for d in excl if d["view"] == "all-volume" and d["comparison"] != "pooled"]
     assert len(av) == 1
     facts["spectralis_srf"] = {k: av[0][k] for k in ("comparison", "fluid", "value", "ci_low",
@@ -502,19 +529,25 @@ def extract() -> dict[str, bytes]:
             int(re.search(r"\((\d+)%\)", row[4]).group(1)),
         ]
 
-    # Fragility (§7.2): the cirrus in-domain SRF draws, unseeded and seeded.
+    # Fragility (§7.2): the cirrus in-domain SRF draws, unseeded and seeded, both measured
+    # through the inversion defect; the corrected seeded value is stated beside them.
     unseeded = figs.load(RUNS / "cirrus_holdout_stage2" / "evaluation_in_domain_ref.json")
+    seeded = figs.load(RUNS / FRAGILITY_SEEDED)
     u = unseeded["segmentation"]["all_vendors"]["SRF"]["dice"]["value"]
-    s = records["cirrus"]["in_domain_ref"]["segmentation"]["all_vendors"]["SRF"]["dice"]["value"]
-    srf_absent = sum(not r["reference_present"] for r in records["cirrus"]["in_domain_ref"]
-                     ["per_volume"] if r["fluid_class"] == "SRF")  # fmt: skip
+    s = seeded["segmentation"]["all_vendors"]["SRF"]["dice"]["value"]
+    corrected = records["cirrus"]["in_domain_ref"]["segmentation"]["all_vendors"]["SRF"]["dice"]
+    srf_absent = sum(not r["reference_present"] for r in seeded["per_volume"]
+                     if r["fluid_class"] == "SRF")  # fmt: skip
     facts["fragility"] = {
         "unseeded": u,
         "seeded": s,
         "shift": u - s,
         "one_flip": 1 / ref_n["cirrus"],
         "absent": srf_absent,
+        "corrected": corrected["value"],
     }
+    claim("docs/10_analytical_validation_report.md",
+          rf"corrected seeded figure is\s+{corrected['value']:.4f}")  # fmt: skip
     claim("docs/10_analytical_validation_report.md", rf"moved by {u - s:.4f}")
 
     # Reproducibility evidence, recomputed from the records rather than copied.
