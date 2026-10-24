@@ -42,7 +42,13 @@ from highdicom.sr import CodedConcept
 from pydicom import Dataset
 from pydicom.sr.codedict import codes
 
-from ocuval.report.coding import FLUID_CODE_VALUES, declare_scheme, fluid_code
+from ocuval.report.coding import (
+    CONTENT_QUALIFICATION,
+    FLUID_CODE_VALUES,
+    RESEARCH_USE_TEXT,
+    declare_scheme,
+    fluid_code,
+)
 
 # Verified against pydicom's shipped concept dictionary, which carries the standard's
 # own tables. Changing either is a coded-concept change and belongs in docs/13.
@@ -149,6 +155,10 @@ def build_segmentation(
         manufacturer_model_name=manufacturer_model_name,
         software_versions=software_version or __version__,
         device_serial_number=device_serial_number,
+        # SRS-042, RC-014: the research-use designation, A and B (docs/11 section 10 item 2).
+        content_qualification=CONTENT_QUALIFICATION,
+        series_description=RESEARCH_USE_TEXT,
+        content_description=RESEARCH_USE_TEXT,
     )
 
     # Declare the private scheme in the object when any of its codes were used, so the

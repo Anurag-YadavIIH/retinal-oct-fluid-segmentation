@@ -49,6 +49,7 @@ from pydicom.uid import ExplicitVRLittleEndian
 from pydicom.uid import generate_uid as _pydicom_generate_uid
 
 from ocuval.io.retouch_reader import OCTVolume, validate_spacing
+from ocuval.report.coding import CONTENT_QUALIFICATION
 
 logger = logging.getLogger(__name__)
 
@@ -338,6 +339,10 @@ def _build_dataset(
     # SOP Common (M)
     ds.SOPClassUID = OPT_SOP_CLASS_UID
     ds.SOPInstanceUID = generate_uid(uid_root)
+    # SRS-042, RC-014, part A (docs/11 section 10 item 2): Content Qualification is Type 3 in
+    # SOP Common (PS3.3 C.12.1). Set here too, by the author's decision, because content
+    # derived from these objects is expected to carry its source's value.
+    ds.ContentQualification = CONTENT_QUALIFICATION
 
     # Patient (M) — all Type 2, so zero-length is conformant and is what a converted
     # archive honestly has. De-identification replaces these downstream.

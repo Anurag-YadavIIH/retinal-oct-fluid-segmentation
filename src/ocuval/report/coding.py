@@ -38,6 +38,13 @@ from pydicom import Dataset
 #: private schemes, so this one announces itself as local by its name alone.
 OCUVAL_SCHEME_DESIGNATOR = "99OCUVAL"
 
+#: The research-use designation (SRS-042, RC-014), decided by the author 2026-10-16
+#: (docs/11 section 10 item 2): A, Content Qualification on every SEG, SR and OPT object;
+#: B, this text in the SEG's Series and Content Descriptions and the SR's Series Description,
+#: ASCII and 60 characters, within LO's 64; C, the SR left UNVERIFIED and PRELIMINARY.
+CONTENT_QUALIFICATION = "RESEARCH"
+RESEARCH_USE_TEXT = "RESEARCH USE ONLY: automated, not validated, review required"
+
 OCUVAL_SCHEME_NAME = "OcuVal RETOUCH fluid classes"
 
 #: Identifies the scheme by OID, satisfying the C.12.1 condition above. Derived from the

@@ -43,7 +43,12 @@ from highdicom.sr import (
 from pydicom import Dataset
 from pydicom.sr.codedict import codes
 
-from ocuval.report.coding import OCUVAL_SCHEME_DESIGNATOR, declare_scheme
+from ocuval.report.coding import (
+    CONTENT_QUALIFICATION,
+    OCUVAL_SCHEME_DESIGNATOR,
+    RESEARCH_USE_TEXT,
+    declare_scheme,
+)
 
 # Verified UCUM concepts. RC-025 is satisfied by these being coded, not by their values.
 UNIT_CUBIC_MM = codes.UCUM.CubicMillimeter
@@ -187,6 +192,13 @@ def build_measurement_report(
         instance_number=instance_number,
         manufacturer="OcuVal",
         software_versions=software_version or __version__,
+        # SRS-042, RC-014 (docs/11 section 10 item 2). A and B: the designation. C: the
+        # report stays UNVERIFIED and PRELIMINARY. Those were already highdicom's defaults;
+        # they are stated here so the designation does not rest on a library default.
+        content_qualification=CONTENT_QUALIFICATION,
+        series_description=RESEARCH_USE_TEXT,
+        is_verified=False,
+        is_final=False,
     )
 
     coded = [names.volume, names.voxel_count, names.voxel_volume, names.confidence]
