@@ -1,8 +1,8 @@
 <!--
 Document: Model Card
-Status: DRAFT v0.1 — drafted 2026-10-15 from docs/10 v0.4, docs/08, docs/06, docs/01 and docs/03; per-vendor fluid prevalence added 2026-10-15 (docs/06 §3.2)
+Status: DRAFT v0.2 — corrected figures from docs/10 v0.5 (2026-10-24); the figures measured through the inversion defect kept in the last section. v0.1 drafted 2026-10-15 from docs/10 v0.4, docs/08, docs/06, docs/01 and docs/03
 Owner: Anurag Yadav
-Last reviewed: 2026-10-15
+Last reviewed: 2026-10-24
 Change history: docs/13_change_control_log.md
 -->
 
@@ -12,11 +12,13 @@ Change history: docs/13_change_control_log.md
 > data. It has never been used on patients, has not been validated for patient care, and makes
 > no clinical claim of any kind. It carries no regulatory clearance (`docs/01` §5).
 
-> **Known defect, found 2026-10-16: the segmentation figures in this card are not
-> reliable.** They are copied from `docs/10`, whose evaluation returned predictions to native
-> geometry without removing the preprocessing padding. Cirrus and spectralis predictions were
-> compressed towards the middle of each B-scan; topcon barely. See the `docs/10` notice and
-> `docs/13`, 2026-10-16. The trained models themselves are not affected.
+> **Earlier figures were measured through a defect, and are kept in the last section.** Until
+> 2026-10-24 this card's Dice and HD95 figures came from an evaluation that returned
+> predictions to native geometry without first removing the preprocessing padding, misplacing
+> every cirrus and spectralis prediction ([`docs/13`, finding of
+> 2026-10-16](13_change_control_log.md)). The inversion was fixed and every sealed bucket
+> evaluated again (`docs/08` §5i). **Every figure above the last section is corrected.** The
+> trained models were not affected, and neither were detection or AUROC.
 
 > **How to read this card.** It adds no result. Every figure is copied from `docs/10` or
 > `docs/08`, or for measured dataset figures from `docs/06` §3.2, and cited by section; where they differ in presentation, `docs/10` governs. Each
@@ -88,9 +90,10 @@ be deployed.
 
 **Two further limits that follow from this project's records:**
 
-- **Not as a vendor-robust model.** No cross-vendor difference was established, and the design
-  could not detect one smaller than about 0.14 Dice (`docs/10` Summary, §5.4). That is not
-  evidence of robustness.
+- **Not as a vendor-robust model.** No degradation on an unseen vendor was established by the
+  pre-registered criterion, a post-hoc view points towards one, and the design could not detect
+  a difference smaller than about 0.16 Dice (`docs/10` Summary, §5.4). That is not evidence of
+  robustness.
 - **Not outside a local PACS.** DICOM objects carry UIDs under an unregistered root and must
   not leave the local Orthanc instance or be published as DICOM files (`docs/06` §7.2). The
   one exception is synthetic test objects sent to an ephemeral Orthanc in CI, which is
@@ -169,55 +172,77 @@ RETOUCH organisers (`docs/06` §2.1):
 
 ### Headline — primary, pre-registered
 
-**No cross-vendor difference in Dice is established at 95%, in either direction.** In all three
-folds and for all three classes, the held-out and in-domain intervals overlap: 9 of 9
-comparisons. The point differences point both ways. **The main limitation is the in-domain
-arms of 7 patients per fold**, which leave Dice intervals 0.15–0.52 wide (`docs/10` Summary,
-§8.3).
+From `docs/10` Summary and §3, unchanged:
+
+By the pre-registered criterion, the overlap of the two arms' 95% intervals, **one of nine
+comparisons establishes a difference in Dice: spectralis SRF, where the unseen vendor scores
+higher**, 0.6057 [0.4571, 0.7496] n=24, against 0.1246 [0.0000, 0.3713] n=7 for unseen patients
+of the training vendors. Beside it:
+
+- the in-domain arm is 71% SRF-absent (5 of 7 volumes), and all 5 of those volumes scored Dice
+  0, because the model marks some SRF where there is none (the false-positive pattern of §7.1);
+  on the held-out side, 7 of the 10 SRF-absent volumes scored Dice 1;
+- restricted to volumes containing SRF, the same comparison's difference interval includes
+  zero: +0.1023 [−0.4096, +0.6134];
+- no multiplicity correction was pre-registered for the nine comparisons.
+
+The difference is consistent with case mix; this report does not claim that case mix explains
+it. **No degradation on an unseen vendor is established by the pre-registered criterion**, in
+any fold or class. The other eight comparisons establish no difference in either direction.
+
+**The main limitation is the in-domain arms of 7 patients per fold**, which leave their Dice
+intervals 0.21–0.52 wide (`docs/10` Summary, §8.3).
 
 ### Segmentation — primary, pre-registered (`docs/10` §3)
 
-Copied unchanged. **Gap convention:** for Dice, a positive gap means worse on the unseen vendor.
+Copied unchanged from the corrected records. **Gap convention:** for Dice, a positive gap means worse on the unseen vendor.
 For HD95, where lower is better, a positive gap means the in-domain arm is worse. `n` is
 patients.
 
 | Held-out vendor (trained on) | Class | Held-out Dice | In-domain reference Dice | Gap | Intervals overlap |
 |---|---|---|---|---|---|
-| cirrus (spectralis + topcon) | IRF | **0.3456** [0.2470, 0.4438] n=24 | **0.5561** [0.3369, 0.7291] n=7 | +0.2105 | yes |
-| cirrus (spectralis + topcon) | SRF | **0.2478** [0.1428, 0.3627] n=24 | **0.1276** [0.0015, 0.3693] n=7 | -0.1201 | yes |
-| cirrus (spectralis + topcon) | PED | **0.1915** [0.0956, 0.2987] n=24 | **0.2742** [0.0385, 0.5599] n=7 | +0.0827 | yes |
-| spectralis (cirrus + topcon) | IRF | **0.2298** [0.1487, 0.3273] n=24 | **0.4721** [0.2269, 0.6937] n=7 | +0.2424 | yes |
-| spectralis (cirrus + topcon) | SRF | **0.4971** [0.3429, 0.6544] n=24 | **0.1261** [0.0000, 0.3761] n=7 | -0.3710 | yes |
-| spectralis (cirrus + topcon) | PED | **0.3125** [0.1783, 0.4618] n=24 | **0.1562** [0.0000, 0.3522] n=7 | -0.1563 | yes |
-| topcon (cirrus + spectralis) | IRF | **0.4585** [0.3297, 0.5768] n=22 | **0.3133** [0.1376, 0.4815] n=7 | -0.1452 | yes |
-| topcon (cirrus + spectralis) | SRF | **0.2687** [0.1380, 0.3951] n=22 | **0.1740** [0.0000, 0.3663] n=7 | -0.0947 | yes |
-| topcon (cirrus + spectralis) | PED | **0.1955** [0.0928, 0.3051] n=22 | **0.0511** [0.0000, 0.1534] n=7 | -0.1444 | yes |
+| cirrus (spectralis + topcon) | IRF | **0.4834** [0.3582, 0.5991] n=24 | **0.5971** [0.3791, 0.7580] n=7 | +0.1136 | yes |
+| cirrus (spectralis + topcon) | SRF | **0.3310** [0.2005, 0.4770] n=24 | **0.1352** [0.0048, 0.3704] n=7 | -0.1957 | yes |
+| cirrus (spectralis + topcon) | PED | **0.2441** [0.1275, 0.3700] n=24 | **0.3268** [0.0899, 0.6126] n=7 | +0.0827 | yes |
+| spectralis (cirrus + topcon) | IRF | **0.3823** [0.2882, 0.4899] n=24 | **0.5024** [0.2496, 0.7262] n=7 | +0.1201 | yes |
+| spectralis (cirrus + topcon) | SRF | **0.6057** [0.4571, 0.7496] n=24 | **0.1246** [0.0000, 0.3713] n=7 | -0.4811 | **no** |
+| spectralis (cirrus + topcon) | PED | **0.3607** [0.2223, 0.5096] n=24 | **0.1722** [0.0000, 0.3506] n=7 | -0.1885 | yes |
+| topcon (cirrus + spectralis) | IRF | **0.4743** [0.3416, 0.5929] n=22 | **0.5624** [0.3455, 0.7226] n=7 | +0.0881 | yes |
+| topcon (cirrus + spectralis) | SRF | **0.2822** [0.1479, 0.4118] n=22 | **0.2483** [0.0000, 0.5143] n=7 | -0.0339 | yes |
+| topcon (cirrus + spectralis) | PED | **0.2056** [0.0987, 0.3208] n=22 | **0.0711** [0.0000, 0.2132] n=7 | -0.1346 | yes |
 
 | Held-out vendor (trained on) | Class | Held-out HD95 (mm) | In-domain reference HD95 (mm) | Gap | Intervals overlap |
 |---|---|---|---|---|---|
-| cirrus (spectralis + topcon) | IRF | 1.4973 [0.3614, 3.0828] n=18 | 0.9594 [0.0446, 2.0126] n=6 | -0.5380 | yes |
-| cirrus (spectralis + topcon) | SRF | 1.2215 [0.2693, 2.3118] n=12 | 7.6029 [0.0355, 17.1420] n=3 | +6.3813 | yes |
-| cirrus (spectralis + topcon) | PED | 1.5850 [0.6284, 2.9064] n=12 | 0.0879 [0.0000, 0.2215] n=3 | -1.4971 | **no** |
-| spectralis (cirrus + topcon) | IRF | 2.1144 [0.8778, 3.8042] n=21 | 1.2267 [0.0349, 3.5668] n=5 | -0.8877 | yes |
-| spectralis (cirrus + topcon) | SRF | 1.6210 [0.2542, 3.8001] n=21 | 3.1980 [0.0156, 6.3804] n=2 | +1.5770 | yes |
-| spectralis (cirrus + topcon) | PED | 0.7311 [0.1511, 1.5883] n=16 | 2.2425 [0.0369, 4.4482] n=2 | +1.5115 | yes |
-| topcon (cirrus + spectralis) | IRF | 2.5188 [1.2436, 3.9942] n=17 | 1.6540 [0.1387, 4.6278] n=6 | -0.8647 | yes |
-| topcon (cirrus + spectralis) | SRF | 3.9000 [1.6269, 6.5503] n=11 | 9.7733 [0.1212, 19.4254] n=2 | +5.8733 | yes |
-| topcon (cirrus + spectralis) | PED | 1.3764 [0.6491, 2.1073] n=9 | 4.6798 (single patient, no spread) n=1 | +3.3035 | **no** |
+| cirrus (spectralis + topcon) | IRF | 1.4649 [0.2716, 3.0824] n=18 | 1.0425 [0.0449, 2.1548] n=6 | -0.4223 | yes |
+| cirrus (spectralis + topcon) | SRF | 1.1492 [0.1599, 2.2554] n=12 | 7.6432 [0.0469, 17.2515] n=3 | +6.4941 | yes |
+| cirrus (spectralis + topcon) | PED | 1.5761 [0.5769, 2.9403] n=12 | 0.0244 [0.0000, 0.0402] n=3 | -1.5517 | **no** |
+| spectralis (cirrus + topcon) | IRF | 2.0929 [0.8563, 3.7611] n=21 | 1.1388 [0.0225, 3.3511] n=5 | -0.9541 | yes |
+| spectralis (cirrus + topcon) | SRF | 1.6150 [0.2235, 3.8138] n=21 | 3.1804 [0.0234, 6.3373] n=2 | +1.5654 | yes |
+| spectralis (cirrus + topcon) | PED | 0.7345 [0.1420, 1.5941] n=16 | 2.2742 [0.0455, 4.5029] n=2 | +1.5397 | yes |
+| topcon (cirrus + spectralis) | IRF | 2.5302 [1.2559, 4.0026] n=17 | 1.5678 [0.0246, 4.5804] n=6 | -0.9624 | yes |
+| topcon (cirrus + spectralis) | SRF | 3.8572 [1.5858, 6.5061] n=11 | 9.7913 [0.1576, 19.4251] n=2 | +5.9341 | yes |
+| topcon (cirrus + spectralis) | PED | 1.3743 [0.6482, 2.1124] n=9 | 4.4120 (single patient, no spread) n=1 | +3.0376 | **no** |
 
-**Dice: all nine comparisons overlap. HD95: two do not**, cirrus PED and topcon PED, with
-in-domain arms of 3 and 1 patients; nothing is concluded from either (`docs/10` §3).
+**Dice: 8 of 9 comparisons overlap; spectralis SRF does not**, with the held-out vendor higher.
+Point differences: worse on the unseen vendor in 4 of 9, better in 5. **HD95: two do not
+overlap**, cirrus PED and topcon PED, with in-domain arms of 3 and 1 patients; nothing is
+concluded from either (`docs/10` §3).
 
-**Cirrus has a second, unseeded draw** from 2026-10-01, kept beside the seeded record in
-`docs/10` §3.1. Only the seeded figures above are reproducible, and only they are carried into
-any cross-fold statement.
+**Cirrus has an earlier, unseeded draw** from 2026-10-01, kept in `docs/10` §3.1 beside the
+seeded figures; both were measured through the defect. Only the corrected seeded figures above
+are carried into any cross-fold statement.
 
 ### Detection — primary, pre-registered (`docs/10` §4)
 
-Copied unchanged. Sensitivity and specificity at the fixed threshold of 10 predicted voxels.
-**AUROC carries no interval**, because the per-volume detection score was not persisted in any
-sealed record (`docs/08` D9). That is a gap against the project's own rule that every metric
-carries an interval, stated rather than hidden (`docs/10` §8.7).
+Copied unchanged, and **unchanged by the correction** in every cell (`docs/08` §5i.2).
+Sensitivity and specificity at the fixed threshold of 10 predicted voxels. **The
+pre-registered AUROC carries no interval**, because the sealed records of 2026-10-05 did not
+persist the per-volume detection score (`docs/08` D9), a gap against the project's own rule
+that every metric carries an interval (`docs/10` §8.7). **Post-hoc intervals** from the scores
+the corrected records persist are in `docs/10` §4. Twelve of the eighteen cells have AUROC
+1.0000, and there the interval is not estimable: every resample scores 1, which says nothing
+about uncertainty. The six informative intervals are the five held-out cells below 1, with
+lower bounds 0.8472–0.9583, and spectralis in-domain SRF, [0.3000, 1.0000].
 
 | Held-out vendor | Class | Arm | AUROC (positives/negatives) | Sensitivity | Specificity |
 |---|---|---|---|---|---|
@@ -247,6 +272,8 @@ rests on 1–6 positives per cell (`docs/10` §4).
 
 ### Secondary, pre-registered (`docs/07` §19)
 
+Both unchanged by the correction (`docs/08` §5i.4).
+
 - **False positives in class-absent volumes** (§19.1; post-hoc for cirrus). In 14 of 18 fold ×
   arm × class cells, every class-absent volume scored Dice 0. The exceptions come from the
   spectralis-held-out model on spectralis volumes, plus one cirrus in-domain PED volume
@@ -266,9 +293,9 @@ primary figures above.
 
 | Class | Pooled held-out Dice | Pooled in-domain Dice | Gap |
 |---|---|---|---|
-| IRF | **0.3414** [0.2787, 0.4094] n=70 | **0.4201** [0.2595, 0.5669] n=13 | +0.0787 |
-| SRF | **0.3398** [0.2563, 0.4259] n=70 | **0.1624** [0.0031, 0.3514] n=13 | -0.1774 |
-| PED | **0.2343** [0.1686, 0.3098] n=70 | **0.1400** [0.0314, 0.2694] n=13 | -0.0942 |
+| IRF | **0.4459** [0.3759, 0.5174] n=70 | **0.5690** [0.4087, 0.6955] n=13 | +0.1231 |
+| SRF | **0.4098** [0.3227, 0.5000] n=70 | **0.2064** [0.0128, 0.4112] n=13 | -0.2034 |
+| PED | **0.2720** [0.2017, 0.3504] n=70 | **0.1788** [0.0419, 0.3373] n=13 | -0.0932 |
 
 All three pairs overlap. **The arms differ in case mix:** the in-domain arms carry more
 class-absent volumes than the held-out arms, 62% against 47% for SRF and 77% against 53% for
@@ -280,32 +307,45 @@ composition confound:
 
 | Class | Held-out, class present | In-domain, class present | Gap |
 |---|---|---|---|
-| IRF | **0.4163** [0.3586, 0.4731] n=55 | **0.4965** [0.3542, 0.6320] n=11 | +0.0802 |
-| SRF | **0.4537** [0.3753, 0.5259] n=37 | **0.4223** [0.1212, 0.7234] n=5 | -0.0315 |
-| PED | **0.3757** [0.3075, 0.4461] n=33 | **0.4400** [0.2696, 0.6429] n=3 | +0.0643 |
+| IRF | **0.5493** [0.4969, 0.6034] n=55 | **0.6725** [0.5987, 0.7444] n=11 | +0.1232 |
+| SRF | **0.5862** [0.5092, 0.6578] n=37 | **0.5367** [0.1976, 0.8655] n=5 | -0.0495 |
+| PED | **0.4558** [0.3840, 0.5271] n=33 | **0.6081** [0.5446, 0.6584] n=3 | +0.1523 |
 
-All three overlap. Per fold, three class-present comparisons do not overlap, each resting on an
-in-domain stratum of 5, 2 or 1 patients; no vendor-specific conclusion is drawn from them
+IRF and SRF overlap; **PED does not**, with the held-out vendor lower and an in-domain arm of 3
+patients. Per fold, four class-present comparisons do not overlap, cirrus PED, spectralis IRF,
+spectralis PED and topcon SRF, all with the in-domain arm higher and each resting on an
+in-domain stratum of 2 or 5 patients; no vendor-specific conclusion is drawn from them
 (`docs/10` §5.3).
 
-**The difference bootstrapped directly** (post-hoc; `docs/10` §5.4). Six of 24 difference
-intervals exclude zero, with no multiplicity correction, pointing both ways and resting on
-in-domain strata of 1–6 patients; none of the six pooled intervals does. One of the nine
-pre-registered all-volume comparisons excludes zero: **spectralis SRF, held-out − in-domain
-+0.3710 [+0.0537, +0.6045]**, where the held-out vendor scores *higher*, and which is the cell
-most exposed to the case-mix confound. **No cross-vendor difference is concluded.**
+**The difference bootstrapped directly** (post-hoc; `docs/10` Summary, §5.4, unchanged):
+
+Bootstrapping the held-out − in-domain difference directly and pooling over folds, the IRF and
+PED intervals exclude zero with the held-out vendor lower: IRF −0.1232 [−0.2100, −0.0347] (55
+held-out against 11 in-domain patients), PED −0.1523 [−0.2385, −0.0620] (33 against 3). Of all
+24 difference intervals, 7 exclude zero, and 6 of those 7 have the held-out vendor lower. They
+are uncorrected, chosen after the results were visible, and PED's in-domain arm is 3 patients:
+**suggestive, not established.**
+
+**The primary and class-present views point in opposite directions on the same data**, because
+a volume without a fluid type scores Dice 1 if nothing is predicted and 0 if anything is. The
+all-volume view includes those volumes and the class-present view removes them. Neither view
+corrects the other: the first is the pre-registered result, the second is post-hoc (`docs/10`
+Summary).
 
 **What the design can detect** (derived from the §5.4 interval widths): an observed difference
-must exceed 0.14–0.29 Dice per fold, or 0.14–0.18 pooled, to exclude zero. **Differences smaller
-than about 0.14 Dice cannot be detected**, and per-fold differences below about 0.3 are detected
+must exceed 0.17–0.31 Dice per fold, or 0.16–0.22 pooled, to exclude zero. **Differences smaller
+than about 0.16 Dice cannot be detected**, and per-fold differences below about 0.3 are detected
 unreliably (`docs/10` Summary, §5.4).
 
 ### Illustrative cases
 
-Six B-scans, chosen by a rule committed before any was rendered, are shown in `docs/10` §7.4.
-They are not results and not typical. A qualitative observation from the author's review of two
-of them is recorded there, labelled as such: predicted fluid in locations where that fluid type
-cannot occur. How often this happens has not been measured (`docs/10` §7.4).
+Six B-scans, chosen by a rule committed before any was rendered, are kept in `docs/10` §7.4.
+**They were rendered through the defective inversion**, so the model's outline on the cirrus
+and spectralis scans is misplaced, and they are withdrawn from the README and the report page
+until a `docs/07` §21 re-run regenerates them. They are not results and not typical. A
+qualitative observation from the author's review of two of them is recorded there, labelled as
+such: predicted fluid in locations where that fluid type cannot occur. It may be an artefact of
+the defect, and how often it happens has not been measured (`docs/10` §7.4).
 
 ## Ethical considerations
 
@@ -343,9 +383,9 @@ cannot occur. How often this happens has not been measured (`docs/10` §7.4).
    comparison run that would measure what it removed was not done.
 3. **All-volume Dice is dominated by false positives in class-absent volumes** (§7.1) and is
    confounded with case mix (§5.2). Class-present Dice is the cleaner view.
-4. **The metric is fragile in small arms** (§7.2). Two equally valid MC-dropout draws moved one
-   in-domain SRF Dice by −0.1431; one class-absent volume flipping between Dice 1 and 0 moves a
-   7-patient mean by 0.1429.
+4. **The metric is fragile in small arms** (§7.2). Two equally valid MC-dropout draws, both
+   measured through the defect, moved one in-domain SRF Dice by −0.1431; one class-absent
+   volume flipping between Dice 1 and 0 moves a 7-patient mean by 0.1429.
 5. **The fixed detection threshold is not a usable operating point** (§4, §7.3): specificity is
    0.0000 in 13 of 18 cells.
 6. **Axial downsampling has an unmeasured cost** (§8.2). Cirrus loses real axial detail; the
@@ -355,10 +395,14 @@ cannot occur. How often this happens has not been measured (`docs/10` §7.4).
 8. **The pre-registered pooling assumption was false** (§8.6), so the pooled figures are
    post-hoc.
 9. **Reproducibility is established on this machine only** (§8.7): one GTX 1050 and one torch
-   build. AUROC has no interval.
+   build. The pre-registered AUROC has no interval; the post-hoc intervals of §4 are
+   not estimable in twelve of eighteen cells.
 10. **Image quality is not separated from appearance shift** (§8.8).
 11. **Calibration is not evaluated** (§6), so the MC-dropout confidence is not shown to track
     error.
+12. **The figures were re-measured after publication** (§2, §10). A defect in returning
+    predictions to native geometry was found on 2026-10-16, after the first results were
+    published; the corrected figures replace them here, and the earlier ones are kept below.
 
 **Recommendations:**
 
@@ -368,7 +412,54 @@ cannot occur. How often this happens has not been measured (`docs/10` §7.4).
   aggregate (URS-007).
 - Prefer the class-present view when asking about segmentation quality, and say which view is
   used.
-- Do not read "no difference established" as "generalises across vendors". A study that could
+- Do not read "no degradation established" as "generalises across vendors". A study that could
   answer the question needs more in-domain patients than this dataset holds (`docs/10` §9).
 - Any reuse on other data, scanners or protocols needs its own pre-registered evaluation.
 - Keep any DICOM output on a local PACS until the UID root is registered (`docs/06` §7.2).
+
+## Figures measured through the inversion defect — superseded
+
+> **Superseded; kept because the record states what happened.** These are the segmentation
+> figures this card carried until 2026-10-24 (`docs/08` §5g; `docs/10` §10). They were measured
+> through the defective inversion ([`docs/13`, finding of 2026-10-16](13_change_control_log.md))
+> and are not results. Read this way, every per-fold Dice comparison overlapped, six of the 24
+> difference intervals excluded zero in both directions, none of the pooled ones did, and the
+> detection limit was about 0.14 Dice.
+
+| Status | Held-out vendor (trained on) | Class | Held-out Dice | In-domain reference Dice | Gap | Intervals overlap |
+|---|---|---|---|---|---|---|
+| through the defect | cirrus (spectralis + topcon) | IRF | **0.3456** [0.2470, 0.4438] n=24 | **0.5561** [0.3369, 0.7291] n=7 | +0.2105 | yes |
+| through the defect | cirrus (spectralis + topcon) | SRF | **0.2478** [0.1428, 0.3627] n=24 | **0.1276** [0.0015, 0.3693] n=7 | -0.1201 | yes |
+| through the defect | cirrus (spectralis + topcon) | PED | **0.1915** [0.0956, 0.2987] n=24 | **0.2742** [0.0385, 0.5599] n=7 | +0.0827 | yes |
+| through the defect | spectralis (cirrus + topcon) | IRF | **0.2298** [0.1487, 0.3273] n=24 | **0.4721** [0.2269, 0.6937] n=7 | +0.2424 | yes |
+| through the defect | spectralis (cirrus + topcon) | SRF | **0.4971** [0.3429, 0.6544] n=24 | **0.1261** [0.0000, 0.3761] n=7 | -0.3710 | yes |
+| through the defect | spectralis (cirrus + topcon) | PED | **0.3125** [0.1783, 0.4618] n=24 | **0.1562** [0.0000, 0.3522] n=7 | -0.1563 | yes |
+| through the defect | topcon (cirrus + spectralis) | IRF | **0.4585** [0.3297, 0.5768] n=22 | **0.3133** [0.1376, 0.4815] n=7 | -0.1452 | yes |
+| through the defect | topcon (cirrus + spectralis) | SRF | **0.2687** [0.1380, 0.3951] n=22 | **0.1740** [0.0000, 0.3663] n=7 | -0.0947 | yes |
+| through the defect | topcon (cirrus + spectralis) | PED | **0.1955** [0.0928, 0.3051] n=22 | **0.0511** [0.0000, 0.1534] n=7 | -0.1444 | yes |
+
+| Status | Held-out vendor (trained on) | Class | Held-out HD95 (mm) | In-domain reference HD95 (mm) | Gap | Intervals overlap |
+|---|---|---|---|---|---|---|
+| through the defect | cirrus (spectralis + topcon) | IRF | 1.4973 [0.3614, 3.0828] n=18 | 0.9594 [0.0446, 2.0126] n=6 | -0.5380 | yes |
+| through the defect | cirrus (spectralis + topcon) | SRF | 1.2215 [0.2693, 2.3118] n=12 | 7.6029 [0.0355, 17.1420] n=3 | +6.3813 | yes |
+| through the defect | cirrus (spectralis + topcon) | PED | 1.5850 [0.6284, 2.9064] n=12 | 0.0879 [0.0000, 0.2215] n=3 | -1.4971 | **no** |
+| through the defect | spectralis (cirrus + topcon) | IRF | 2.1144 [0.8778, 3.8042] n=21 | 1.2267 [0.0349, 3.5668] n=5 | -0.8877 | yes |
+| through the defect | spectralis (cirrus + topcon) | SRF | 1.6210 [0.2542, 3.8001] n=21 | 3.1980 [0.0156, 6.3804] n=2 | +1.5770 | yes |
+| through the defect | spectralis (cirrus + topcon) | PED | 0.7311 [0.1511, 1.5883] n=16 | 2.2425 [0.0369, 4.4482] n=2 | +1.5115 | yes |
+| through the defect | topcon (cirrus + spectralis) | IRF | 2.5188 [1.2436, 3.9942] n=17 | 1.6540 [0.1387, 4.6278] n=6 | -0.8647 | yes |
+| through the defect | topcon (cirrus + spectralis) | SRF | 3.9000 [1.6269, 6.5503] n=11 | 9.7733 [0.1212, 19.4254] n=2 | +5.8733 | yes |
+| through the defect | topcon (cirrus + spectralis) | PED | 1.3764 [0.6491, 2.1073] n=9 | 4.6798 (single patient, no spread) n=1 | +3.3035 | **no** |
+
+| Status | Class | Pooled held-out Dice | Pooled in-domain Dice | Gap |
+|---|---|---|---|---|
+| through the defect | IRF | **0.3414** [0.2787, 0.4094] n=70 | **0.4201** [0.2595, 0.5669] n=13 | +0.0787 |
+| through the defect | SRF | **0.3398** [0.2563, 0.4259] n=70 | **0.1624** [0.0031, 0.3514] n=13 | -0.1774 |
+| through the defect | PED | **0.2343** [0.1686, 0.3098] n=70 | **0.1400** [0.0314, 0.2694] n=13 | -0.0942 |
+
+| Status | Class | Held-out, class present | In-domain, class present | Gap |
+|---|---|---|---|---|
+| through the defect | IRF | **0.4163** [0.3586, 0.4731] n=55 | **0.4965** [0.3542, 0.6320] n=11 | +0.0802 |
+| through the defect | SRF | **0.4537** [0.3753, 0.5259] n=37 | **0.4223** [0.1212, 0.7234] n=5 | -0.0315 |
+| through the defect | PED | **0.3757** [0.3075, 0.4461] n=33 | **0.4400** [0.2696, 0.6429] n=3 | +0.0643 |
+
+The superseded difference intervals and half-widths are in `docs/10` §10.
