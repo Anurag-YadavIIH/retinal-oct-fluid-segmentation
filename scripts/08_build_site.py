@@ -51,6 +51,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from ocuval.eval import report
+
 REPO = Path(__file__).resolve().parents[1]
 SITE = REPO / "site"
 DATA = SITE / "data"
@@ -233,6 +235,13 @@ def extract() -> dict[str, bytes]:
     figs = load_module("make_figures", REPO / "scripts" / "07_make_figures.py")
     comparator = load_module("compare_records", REPO / "scripts" / "compare_evaluation_records.py")
     data = figs.gather()  # asserts against the records, docs/10 §5.2 and §5.4
+    # SRS-098: the page is built only from documents that agree with the records, checked by
+    # the same generator the documents are checked by, so the two cannot diverge.
+    generated = report.generate(report.load_records(RUNS))
+    differences = report.check(generated, report.read_documents(REPO))
+    assert not differences, "documents disagree with the records:\n" + "\n".join(
+        map(str, differences)
+    )
     records = {f: {a: figs.load(figs.RECORDS[f][a]) for a, _ in ARMS} for f in FOLDS}
     out: dict[str, bytes] = {}
     facts: dict = {}

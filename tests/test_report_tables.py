@@ -338,3 +338,41 @@ def test_TC_144_the_committed_documents_agree_with_the_records(capsys):
         pytest.skip("evaluation records absent")
     assert script.main([]) == 0, capsys.readouterr().out
     assert {k: (REPO / v).read_bytes() for k, v in report.DOCS.items()} == docs
+
+
+def load_script(name, filename):
+    spec = importlib.util.spec_from_file_location(name, REPO / "scripts" / filename)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.mark.requires_data
+def test_TC_144_the_figures_and_page_take_their_figures_from_the_generator():
+    runs = REPO / "artifacts" / "runs"
+    if not report.records_present(runs):
+        pytest.skip("evaluation records absent")
+    figs = load_script("make_figures_tc144", "07_make_figures.py")
+    data = figs.gather()
+    records = report.load_records(runs).corrected
+    for key, c in report.comparisons(records).items():
+        assert data["arms"][key] == (c["held"], c["ref"]) and data["diff"][key] == c["diff"]
+
+
+@pytest.mark.requires_data
+def test_TC_144_the_page_build_refuses_documents_that_disagree(monkeypatch):
+    runs = REPO / "artifacts" / "runs"
+    if not report.records_present(runs):
+        pytest.skip("evaluation records absent")
+    build = load_script("build_site_tc144", "08_build_site.py")
+    real = report.read_documents
+
+    def altered(repo):
+        texts = real(repo)
+        texts["README"] = texts["README"].replace("in 1 of 9 comparisons", "in 2 of 9 comparisons")
+        return texts
+
+    monkeypatch.setattr(report, "read_documents", altered)
+    with pytest.raises(AssertionError, match="in 1 of 9 comparisons"):
+        build.extract()
