@@ -37,3 +37,14 @@ repos:
         language: system
         stages: [commit-msg]
         always_run: true
+      # SRS-099. Selects docs/10, docs/12 and README.md from the staged changes itself, since
+      # at this stage pre-commit passes only the message file. verbose, because pre-commit
+      # hides a passing hook's output and the records-absent warning must always be seen.
+      - id: report-tables
+        name: docs/10, docs/12 and README agree with the records (SRS-099)
+        entry: python scripts/check_report_tables_hook.py
+        language: system
+        stages: [commit-msg]
+        always_run: true
+        pass_filenames: false
+        verbose: true
