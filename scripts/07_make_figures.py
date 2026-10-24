@@ -1,7 +1,7 @@
 """Draw the Stage 3 result figures into docs/figures/ from the recorded evaluations.
 
 Serves: `docs/10`. Computes no reported number. Every value drawn here is already tabulated in
-`docs/08` §5g or `docs/10`, and the script **refuses to draw** if what it computes from the
+`docs/08` §5i or `docs/10`, and the script **refuses to draw** if what it computes from the
 records disagrees with them:
 
 - every per-fold Dice value and interval must equal the stored record exactly;
@@ -10,9 +10,11 @@ records disagrees with them:
 - every interval must lie inside its axis, so none is clipped, and every count a caption states
   is computed and asserted, not typed.
 
-**Inputs**, read only: the seeded evaluation records of the three folds (`test` and
-`in_domain_ref`), their per-volume rows (SRS-089), and each fold's `epochs.jsonl`. No sealed
-bucket is opened -- these are the records the sealed runs already wrote. **No image, B-scan,
+**Inputs**, read only: the corrected seeded evaluation records of the three folds (`test` and
+`in_domain_ref`, under each run's `corrected/`, written by the `docs/07` §17.11 re-evaluation),
+their per-volume rows (SRS-089), and each fold's `epochs.jsonl`. No sealed bucket is opened --
+these are the records the sealed runs already wrote. The earlier records, measured through the
+inversion defect, are no longer drawn; their figures are kept in `docs/10` §10. **No image, B-scan,
 reference mask or patient identifier appears in any figure.**
 
 **Deterministic.** Point jitter is a fixed function of position, not random; PNG metadata
@@ -68,18 +70,18 @@ OPAQUE = {"facecolor": "white", "transparent": False}
 RECORDS = {
     "cirrus": {
         "dir": RUNS / "cirrus_holdout_stage2",
-        "test": RUNS / "cirrus_holdout_stage2/repro/evaluation_test_seeded.json",
-        "in_domain_ref": RUNS / "cirrus_holdout_stage2/repro/evaluation_in_domain_ref_seeded.json",
+        "test": RUNS / "cirrus_holdout_stage2/corrected/evaluation_test.json",
+        "in_domain_ref": RUNS / "cirrus_holdout_stage2/corrected/evaluation_in_domain_ref.json",
     },
     "spectralis": {
         "dir": RUNS / "spectralis_holdout_stage3",
-        "test": RUNS / "spectralis_holdout_stage3/evaluation_test.json",
-        "in_domain_ref": RUNS / "spectralis_holdout_stage3/evaluation_in_domain_ref.json",
+        "test": RUNS / "spectralis_holdout_stage3/corrected/evaluation_test.json",
+        "in_domain_ref": RUNS / "spectralis_holdout_stage3/corrected/evaluation_in_domain_ref.json",
     },
     "topcon": {
         "dir": RUNS / "topcon_holdout_stage3",
-        "test": RUNS / "topcon_holdout_stage3/evaluation_test.json",
-        "in_domain_ref": RUNS / "topcon_holdout_stage3/evaluation_in_domain_ref.json",
+        "test": RUNS / "topcon_holdout_stage3/corrected/evaluation_test.json",
+        "in_domain_ref": RUNS / "topcon_holdout_stage3/corrected/evaluation_in_domain_ref.json",
     },
 }
 PNG = {"dpi": 150, "metadata": {"Software": None}}
@@ -260,14 +262,28 @@ def dice_intervals(data: dict) -> str:
             bottom=0.1,
         )
         save(fig, "fig2_dice_intervals")
-    overlap = [h["ci_low"] <= r["ci_high"] and r["ci_low"] <= h["ci_high"] for h, r in arms]
-    assert all(overlap), "the caption below says every row overlaps"
+    apart = [
+        (f"{NAME[c]} {cls}", "above" if h["ci_low"] > r["ci_high"] else "below")
+        for (c, cls), (h, r) in zip(labels, arms, strict=True)
+        if h["ci_low"] > r["ci_high"] or r["ci_low"] > h["ci_high"]
+    ]
+    if apart:
+        rows = ", ".join(f"{name}, where the held-out interval lies {s} it" for name, s in apart)
+        overlap = (
+            f"In {len(arms) - len(apart)} of the {len(arms)} rows the held-out interval (orange) "
+            f"overlaps the in-domain one (blue). It does not in {rows}: by the pre-registered "
+            "criterion, a difference (§3)."
+        )
+    else:
+        overlap = (
+            f"In all {len(arms)} rows the held-out interval (orange) overlaps the in-domain one "
+            "(blue), so no difference is established."
+        )
     n = {c: tuple(data["arms"][("all-volume", c, "IRF")][k]["n"] for k in (0, 1)) for c in NAME}
     (hc, ic), (hs, _), (ht, _), (hp, ip) = (n[c] for c in (*FOLDS, "pooled"))
     return (
-        "**Figure 2. Held-out and in-domain Dice with 95% intervals.** In all "
-        f"{len(overlap)} rows the held-out interval (orange) overlaps the in-domain one (blue), so "
-        "no difference is established; the in-domain intervals are wide because those arms are "
+        f"**Figure 2. Held-out and in-domain Dice with 95% intervals.** {overlap} The in-domain "
+        "intervals are wide because those arms are "
         "small. Per-fold rows are the primary, pre-registered figures of §3 (held-out n = "
         f"{hc}, {hs}, {ht} patients; in-domain n = {ic} per fold). The pooled rows (n = {hp} and "
         f"{ip}) use the patient-as-unit rule decided after the per-fold results (§5.1, `docs/07` "
@@ -316,17 +332,29 @@ def dice_differences(data: dict) -> str:
     rows = [(k, d, data["arms"][k][1]["n"]) for k, d in data["diff"].items()]
     excl = [(k, d, n) for k, d, n in rows if d[1] > 0 or d[2] < 0]
     pooled = [r for r in rows if r[0][1] == "pooled"]
-    assert {d[0] > 0 for _, d, _ in excl} == {True, False}, "the caption says both directions"
-    assert not any(r in excl for r in pooled), "the caption says no pooled interval excludes 0"
+    lower = [r for r in excl if r[1][0] < 0]
+    pooled_excl = [r for r in excl if r in pooled]
+    pooled_views = {k[0] for k, _, _ in pooled_excl}
+    pooled_lower = all(d[0] < 0 for _, d, _ in pooled_excl)
+    assert all(n > 1 for _, _, n in excl), "the caption: no excluding interval is the dashed one"
     ns = sorted(n for _, _, n in excl)
+    every = "both" if len(pooled_excl) == 2 else "all"
+    pooled_text = (
+        f"none of the {len(pooled)} pooled intervals does"
+        if not pooled_excl
+        else f"{len(pooled_excl)} of the {len(pooled)} pooled intervals do"
+        + (f", {every} {next(iter(pooled_views))}" if len(pooled_views) == 1 else "")
+        + (f" and {every} with the unseen brand lower" if pooled_lower else "")
+    )
     return (
         "**Figure 4. Held-out minus in-domain Dice, bootstrapped directly.** "
-        f"Of the {len(rows)} intervals, {len(excl)} exclude zero, pointing both ways and resting "
-        f"on in-domain arms of {ns[0]} to {ns[-1]} patients, and none of the {len(pooled)} pooled "
-        "intervals does, so no cross-vendor difference is concluded (§5.4). The whole figure is "
-        "**post-hoc** (§5.4), and its pooled rows also use the post-hoc pooling rule (§5.1); the "
-        "dashed interval has a single in-domain patient, ignores in-domain variance and is not a "
-        "valid interval."
+        f"Of the {len(rows)} intervals, {len(excl)} exclude zero, {len(lower)} of them with the "
+        f"unseen brand lower and {len(excl) - len(lower)} higher, resting on in-domain arms of "
+        f"{ns[0]} to {ns[-1]} patients; {pooled_text}. They are uncorrected for multiplicity and "
+        "chosen after the results were visible: suggestive, not established (§5.4). The whole "
+        "figure is **post-hoc** (§5.4), and its pooled rows also use the post-hoc pooling rule "
+        "(§5.1); the dashed interval has a single in-domain patient, ignores in-domain variance "
+        "and is not a valid interval."
     )
 
 

@@ -37,7 +37,7 @@ Change history: docs/13_change_control_log.md
 > **Figures 1–5 add no result.** They are drawn from the same records by
 > `scripts/07_make_figures.py`, which refuses to draw if a per-fold Dice interval differs from
 > its stored record, a pooled interval from the §5.2 table, or a difference interval from the
-> §5.4 table (`07_make_figures.py:121-184`). Their captions are generated with them
+> §5.4 table (`07_make_figures.py:123-186`). They are drawn from the corrected records. Their captions are generated with them
 > (`docs/figures/captions.md`) and reproduced here unchanged.
 >
 > **Figures 6–11 add no result either.** They are illustrative B-scans (§7.4), chosen by the
@@ -222,7 +222,7 @@ the other: the first is the pre-registered result, the second is post-hoc.
 
 ![Held-out and in-domain Dice with 95% intervals for each fold and fluid class, with the pooled rows below a separator.](figures/fig2_dice_intervals.svg)
 
-**Figure 2. Held-out and in-domain Dice with 95% intervals.** In all 12 rows the held-out interval (orange) overlaps the in-domain one (blue), so no difference is established; the in-domain intervals are wide because those arms are small. Per-fold rows are the primary, pre-registered figures of §3 (held-out n = 24, 24, 22 patients; in-domain n = 7 per fold). The pooled rows (n = 70 and 13) use the patient-as-unit rule decided after the per-fold results (§5.1, `docs/07` §19.5): **post-hoc**.
+**Figure 2. Held-out and in-domain Dice with 95% intervals.** In 11 of the 12 rows the held-out interval (orange) overlaps the in-domain one (blue). It does not in Spectralis SRF, where the held-out interval lies above it: by the pre-registered criterion, a difference (§3). The in-domain intervals are wide because those arms are small. Per-fold rows are the primary, pre-registered figures of §3 (held-out n = 24, 24, 22 patients; in-domain n = 7 per fold). The pooled rows (n = 70 and 13) use the patient-as-unit rule decided after the per-fold results (§5.1, `docs/07` §19.5): **post-hoc**.
 
 ### 3.1 Cirrus — the seeded record beside the earlier unseeded draw
 
@@ -447,7 +447,7 @@ of about 0.09, but that view is post-hoc and is not the basis of the detection l
 
 ![Held-out minus in-domain Dice with 95% intervals for each fold and fluid class, for all scans and for class-present scans only, with the pooled rows below a separator.](figures/fig4_dice_differences.svg)
 
-**Figure 4. Held-out minus in-domain Dice, bootstrapped directly.** Of the 24 intervals, 6 exclude zero, pointing both ways and resting on in-domain arms of 1 to 7 patients, and none of the 6 pooled intervals does, so no cross-vendor difference is concluded (§5.4). The whole figure is **post-hoc** (§5.4), and its pooled rows also use the post-hoc pooling rule (§5.1); the dashed interval has a single in-domain patient, ignores in-domain variance and is not a valid interval.
+**Figure 4. Held-out minus in-domain Dice, bootstrapped directly.** Of the 24 intervals, 7 exclude zero, 6 of them with the unseen brand lower and 1 higher, resting on in-domain arms of 2 to 11 patients; 2 of the 6 pooled intervals do, both class-present and both with the unseen brand lower. They are uncorrected for multiplicity and chosen after the results were visible: suggestive, not established (§5.4). The whole figure is **post-hoc** (§5.4), and its pooled rows also use the post-hoc pooling rule (§5.1); the dashed interval has a single in-domain patient, ignores in-domain variance and is not a valid interval.
 
 ## 6. Calibration
 
