@@ -33,7 +33,7 @@ A stale matrix is worse than no matrix (CLAUDE.md rule 5).
 | URS-004, URS-011 | SRS-095 | — | — | TC-136 | `io/dicom_writer.py`, `report/seg_object.py`, `report/sr_object.py`, `report/coding.py` — every text value in an emitted object is encodable in its declared character set, ASCII where none is declared, with no substitution |
 | URS-010 | SRS-094 | HAZ-004 | — | TC-135 | `.github/workflows/ci.yml`, job `pacs` — the PACS round-trip runs in CI against an ephemeral Orthanc at the SOUP-014 digest, bound to loopback, receiving synthetic objects only and destroyed with the job (`docs/06` §7.2.1) |
 | URS-010 | SRS-090 | HAZ-016 | RC-032 | TC-127 | `scripts/compare_evaluation_records.py` — exact record comparison; NaN in both is equal, NaN in one is a difference |
-| URS-007 | SRS-093 | HAZ-009, HAZ-016 | RC-030, RC-032 | TC-132, TC-133, TC-134 | `scripts/09_illustrative_bscans.py` — at most six B-scans selected by `docs/07` §21, saved only if each regenerated prediction reproduces its sealed record exactly, with no metadata or identifier |
+| URS-007 | SRS-093 | HAZ-009, HAZ-016 | RC-030, RC-032 | TC-132, TC-133, TC-134, TC-146 | `scripts/09_illustrative_bscans.py` — at most six B-scans selected by `docs/07` §21, saved only if each regenerated prediction reproduces its sealed record exactly, with no metadata or identifier |
 | URS-007 | SRS-092 | HAZ-005, HAZ-009 | RC-006, RC-030 | TC-129, TC-130, TC-131 | `scripts/08_build_site.py`, `site/` — the report page is generated from the records, every number on it from the generated data, with no image data and nothing that relinks a row to a subject |
 | URS-007, URS-010 | SRS-097, SRS-098 | HAZ-005, HAZ-016 | RC-006, RC-032 | TC-138, TC-139, TC-140, TC-141, TC-142, TC-143, TC-144 | `src/ocuval/eval/report.py`, `scripts/11_report_tables.py` — every derived figure in `docs/10` generated from the records by committed code, and a check that fails when `docs/10`, `docs/12` or the README differ from it |
 | URS-010 | SRS-099 | HAZ-016 | RC-032 | TC-145 | `scripts/check_report_tables_hook.py`, `.pre-commit-config.yaml` — runs the check when those documents change; blocks on a difference, warns and never skips silently when the records are absent |
@@ -85,9 +85,9 @@ implemented.
 - Software requirements with a verifying test case **allocated**: **99 of 99**
   SRS and **8 of 8** NFR. Every SRS names a test case in its own row; each NFR is named by
   at least one row of `docs/07` §6 instead, the allocation running in that direction.
-- Test cases **registered** in `docs/07` §6: **131**.
-  Test cases **written**: **107**. Of those,
-  **107 are executed** by the suite and
+- Test cases **registered** in `docs/07` §6: **132**.
+  Test cases **written**: **108**. Of those,
+  **108 are executed** by the suite and
   **0 have never been run**. TC-080, TC-081 and TC-082 need a PACS, which is not available
   on this workstation; until 2026-10-16 they had never been run. CI's `pacs` job now runs them
   against an ephemeral Orthanc (SRS-094), and their first run passed (`docs/08` §5h). A

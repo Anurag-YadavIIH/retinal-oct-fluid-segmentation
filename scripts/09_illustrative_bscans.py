@@ -35,6 +35,7 @@ import argparse
 import importlib.util
 import json
 import math
+import re
 import struct
 import sys
 from pathlib import Path
@@ -55,7 +56,9 @@ TITLES = ("Expert outline", "Model outline")
 ALLOWED_TEXT = frozenset(TITLES) | frozenset(CLASSES)
 FORBIDDEN_CHUNKS = frozenset({b"tEXt", b"iTXt", b"zTXt", b"tIME", b"eXIf"})
 FRAMES_PER_CHUNK = 8  # as the sealed evaluations ran; checked against each record's notes
-OUT = REPO / "artifacts" / "illustrations"
+# docs/07 section 21.9: a new directory, so the images of section 21.7 are never overwritten.
+OUT = REPO / "artifacts" / "illustrations_corrected"
+CITED = (re.compile(r"17\.11"), re.compile(r"(?<![\d.])21(?![\d])"))
 
 
 def load_module(name: str, path: Path):
@@ -305,12 +308,25 @@ def parse_args(argv):
     args = parser.parse_args(argv)
     if not (args.unlock_reason.strip() and args.approved_by.strip()):
         parser.error("--unlock-reason and --approved-by must say something; they are logged")
+    if not all(p.search(args.unlock_reason) for p in CITED):
+        parser.error("the unlock reason must cite docs/07 section 17.11 and section 21 (21.9)")
+    if args.output_dir.exists() and any(args.output_dir.iterdir()):
+        parser.error(f"{args.output_dir} already holds files; an earlier run is never overwritten")
     if args.device != "cuda":
         parser.error(
             "the sealed records were produced on the GPU, and the exact-match gate compares "
             "with ==; a CPU run cannot reproduce them, so it is refused before anything runs"
         )
     return args
+
+
+def held_out_records(figures) -> dict[str, Path]:
+    """The held-out records the run selects and gates from: the corrected ones, and only them."""
+    paths = {f: Path(figures.RECORDS[f]["test"]) for f in FOLDS}
+    for fold, path in paths.items():
+        if path.parent.name != "corrected" or path.name != "evaluation_test.json":
+            raise SystemExit(f"{fold}: {path} is not a corrected held-out record (section 21.9)")
+    return paths
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -338,7 +354,7 @@ def main(argv: list[str] | None = None) -> int:
 
     figures = load_module("make_figures", REPO / "scripts" / "07_make_figures.py")
     evaluation = load_module("evaluate", REPO / "scripts" / "05_evaluate.py")
-    records = {f: figures.load(figures.RECORDS[f]["test"]) for f in FOLDS}
+    records = {f: figures.load(p) for f, p in held_out_records(figures).items()}
     threshold = int(cfg["inference"]["presence_voxel_threshold"])
     passes = int(cfg["inference"]["mc_dropout_passes"])
     for f, rec in records.items():

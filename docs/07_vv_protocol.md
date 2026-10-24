@@ -543,6 +543,7 @@ passes every fixture written by the same person who wrote the code, and is wrong
 | TC-143 | **The check fails on every kind of difference, and never edits a document** | SRS-098 | U | **Shown able to fail.** Against a copy of the documents with one digit changed, a row deleted, a row added and a stated count altered, the check exits non-zero and names each difference with its document and location. On an unaltered copy it exits zero. A "through the defect" row is compared only with the superseded records. The documents' bytes are unchanged after any run | yes |
 | TC-144 | **The committed documents agree with the records** | SRS-098, SRS-092, RC-006 | U | The full check against the real records and the committed `docs/10`, `docs/12` and `README.md` exits zero. The page build's derived figures equal the generator's. Marked `requires_data`: the records never leave this workstation, so CI cannot run it, and that limit is stated here rather than hidden | yes (`requires_data`) |
 | TC-145 | **The hook blocks on a difference, and never skips silently** | SRS-099 | U | With records present and a difference, the hook exits non-zero. With records present and no difference, it exits zero. With records absent it exits zero and prints a warning naming the check and saying it did not run and why. It runs only when `docs/10`, `docs/12` or `README.md` is staged, and checks the **staged** text, not the working tree. Its watched files equal the generator's documents. `.pre-commit-config.yaml` declares it at the `commit-msg` stage, the hook type this repository installs, with `always_run`, no filenames passed and `verbose: true`, because pre-commit hides a passing hook's output and the warning must be seen. Where no interpreter can import the project, it **blocks** if records are on disk, and warns that the check did not run if they are not; the records-on-disk probe uses the standard library only. **Amended 2026-10-24** (twice: the blocking case by the author's decision), before the test was written: "declared on exactly those files" was the first wording, and at the `commit-msg` stage pre-commit passes only the message file, so a file filter there would skip the hook every time | yes |
+| TC-146 | **The §21.9 regeneration reads only the corrected records, cites §17.11 and §21 in its unlock reason, and never overwrites** | SRS-093 | U | **Argument handling and inputs only; the run is never executed by a test.** A reason lacking §17.11 or §21 is refused; one citing both is accepted. An output directory holding any file is refused, and an empty or new one accepted. The default output directory is `artifacts/illustrations_corrected`. Every record path the script selects and gates from is a held-out record under `corrected/` | yes |
 | TC-121 | **Two GPU runs of one configuration agree bit-for-bit** | SRS-076, SRS-077, SRS-084, SRS-085; CLAUDE.md rule 4 | U | Two independent runs of the same fold, seed and configuration produce **byte-identical** model weights, optimiser state and per-epoch loss log, and `determinism.json` records **zero fallbacks**. Both halves are required: zero fallbacks means no operation announced non-determinism, which is not the same claim as two runs agreeing — §3 rule 8. Marked `requires_data` and `slow`; it is the evidence for rule 4 on GPU and rule 4 is not claimed achieved there without it | yes (`slow`, `requires_data`) |
 
 TC-120 is marked `slow` because it imports the torch stack, which the rest of the metric
@@ -1721,3 +1722,31 @@ is about the B-scan shown, and that is the author's observation.
 
 The caption file `docs/figures/illustrations.md` records in its header which two sentences are
 the author's. It is therefore no longer the script's output unchanged.
+
+### 21.9 Regeneration from the corrected records — written 2026-10-24, before any run
+
+The images of §21.7 were rendered through the defective inversion and are withdrawn
+(`docs/13`, 2026-10-22). They are replaced by a new run of the same rule, **for illustration
+only**. Nothing measured in it is reported, and it is not an evaluation.
+
+- **Population and rule unchanged.** §21.1–§21.3 and §21.5 apply as written. The records are
+  the corrected held-out records of §17.11 (`corrected/evaluation_test.json` of each run), and
+  no other. The selection is computed from their numbers alone. Applied before this section was
+  written, without opening any bucket or image, it gives six picks across **all three** held-out
+  runs: worst and best from Spectralis, median and the IRF false-positive case from Cirrus, and
+  the SRF and PED false-positive cases from Topcon. Through the defect, the same rule had chosen
+  none from Cirrus (§21.7). The scans and identifiers stay in the local selection record.
+- **The gate unchanged, against the corrected records.** Every chosen scan's regenerated Dice
+  and predicted voxel count, for all three fluid types, must equal its corrected record exactly,
+  or nothing is saved (§21.4).
+- **Unlocks.** Each of the three `test` buckets is opened with an `Unlock` whose reason cites
+  **§17.11 and §21**, and the script refuses a reason that does not. Access counts, read from
+  the log on 2026-10-24 before this section was committed: cirrus `test` **5 → 6**, spectralis
+  `test` **3 → 4**, topcon `test` **3 → 4**. No bucket's evaluation count changes.
+- **Output.** A new directory, `artifacts/illustrations_corrected/`. The script refuses a
+  directory that already holds files, so §21.7's images are never overwritten.
+- **Review and what may not change.** As §21.5 and §21.6: the author reviews outside any
+  session, a declined image is left out and not replaced, and the captions are those generated.
+  The §7.4 qualitative observation of `docs/10` is reassessed against the new images, labelled
+  qualitative.
+- **Launch.** By the author, from an interactive terminal (§17.8).
