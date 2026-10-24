@@ -264,10 +264,8 @@ counts fixed; 2000 replicates, seed 20260916, scored by the project's own `auroc
 resampling patients is resampling volumes. Before any interval was drawn, the recomputed AUROC
 equalled the stored value in all 18 cells. **What they can and cannot say:**
 
-- **Twelve cells have AUROC 1.0000, and their intervals are [1.0000, 1.0000].** When every
-  positive outranks every negative in the sample, every resample does too, so the percentile
-  bootstrap cannot produce a value below 1. These zero-width intervals state nothing about
-  uncertainty; they are not evidence of perfect detection.
+- **Twelve cells have AUROC 1.0000, and their interval is not estimable** by this method
+  (note below the table).
 - **The in-domain arms hold one to six negatives and one to six positives per class**, and a
   stratified resample of a single negative or positive never varies that side at all.
   Intervals over so few volumes carry little information.
@@ -282,24 +280,32 @@ reported as a result).
 
 | Held-out vendor | Class | Arm | AUROC (positives/negatives) | AUROC 95% interval, **post-hoc** | Sensitivity | Specificity |
 |---|---|---|---|---|---|---|
-| cirrus | IRF | held-out | **1.0000** (+18/−6) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=18 | 0.0000 [0.0000, 0.0000] n=6 |
-| cirrus | IRF | in-domain | **1.0000** (+6/−1) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=6 | 0.0000 (single patient, no spread) n=1 |
+| cirrus | IRF | held-out | **1.0000** (+18/−6) | not estimable (see note) | 1.0000 [1.0000, 1.0000] n=18 | 0.0000 [0.0000, 0.0000] n=6 |
+| cirrus | IRF | in-domain | **1.0000** (+6/−1) | not estimable (see note) | 1.0000 [1.0000, 1.0000] n=6 | 0.0000 (single patient, no spread) n=1 |
 | cirrus | SRF | held-out | **0.9931** (+12/−12) | [0.9583, 1.0000] | 1.0000 [1.0000, 1.0000] n=12 | 0.0000 [0.0000, 0.0000] n=12 |
-| cirrus | SRF | in-domain | **1.0000** (+3/−4) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=3 | 0.2500 [0.0000, 0.7500] n=4 |
+| cirrus | SRF | in-domain | **1.0000** (+3/−4) | not estimable (see note) | 1.0000 [1.0000, 1.0000] n=3 | 0.2500 [0.0000, 0.7500] n=4 |
 | cirrus | PED | held-out | **0.9514** (+12/−12) | [0.8472, 1.0000] | 1.0000 [1.0000, 1.0000] n=12 | 0.0000 [0.0000, 0.0000] n=12 |
-| cirrus | PED | in-domain | **1.0000** (+2/−5) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=2 | 0.2000 [0.0000, 0.6000] n=5 |
-| spectralis | IRF | held-out | **1.0000** (+20/−4) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=20 | 0.2500 [0.0000, 0.7500] n=4 |
-| spectralis | IRF | in-domain | **1.0000** (+5/−2) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=5 | 0.0000 [0.0000, 0.0000] n=2 |
+| cirrus | PED | in-domain | **1.0000** (+2/−5) | not estimable (see note) | 1.0000 [1.0000, 1.0000] n=2 | 0.2000 [0.0000, 0.6000] n=5 |
+| spectralis | IRF | held-out | **1.0000** (+20/−4) | not estimable (see note) | 1.0000 [1.0000, 1.0000] n=20 | 0.2500 [0.0000, 0.7500] n=4 |
+| spectralis | IRF | in-domain | **1.0000** (+5/−2) | not estimable (see note) | 1.0000 [1.0000, 1.0000] n=5 | 0.0000 [0.0000, 0.0000] n=2 |
 | spectralis | SRF | held-out | **0.9929** (+14/−10) | [0.9571, 1.0000] | 1.0000 [1.0000, 1.0000] n=14 | 0.9000 [0.7000, 1.0000] n=10 |
 | spectralis | SRF | in-domain | **0.7000** (+2/−5) | [0.3000, 1.0000] | 1.0000 [1.0000, 1.0000] n=2 | 0.0000 [0.0000, 0.0000] n=5 |
 | spectralis | PED | held-out | **0.9931** (+12/−12) | [0.9583, 1.0000] | 1.0000 [1.0000, 1.0000] n=12 | 0.4167 [0.1667, 0.6667] n=12 |
-| spectralis | PED | in-domain | **1.0000** (+2/−5) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=2 | 0.0000 [0.0000, 0.0000] n=5 |
-| topcon | IRF | held-out | **1.0000** (+17/−5) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=17 | 0.0000 [0.0000, 0.0000] n=5 |
-| topcon | IRF | in-domain | **1.0000** (+6/−1) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=6 | 0.0000 (single patient, no spread) n=1 |
+| spectralis | PED | in-domain | **1.0000** (+2/−5) | not estimable (see note) | 1.0000 [1.0000, 1.0000] n=2 | 0.0000 [0.0000, 0.0000] n=5 |
+| topcon | IRF | held-out | **1.0000** (+17/−5) | not estimable (see note) | 1.0000 [1.0000, 1.0000] n=17 | 0.0000 [0.0000, 0.0000] n=5 |
+| topcon | IRF | in-domain | **1.0000** (+6/−1) | not estimable (see note) | 1.0000 [1.0000, 1.0000] n=6 | 0.0000 (single patient, no spread) n=1 |
 | topcon | SRF | held-out | **0.9793** (+11/−11) | [0.9174, 1.0000] | 1.0000 [1.0000, 1.0000] n=11 | 0.0000 [0.0000, 0.0000] n=11 |
-| topcon | SRF | in-domain | **1.0000** (+2/−5) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=2 | 0.0000 [0.0000, 0.0000] n=5 |
-| topcon | PED | held-out | **1.0000** (+9/−13) | [1.0000, 1.0000] zero width | 1.0000 [1.0000, 1.0000] n=9 | 0.0000 [0.0000, 0.0000] n=13 |
-| topcon | PED | in-domain | **1.0000** (+1/−6) | [1.0000, 1.0000] zero width | 1.0000 (single patient, no spread) n=1 | 0.0000 [0.0000, 0.0000] n=6 |
+| topcon | SRF | in-domain | **1.0000** (+2/−5) | not estimable (see note) | 1.0000 [1.0000, 1.0000] n=2 | 0.0000 [0.0000, 0.0000] n=5 |
+| topcon | PED | held-out | **1.0000** (+9/−13) | not estimable (see note) | 1.0000 [1.0000, 1.0000] n=9 | 0.0000 [0.0000, 0.0000] n=13 |
+| topcon | PED | in-domain | **1.0000** (+1/−6) | not estimable (see note) | 1.0000 (single patient, no spread) n=1 | 0.0000 [0.0000, 0.0000] n=6 |
+
+**Note, "not estimable".** In these twelve cells every positive volume outranks every negative
+one in the sample. A stratified resample draws only from those same volumes, so it keeps that
+order, and every one of the 2000 resamples scores exactly 1.0000. The percentile bootstrap then
+returns the observed value twice, [1.0000, 1.0000], which would read as certainty about perfect
+detection. It is not: it is the method failing at the boundary, and it carries no information
+about how AUROC would vary with other patients. These cells are therefore printed as not
+estimable rather than given an interval.
 
 **Sensitivity is 1.0000 in every cell, and specificity is 0.0000 in 13 of 18.** At 10 voxels
 the model calls almost every class present in almost every volume, which is the detection face
@@ -738,9 +744,9 @@ fold, so the held-out arms are unaffected.
   score. The AUROC values are unchanged (§4), so §4 now gives **post-hoc** intervals computed
   from those scores. They bear out the reasoning above: the in-domain intervals carry little
   information, and twelve of the eighteen cells, held-out and in-domain, have AUROC 1.0000 and
-  a zero-width interval that states nothing about uncertainty. The informative intervals are
-  the five held-out cells below 1, with lower bounds 0.8472–0.9583. The pre-registered AUROC
-  remains a point value without an interval.
+  an interval that is not estimable by this method. The six informative intervals are the five
+  held-out cells below 1, with lower bounds 0.8472–0.9583, and spectralis in-domain SRF,
+  [0.3000, 1.0000]. The pre-registered AUROC remains a point value without an interval.
 
 ### 8.8 Image quality is not separated from appearance shift
 

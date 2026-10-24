@@ -322,8 +322,8 @@ fold would be a new experiment with its own pre-registration, never a replacemen
 - **AUROC intervals for the sealed records.** Not recoverable from the 2026-10-05 records,
   because the scores were not persisted (D9), and re-unlocking for them was declined by the
   author. **Done post-hoc on 2026-10-24** from the scores the §17.11 corrected records persist
-  (`docs/10` §4). Twelve of the eighteen intervals are zero-width at AUROC 1.0000, which states
-  nothing about uncertainty.
+  (`docs/10` §4). Twelve of the eighteen cells have AUROC 1.0000 and are printed "not
+  estimable": every resample scores 1, which states nothing about uncertainty.
 
 **Possible next phase: a paper.** Named by the author on 2026-10-15 as a possible next phase.
 No plan for it is recorded in the repository and nothing has been started; its scope is the

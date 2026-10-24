@@ -240,8 +240,9 @@ pre-registered AUROC carries no interval**, because the sealed records of 2026-1
 persist the per-volume detection score (`docs/08` D9), a gap against the project's own rule
 that every metric carries an interval (`docs/10` §8.7). **Post-hoc intervals** from the scores
 the corrected records persist are in `docs/10` §4. Twelve of the eighteen cells have AUROC
-1.0000 and a zero-width interval, which states nothing about uncertainty. The informative
-intervals are the five held-out cells below 1, with lower bounds 0.8472–0.9583.
+1.0000, and there the interval is not estimable: every resample scores 1, which says nothing
+about uncertainty. The six informative intervals are the five held-out cells below 1, with
+lower bounds 0.8472–0.9583, and spectralis in-domain SRF, [0.3000, 1.0000].
 
 | Held-out vendor | Class | Arm | AUROC (positives/negatives) | Sensitivity | Specificity |
 |---|---|---|---|---|---|
@@ -395,7 +396,7 @@ the defect, and how often it happens has not been measured (`docs/10` §7.4).
    post-hoc.
 9. **Reproducibility is established on this machine only** (§8.7): one GTX 1050 and one torch
    build. The pre-registered AUROC has no interval; the post-hoc intervals of §4 are
-   zero-width in twelve of eighteen cells.
+   not estimable in twelve of eighteen cells.
 10. **Image quality is not separated from appearance shift** (§8.8).
 11. **Calibration is not evaluated** (§6), so the MC-dropout confidence is not shown to track
     error.

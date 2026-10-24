@@ -144,7 +144,7 @@ python scripts/08_build_site.py
 - **Writing the model's results as DICOM files.** The builders exist and are tested, but no pipeline step calls them yet; `scripts/06_push_to_pacs.py` is a stub.
 - **The inference service and `eval/report.py`** are stubs.
 - **Optional analyses not run:** a RETOUCH leaderboard submission; and the ablation that would measure how much of the brand difference the per-scan brightness normalisation removes ([`docs/10`](docs/10_analytical_validation_report.md) §8.1).
-- **AUROC intervals exist only as a post-hoc analysis.** The corrected records keep each scan's detection score, so intervals were computed after the results were visible. Twelve of the eighteen are zero-width because the model ranked every scan correctly in that group, which says nothing about uncertainty ([`docs/10`](docs/10_analytical_validation_report.md) §4).
+- **AUROC intervals exist only as a post-hoc analysis.** The corrected records keep each scan's detection score, so intervals were computed after the results were visible. For twelve of the eighteen the interval is not estimable: the model ranked every scan correctly in that group, so every resample scores a perfect 1, which says nothing about uncertainty ([`docs/10`](docs/10_analytical_validation_report.md) §4).
 
 **Known weaknesses:** the familiar-brand comparison groups hold 7 patients per fold, so only large differences are detectable; the per-scan score is fragile when a fluid type is absent; the published results were re-measured after a defect was found, and the illustrative image stays withdrawn until regenerated; and the reproducibility claims are proven on this machine's GPU and software versions only.
 
