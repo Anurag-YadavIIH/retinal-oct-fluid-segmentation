@@ -170,16 +170,24 @@ Accuracy alone is never reported. The classes are imbalanced and it is misleadin
 
 ## 7. Current status
 
-**STATUS CHANGED 2026-10-16: the published segmentation results are under a known defect.**
-`invert_axial_resample` resized padded frames whole, misplacing every cirrus and spectralis
-prediction in the evaluation (`docs/13`, 2026-10-16). Fixed in code on branch `fix-inversion`
-(SRS-074 amended, TC-048 extended), with notices on `docs/10`, `docs/08` §5g, `docs/12`, the
-README and the report page. **Every Dice and HD95 in the published record still comes from the
-defective inversion** until the author re-runs the six sealed evaluations under `docs/07`
-§17.7(b), recording both results. Re-evaluation is the author's to launch (§6 long-run rule);
-the illustrative B-scans would need regenerating too. Training, checkpoints and AUROC are not
-affected. Task 5 (wiring model output to DICOM, branch `wire-dicom`, nothing committed) waits
-for this fix to merge.
+**STATUS 2026-10-24: results corrected after the inversion defect; the documents are updated on
+branch `corrected-results`, not yet pushed.** `invert_axial_resample` resized padded frames
+whole, misplacing every cirrus and spectralis prediction in the evaluation (`docs/13`,
+2026-10-16). Fixed in `3c085a1` (SRS-074 amended, TC-048 extended). The author re-ran the six
+sealed evaluations under `docs/07` §17.11 on 2026-10-24: 6 h 30 min 20 s measured, every step
+exit 0, reproducibility check IDENTICAL on 466 of 466 leaves (`docs/08` §5i). `docs/10` v0.5,
+`docs/12` v0.2, the README and the report page carry the corrected figures, with the earlier
+ones kept and labelled as measured through the defect (`docs/10` §10). The earlier notices are
+replaced by statements that link the `docs/13` finding. **Corrected headline:** by the
+pre-registered criterion, 1 of 9 Dice comparisons establishes a difference, spectralis SRF,
+with the unseen vendor higher and consistent with case mix; no degradation is established.
+Post-hoc and class-present, the pooled IRF and PED difference intervals exclude zero with the
+held-out vendor lower: suggestive, not established. Detection limit about 0.16 Dice (derived,
+`docs/10` §5.4). Detection, AUROC and the §19.1 and §19.2 results were unchanged by the
+correction. **Still open from the defect:** the illustrative B-scans stay withdrawn until the
+author's `docs/07` §21 re-run on the corrected records. Task 5 (wiring model output to DICOM,
+branch `wire-dicom`, nothing committed) waits for this branch to merge and is rebuilt from
+`main`.
 
 **Phase before 2026-10-16: complete and published, 2026-10-15.** All three folds are trained and evaluated
 once, under one seeded, reproducible procedure (`docs/08` §5g). Tags: `v1.0` on `9195d4c`
@@ -311,8 +319,11 @@ fold would be a new experiment with its own pre-registration, never a replacemen
   gap per-volume normalisation removes. Not run, so §8.1 stands as a stated bound.
 - **The native-resolution comparison** (`docs/10` §8.2), which would price axial
   downsampling. Not run.
-- **AUROC intervals for the sealed records.** Not recoverable without re-unlocking, because the
-  scores were not persisted (D9). Declined by the author.
+- **AUROC intervals for the sealed records.** Not recoverable from the 2026-10-05 records,
+  because the scores were not persisted (D9), and re-unlocking for them was declined by the
+  author. **Done post-hoc on 2026-10-24** from the scores the §17.11 corrected records persist
+  (`docs/10` §4). Twelve of the eighteen intervals are zero-width at AUROC 1.0000, which states
+  nothing about uncertainty.
 
 **Possible next phase: a paper.** Named by the author on 2026-10-15 as a possible next phase.
 No plan for it is recorded in the repository and nothing has been started; its scope is the
