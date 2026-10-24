@@ -823,7 +823,8 @@ moved between 8.50 and 14.65 GB with the page file, and no threshold was approac
 > here was measured after `invert_axial_resample` returned predictions to native geometry
 > without removing the preprocessing padding, compressing cirrus and spectralis predictions
 > towards the middle of each B-scan and barely affecting topcon. The figures are kept as
-> recorded and are not reliable (`docs/10` notice; `docs/13`, 2026-10-16).
+> recorded and are not reliable (`docs/10` notice; `docs/13`, 2026-10-16). **The corrected
+> figures, from the re-evaluation of 2026-10-24, are in §5i, beside these.**
 
 Run 2026-10-04 21:36 to 2026-10-05 03:07 local, under `docs/07` §17 as amended in §17.10
 **before any unlock**. One chain, `scripts/run_remaining.ps1` at **`5d0dc3c`**, was launched by
@@ -1247,6 +1248,109 @@ Each was read and is expected, not a fault:
   conformance finding.
 - **One server, one version.** This is evidence against this Orthanc and plugin version only,
   not against DICOMweb servers in general.
+
+## 5i. Re-evaluation under `docs/07` §17.11 — the corrected figures, beside §5g
+
+> **What this is.** The six sealed buckets and three `val` buckets evaluated again after the
+> inversion fix (`3c085a1`, `docs/13` 2026-10-16), under §17.11 and §17.7(b). Same models,
+> checkpoints, threshold, seeded passes, metric definitions and bootstrap as §5g. **§5d and §5g
+> stay exactly as recorded**, measured through the defective inversion; this section reports
+> beside them and replaces nothing.
+
+### 5i.1 The run
+
+| Field | Value | Source |
+|---|---|---|
+| Chain | `scripts/10_reevaluate.py` (SRS-096), launched by the author 2026-10-24 02:03:02 from the VS Code integrated terminal; parent chain powershell.exe → Code.exe → Code.exe → explorer.exe | `artifacts/chain/reeval_status.txt`; process tree read at 02:09 |
+| Evaluation code | **`5422913`** (merge of `reeval`), `dirty: false`, in all ten records | `notes.evaluation_source` |
+| Determinism | requested and granted in all ten records; **0 fallbacks** each | `notes.determinism` |
+| Checkpoints | cirrus epoch 33, spectralis 29, topcon 29, as §5g | `notes.checkpoint_epoch` |
+| Access counts before | as §17.11 states, checked by the chain before any step | status log |
+| **Reproducibility check** | two seeded cirrus `val` runs: **IDENTICAL** on 466 of 466 compared leaves, and all 21 per-volume rows identical | TC-127 comparator, re-run on the records |
+| Access counts after | cirrus `test` **5**, `in_domain_ref` **4**; spectralis and topcon `test` **3**, `in_domain_ref` **2**, exactly §17.11's "after" column | `sealed.access_count`, read after the chain |
+| Records | ten new files under `corrected/` of each run directory; nothing earlier overwritten | file listing |
+
+| Step | Duration (measured, status log) | Exit |
+|---|---|---|
+| cirrus `val` a / b | 18 min 00 s / 17 min 34 s | 0 / 0 |
+| spectralis `val` / topcon `val` | 34 min 58 s / 27 min 32 s | 0 / 0 |
+| cirrus `test` / `in_domain_ref` | 1 h 58 min 41 s / 19 min 35 s | 0 / 0 |
+| spectralis `test` / `in_domain_ref` | 33 min 28 s / 25 min 01 s | 0 / 0 |
+| topcon `test` / `in_domain_ref` | 1 h 20 min 06 s / 15 min 25 s | 0 / 0 |
+| **Whole chain** | **6 h 30 min 20 s**, 02:03:02 to 08:33:22 | 0 |
+
+The chain had been estimated at about 6 h 10 min; the difference is mostly the spectralis and
+topcon `val` steps, estimated from their in-domain runs and in fact slower.
+
+### 5i.2 Corrected figures, per fold, beside §5g
+
+Conventions as §5g: `n` is patients; **gap = in-domain − held-out**, so for Dice a positive gap
+is worse on the unseen vendor; HD95 drops volumes where exactly one side is empty. The §5g
+columns are the figures measured through the defect.
+
+#### Cirrus held out
+
+| Class | Metric | Held-out, corrected | In-domain, corrected | Gap | Held-out, §5g | In-domain, §5g |
+|---|---|---|---|---|---|---|
+| IRF | Dice | **0.4834** [0.3582, 0.5991] n=24 | **0.5971** [0.3791, 0.7580] n=7 | +0.1136 | 0.3456 [0.2470, 0.4438] n=24 | 0.5561 [0.3369, 0.7291] n=7 |
+| IRF | HD95 | 1.4649 [0.2716, 3.0824] n=18 | 1.0425 [0.0449, 2.1548] n=6 | −0.4223 | 1.4973 [0.3614, 3.0828] n=18 | 0.9594 [0.0446, 2.0126] n=6 |
+| SRF | Dice | **0.3310** [0.2005, 0.4770] n=24 | **0.1352** [0.0048, 0.3704] n=7 | −0.1957 | 0.2478 [0.1428, 0.3627] n=24 | 0.1276 [0.0015, 0.3693] n=7 |
+| SRF | HD95 | 1.1492 [0.1599, 2.2554] n=12 | 7.6432 [0.0469, 17.2515] n=3 | +6.4941 | 1.2215 [0.2693, 2.3118] n=12 | 7.6029 [0.0355, 17.1420] n=3 |
+| PED | Dice | **0.2441** [0.1275, 0.3700] n=24 | **0.3268** [0.0899, 0.6126] n=7 | +0.0827 | 0.1915 [0.0956, 0.2987] n=24 | 0.2742 [0.0385, 0.5599] n=7 |
+| PED | HD95 | 1.5761 [0.5769, 2.9403] n=12 | 0.0244 [0.0000, 0.0402] n=3 | −1.5517 | 1.5850 [0.6284, 2.9064] n=12 | 0.0879 [0.0000, 0.2215] n=3 |
+
+#### Spectralis held out
+
+| Class | Metric | Held-out, corrected | In-domain, corrected | Gap | Held-out, §5g | In-domain, §5g |
+|---|---|---|---|---|---|---|
+| IRF | Dice | **0.3823** [0.2882, 0.4899] n=24 | **0.5024** [0.2496, 0.7262] n=7 | +0.1201 | 0.2298 [0.1487, 0.3273] n=24 | 0.4721 [0.2269, 0.6937] n=7 |
+| IRF | HD95 | 2.0929 [0.8563, 3.7611] n=21 | 1.1388 [0.0225, 3.3511] n=5 | −0.9541 | 2.1144 [0.8778, 3.8042] n=21 | 1.2267 [0.0349, 3.5668] n=5 |
+| SRF | Dice | **0.6057** [0.4571, 0.7496] n=24 | **0.1246** [0.0000, 0.3713] n=7 | −0.4811 | 0.4971 [0.3429, 0.6544] n=24 | 0.1261 [0.0000, 0.3761] n=7 |
+| SRF | HD95 | 1.6150 [0.2235, 3.8138] n=21 | 3.1804 [0.0234, 6.3373] n=2 | +1.5654 | 1.6210 [0.2542, 3.8001] n=21 | 3.1980 [0.0156, 6.3804] n=2 |
+| PED | Dice | **0.3607** [0.2223, 0.5096] n=24 | **0.1722** [0.0000, 0.3506] n=7 | −0.1885 | 0.3125 [0.1783, 0.4618] n=24 | 0.1562 [0.0000, 0.3522] n=7 |
+| PED | HD95 | 0.7345 [0.1420, 1.5941] n=16 | 2.2742 [0.0455, 4.5029] n=2 | +1.5397 | 0.7311 [0.1511, 1.5883] n=16 | 2.2425 [0.0369, 4.4482] n=2 |
+
+#### Topcon held out
+
+| Class | Metric | Held-out, corrected | In-domain, corrected | Gap | Held-out, §5g | In-domain, §5g |
+|---|---|---|---|---|---|---|
+| IRF | Dice | **0.4743** [0.3416, 0.5929] n=22 | **0.5624** [0.3455, 0.7226] n=7 | +0.0881 | 0.4585 [0.3297, 0.5768] n=22 | 0.3133 [0.1376, 0.4815] n=7 |
+| IRF | HD95 | 2.5302 [1.2559, 4.0026] n=17 | 1.5678 [0.0246, 4.5804] n=6 | −0.9624 | 2.5188 [1.2436, 3.9942] n=17 | 1.6540 [0.1387, 4.6278] n=6 |
+| SRF | Dice | **0.2822** [0.1479, 0.4118] n=22 | **0.2483** [0.0000, 0.5143] n=7 | −0.0339 | 0.2687 [0.1380, 0.3951] n=22 | 0.1740 [0.0000, 0.3663] n=7 |
+| SRF | HD95 | 3.8572 [1.5858, 6.5061] n=11 | 9.7913 [0.1576, 19.4251] n=2 | +5.9341 | 3.9000 [1.6269, 6.5503] n=11 | 9.7733 [0.1212, 19.4254] n=2 |
+| PED | Dice | **0.2056** [0.0987, 0.3208] n=22 | **0.0711** [0.0000, 0.2132] n=7 | −0.1346 | 0.1955 [0.0928, 0.3051] n=22 | 0.0511 [0.0000, 0.1534] n=7 |
+| PED | HD95 | 1.3743 [0.6482, 2.1124] n=9 | 4.4120 (single patient, no spread) n=1 | +3.0376 | 1.3764 [0.6491, 2.1073] n=9 | 4.6798 (single patient, no spread) n=1 |
+
+**Detection is unchanged in every cell.** Sensitivity, specificity with their intervals and `n`,
+and AUROC with its positive and negative counts equal §5g.2–§5g.4 exactly, in all 18 cells: no
+volume's predicted voxel count crossed the 10-voxel threshold under the corrected inversion, and
+the AUROC score is taken before inversion. The detection tables of §5g.2–§5g.4 therefore stand
+as the detection record, and are not repeated.
+
+### 5i.3 What the corrected primary figures establish
+
+**Dice, by the pre-registered criterion (§17.2, overlap of the two arms' 95% intervals): 8 of 9
+comparisons overlap; one does not, spectralis SRF**, where the unseen vendor scores higher:
+0.6057 [0.4571, 0.7496] n=24 against 0.1246 [0.0000, 0.3713] n=7. In §5g all nine overlapped.
+No degradation on an unseen vendor is established in any fold or class. No multiplicity
+correction was pre-registered. **HD95**: the same two comparisons as §5g do not overlap, cirrus
+PED (in-domain n=3) and topcon PED (n=1), and nothing is concluded from either.
+
+**Gap directions:** worse on the unseen vendor in 4 of 9 Dice comparisons (cirrus IRF, cirrus
+PED, spectralis IRF, topcon IRF) and better in 5. Topcon IRF changed sign, −0.1452 to +0.0881.
+
+### 5i.4 Secondary analyses (§19), corrected
+
+- **§19.1, the present/absent decomposition: absent volumes unchanged in every cell.** Every
+  class-absent volume scored the same Dice, 0 or 1, as in §5g.6: still **14 of 18** cells with
+  every absent volume at Dice 0, and the same spectralis held-out exceptions (SRF 3 at 0 and 7
+  at 1). The present-stratum figures change with the corrected Dice and are reported in
+  `docs/10` §5.3.
+- **§19.2, the threshold selected on `val`: unchanged in every cell.** The corrected `val`
+  records give the same selected thresholds and J values, and the same held-out and in-domain
+  specificities with intervals, as §5g.7.
+- **§19.3 under the §19.5 rule, pooled:** all three classes still overlap; figures in `docs/10`
+  §5.2.
 
 ## 6. Conclusion
 
