@@ -1750,3 +1750,35 @@ only**. Nothing measured in it is reported, and it is not an evaluation.
   The §7.4 qualitative observation of `docs/10` is reassessed against the new images, labelled
   qualitative.
 - **Launch.** By the author, from an interactive terminal (§17.8).
+
+**The run, recorded 2026-10-24.** Launched by the author. The three `test` buckets were opened
+under one run, each with an `Unlock` citing §21.9 and §17.11, approved by the author, at
+11:50:06, 11:59:36 and 12:02:14 UTC (cirrus, spectralis, topcon). The last file was written at
+17:39:28 local time, 19 min 22 s after the first unlock (measured, log and file times). Access
+counts after: cirrus 6, spectralis 4, topcon 4, exactly as stated above. **The gate passed for
+all six**, against the corrected records. The PNGs carry no metadata chunks (checked by reading
+their bytes; no image was opened in a Claude Code session, DMP-C12). **`bscan_worst.png` is byte
+for byte the image of §21.7**: the same scan, and on that slice the model marked nothing, so the
+inversion had nothing to move. The other five differ.
+
+**The author's review, outside any session.** All six **approved**. The author first declined
+`bscan_best.png`, because it departs from the expert's outline and marks SRF the expert did not,
+and asked for another scan in its place. **The author then withdrew the decline, as resting on
+how the image looks, which §21.6 does not allow**, and kept the image with a caption addition
+(below). No image was replaced and none was left out.
+
+**The author's caption for `bscan_best.png`**, replacing the generated description: *"The
+highest-scoring held-out scan (whole-scan IRF Dice 0.83), shown on its slice with the most
+expert-marked fluid. The model's IRF outlines are close to the expert's but about a quarter
+smaller overall, and it marks a small SRF region the expert did not."* It is followed by a
+citation to the corrected record, at the author's request, and by the generated tail. **The
+numbers are checked against the corrected record**, read without opening any image or bucket:
+IRF Dice 0.8261, expert 50,701 voxels and predicted 37,860, so the prediction is 25% smaller;
+IRF HD95 0.035 mm; SRF absent in the reference, with 561 predicted voxels; PED absent and none
+predicted. **Before settling the caption**, the author asked whether the mismatch on the slice
+shown was ordinary error or systematic displacement. The whole-volume HD95 argues against
+displacement. Per-slice figures were not computed: they need a further unlock, and the author
+declined to prepare one. An interim caption by the author, saying the slice was the hardest in
+the scan, was superseded before any commit; the records hold no slice-level score that could
+have checked it. The §21.8 sentence on `bscan_worst.png` is kept, because it describes an image
+reproduced byte for byte.
