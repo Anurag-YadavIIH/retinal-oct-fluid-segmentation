@@ -1,7 +1,8 @@
 """Monte Carlo dropout uncertainty estimation.
 
 Traces to: SRS-029, SRS-030 (uncertainty output), SRS-091 (seeded per volume)
-Implements risk control: RC-009 (routing low-confidence cases to human review)
+Implements risk control: RC-009 (review recommended for every scan since 2026-10-16; the
+confidence is carried to the report as information, not used as a gate)
 Verifies: TC-055, TC-056, TC-128
 
 Dropout layers are kept active at inference and the forward pass is repeated; the
@@ -137,10 +138,38 @@ def scan_confidence(uncertainty_map) -> float:
     return float(1.0 - 2.0 * np.nanmean(values))
 
 
+def review_recommended(confidence: float, review_cfg: dict) -> bool:
+    """Whether review is recommended for a scan (SRS-030 as amended 2026-10-16): always.
+
+    The author's decision: no threshold is invented. Nothing shows the confidence predicts
+    error (calibration was not evaluated, docs/10 section 6), and every output is reviewed
+    by a grader anyway (URS-003). `configs/inference.yaml` records that no validated
+    threshold exists, and this refuses a configuration claiming one, because applying a
+    threshold would be a change-controlled decision this code does not implement.
+
+    The confidence is still checked and carried to the report, as information for the grader.
+    """
+    if not 0.0 <= float(confidence) <= 1.0:
+        raise ValueError(f"confidence must be in [0, 1], got {confidence}")
+    if review_cfg.get("validated_confidence_threshold") is not None:
+        raise ValueError(
+            "a confidence threshold is configured, but none is validated and this code "
+            "recommends review for every scan (SRS-030). Setting one is a change-controlled "
+            "decision under NFR-007, not a configuration edit."
+        )
+    if review_cfg.get("recommended_for_every_scan") is not True:
+        raise ValueError(
+            "configs/inference.yaml must state review.recommended_for_every_scan: true "
+            "(SRS-030 as amended 2026-10-16)"
+        )
+    return True
+
+
 __all__ = [
     "enable_dropout",
     "mc_dropout_predict",
     "reseed_for_volume",
+    "review_recommended",
     "scan_confidence",
     "volume_seed",
 ]

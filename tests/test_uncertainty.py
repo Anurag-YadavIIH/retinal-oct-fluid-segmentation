@@ -12,11 +12,46 @@ away -- `docs/07` §3 rule 8, since all three produce output of the right shape.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 import torch
+import yaml
 
-from ocuval.models.uncertainty import enable_dropout, mc_dropout_predict, scan_confidence
+from ocuval.models.uncertainty import (
+    enable_dropout,
+    mc_dropout_predict,
+    review_recommended,
+    scan_confidence,
+)
+
+INFERENCE_CFG = Path(__file__).resolve().parents[1] / "configs" / "inference.yaml"
+
+
+def review_cfg() -> dict:
+    return yaml.safe_load(INFERENCE_CFG.read_text(encoding="utf-8"))["review"]
+
+
+def test_TC_056_review_is_recommended_for_every_scan_however_confident():
+    """SRS-030 as amended 2026-10-16: no threshold, review for every scan."""
+    for confidence in (0.0, 0.5, 0.99, 1.0):
+        assert review_recommended(confidence, review_cfg()) is True
+
+
+def test_TC_056_the_configuration_records_that_no_validated_threshold_exists():
+    cfg = review_cfg()
+    assert cfg["recommended_for_every_scan"] is True
+    assert cfg["validated_confidence_threshold"] is None
+
+
+def test_TC_056_a_configured_threshold_is_refused_not_applied():
+    with pytest.raises(ValueError, match="change-controlled"):
+        review_recommended(0.9, {**review_cfg(), "validated_confidence_threshold": 0.8})
+    with pytest.raises(ValueError, match="recommended_for_every_scan"):
+        review_recommended(0.9, {**review_cfg(), "recommended_for_every_scan": False})
+    with pytest.raises(ValueError, match=r"\[0, 1\]"):
+        review_recommended(1.2, review_cfg())
 
 
 def tiny(dropout: float = 0.5) -> torch.nn.Module:

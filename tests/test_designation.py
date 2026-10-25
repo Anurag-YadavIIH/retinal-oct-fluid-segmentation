@@ -103,6 +103,7 @@ def report(sources) -> Dataset:
             confidence=local_code("CONF", "confidence"),
         ),
         confidence=0.9,
+        review_recommended=True,
         procedure_reported=local_code("OCTSEG", "OCT fluid segmentation"),
         device_uid=dw.generate_uid(UID_ROOT),
         series_instance_uid=dw.generate_uid(UID_ROOT),

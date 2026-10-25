@@ -207,6 +207,7 @@ def report(source_images, names) -> Dataset:
         measurements,
         names,
         confidence=0.83,
+        review_recommended=True,
         procedure_reported=local_code("OCTSEG", "OCT fluid segmentation (local)"),
         device_uid=dw.generate_uid(UID_ROOT),
         series_instance_uid=dw.generate_uid(UID_ROOT),
@@ -279,6 +280,7 @@ def test_TC_075_confidence_outside_zero_to_one_is_rejected(source_images, names)
             [],
             names,
             confidence=1.4,
+            review_recommended=True,
             procedure_reported=local_code("OCTSEG", "OCT fluid segmentation (local)"),
             device_uid=dw.generate_uid(UID_ROOT),
             series_instance_uid=dw.generate_uid(UID_ROOT),
@@ -286,9 +288,49 @@ def test_TC_075_confidence_outside_zero_to_one_is_rejected(source_images, names)
         )
 
 
-def test_TC_075_measurement_names_have_no_defaults_where_unverified():
-    with pytest.raises(sr.MeasurementCodingError):
-        sr.MeasurementNames(voxel_count=None, voxel_volume=None, confidence=None)
+def test_TC_076_unset_measurement_names_resolve_to_the_declared_private_scheme():
+    """docs/11 section 10 item 5, decided 2026-10-16: no verified generic concept exists for
+    these four, so an unset name is the project's declared code, never a substituted one."""
+    names = sr.MeasurementNames()
+    declared = {
+        "voxel_count": "VOXELCOUNT",
+        "voxel_volume": "VOXELVOLUME",
+        "confidence": "MCCONF",
+        "review": "REVIEW",
+    }
+    for field_name, value in declared.items():
+        code = getattr(names, field_name)
+        assert (code.scheme_designator, code.value) == ("99OCUVAL", value), field_name
+    assert names.volume.scheme_designator == "SCT"  # verified, not declared locally
+
+
+def test_TC_076_the_review_indication_is_a_coded_yes_in_the_report(source_images):
+    voxel_volume = SPACING_MM[0] * SPACING_MM[1] * SPACING_MM[2]
+    doc = sr.build_measurement_report(
+        source_images,
+        [
+            sr.FluidMeasurement(
+                label="IRF",
+                coded_type=coding.fluid_code("IRF"),
+                volume_mm3=2 * voxel_volume,
+                voxel_count=2,
+                voxel_volume_mm3=voxel_volume,
+            )
+        ],
+        sr.MeasurementNames(),
+        confidence=0.97,
+        review_recommended=True,
+        procedure_reported=local_code("OCTSEG", "OCT fluid segmentation (local)"),
+        device_uid=dw.generate_uid(UID_ROOT),
+        series_instance_uid=dw.generate_uid(UID_ROOT),
+        sop_instance_uid=dw.generate_uid(UID_ROOT),
+    )
+    assert ("99OCUVAL", "REVIEW", "SCT", "373066001") in sr.coded_evaluations(doc)
+    confidences = [v for name, v, _ in sr.numeric_measurements(doc) if "confidence" in name]
+    assert confidences == [pytest.approx(0.97)]
+    assert coding.OCUVAL_SCHEME_DESIGNATOR in {
+        d.CodingSchemeDesignator for d in doc.CodingSchemeIdentificationSequence
+    }
 
 
 def test_TC_075_volume_name_is_the_verified_standard_code():
@@ -313,6 +355,7 @@ def test_TC_075_report_requires_a_source_image(names):
             [],
             names,
             confidence=0.5,
+            review_recommended=True,
             procedure_reported=local_code("OCTSEG", "OCT fluid segmentation (local)"),
             device_uid=dw.generate_uid(UID_ROOT),
             series_instance_uid=dw.generate_uid(UID_ROOT),
@@ -433,6 +476,7 @@ def test_TC_076_sr_declares_the_scheme_when_its_codes_are_used(source_images, na
         ],
         names,
         confidence=0.5,
+        review_recommended=True,
         procedure_reported=local_code("OCTSEG", "OCT fluid segmentation (local)"),
         device_uid=dw.generate_uid(UID_ROOT),
         series_instance_uid=dw.generate_uid(UID_ROOT),

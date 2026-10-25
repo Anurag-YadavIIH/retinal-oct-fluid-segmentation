@@ -20,9 +20,11 @@ comment saying "1000 voxels" would satisfy a reader and not a validator, and the
 RC-026 is that the derivation is auditable by machine.
 
 **Coded names, and which could be verified.** `SCT 118565006 Volume` is verified and used
-for the volume measurement. There is no generic count or confidence concept in the
-dictionary, so those names are caller-supplied on the same rule as the fluid classes in
-`seg_object`: an unverified code is an invented code with extra steps.
+for the volume measurement. There is no generic count, voxel-volume, confidence or
+review concept in the dictionary, so those names default to the project's declared private
+scheme `99OCUVAL`, as the fluid classes do in `seg_object` (`docs/11` section 10 item 5,
+decided 2026-10-16); a caller with a verified code passes it. The review evaluation's value
+is a verified standard code, `SCT 373066001 Yes` (or `373067005 No`).
 """
 
 from __future__ import annotations
@@ -38,6 +40,7 @@ from highdicom.sr import (
     MeasurementsAndQualitativeEvaluations,
     ObservationContext,
     ObserverContext,
+    QualitativeEvaluation,
     TrackingIdentifier,
 )
 from pydicom import Dataset
@@ -48,6 +51,7 @@ from ocuval.report.coding import (
     OCUVAL_SCHEME_DESIGNATOR,
     RESEARCH_USE_TEXT,
     declare_scheme,
+    measurement_code,
 )
 
 # Verified UCUM concepts. RC-025 is satisfied by these being coded, not by their values.
@@ -59,32 +63,39 @@ UNIT_NO_UNITS = codes.UCUM.NoUnits
 VOLUME = codes.SCT.Volume
 
 
-class MeasurementCodingError(ValueError):
-    """Raised when a measurement name has no caller-supplied coded concept."""
+#: The review evaluation's values: verified standard codes.
+REVIEW_YES = codes.SCT.Yes
+REVIEW_NO = codes.SCT.No
+
+_DECLARED = {
+    "voxel_count": "VOXELCOUNT",
+    "voxel_volume": "VOXELVOLUME",
+    "confidence": "MCCONF",
+    "review": "REVIEW",
+}
 
 
 @dataclass(frozen=True)
 class MeasurementNames:
-    """Coded names for the measurements this project emits.
+    """Coded names for the measurements and the evaluation this project emits.
 
-    `volume` is verified and defaulted. The other three are not available in the
-    concept dictionary and have no default: the caller supplies a verified standard code
-    or an explicitly declared local one.
+    `volume` is a verified standard code. The other four have no verified generic concept,
+    so a name left unset resolves to the project's declared private scheme (`docs/11`
+    section 10 item 5, the author's decision of 2026-10-16), exactly as an unset fluid type
+    does in `seg_object`: the project's own declared vocabulary, carried with its scheme
+    identification, not a substituted value. A caller with a verified code passes it.
     """
 
-    voxel_count: CodedConcept | Dataset
-    voxel_volume: CodedConcept | Dataset
-    confidence: CodedConcept | Dataset
+    voxel_count: CodedConcept | Dataset | None = None
+    voxel_volume: CodedConcept | Dataset | None = None
+    confidence: CodedConcept | Dataset | None = None
+    review: CodedConcept | Dataset | None = None
     volume: CodedConcept | Dataset = VOLUME
 
     def __post_init__(self) -> None:
-        for field_name in ("voxel_count", "voxel_volume", "confidence"):
+        for field_name, value in _DECLARED.items():
             if getattr(self, field_name) is None:
-                raise MeasurementCodingError(
-                    f"{field_name} has no coded name. No verified standard concept was "
-                    f"found for it, so one must be supplied rather than substituted "
-                    f"(docs/05 RC-029)."
-                )
+                object.__setattr__(self, field_name, measurement_code(value))
 
 
 @dataclass(frozen=True)
@@ -109,6 +120,7 @@ def build_measurement_report(
     names: MeasurementNames,
     *,
     confidence: float,
+    review_recommended: bool,
     procedure_reported: CodedConcept | Dataset,
     device_uid: str,
     series_instance_uid: str,
@@ -164,8 +176,10 @@ def build_measurement_report(
             )
         )
 
-    # Scan-level confidence, carried as its own measurement group rather than as a
-    # property of any one fluid class: it describes the inference, not a finding.
+    # Scan-level confidence and the review-recommended indication (SRS-041), carried as their
+    # own group rather than as a property of any one fluid class: they describe the
+    # inference, not a finding. The indication is a coded evaluation, not text, so software
+    # can read it; since 2026-10-16 it is Yes for every scan (SRS-030 as amended).
     groups.append(
         MeasurementsAndQualitativeEvaluations(
             tracking_identifier=TrackingIdentifier(
@@ -173,6 +187,11 @@ def build_measurement_report(
             ),
             measurements=[
                 Measurement(name=names.confidence, value=float(confidence), unit=UNIT_NO_UNITS)
+            ],
+            qualitative_evaluations=[
+                QualitativeEvaluation(
+                    name=names.review, value=REVIEW_YES if review_recommended else REVIEW_NO
+                )
             ],
         )
     )
@@ -201,7 +220,7 @@ def build_measurement_report(
         is_final=False,
     )
 
-    coded = [names.volume, names.voxel_count, names.voxel_volume, names.confidence]
+    coded = [names.volume, names.voxel_count, names.voxel_volume, names.confidence, names.review]
     coded += [m.coded_type for m in measurements]
     if any(
         getattr(c, "scheme_designator", None) == OCUVAL_SCHEME_DESIGNATOR
@@ -211,6 +230,32 @@ def build_measurement_report(
         declare_scheme(document)
 
     return document
+
+
+def coded_evaluations(dataset: Dataset) -> list[tuple[str, str, str, str]]:
+    """Every CODE content item, as (name scheme, name value, value scheme, value code).
+
+    Lets a test check the review indication as software would read it, by code, not text.
+    """
+    found: list[tuple[str, str, str, str]] = []
+
+    def walk(items) -> None:
+        for item in items or []:
+            if getattr(item, "ValueType", None) == "CODE":
+                name = item.ConceptNameCodeSequence[0]
+                value = item.ConceptCodeSequence[0]
+                found.append(
+                    (
+                        str(name.CodingSchemeDesignator),
+                        str(name.CodeValue),
+                        str(value.CodingSchemeDesignator),
+                        str(value.CodeValue),
+                    )
+                )
+            walk(getattr(item, "ContentSequence", None))
+
+    walk(getattr(dataset, "ContentSequence", None))
+    return found
 
 
 def numeric_measurements(dataset: Dataset) -> list[tuple[str, float, str]]:

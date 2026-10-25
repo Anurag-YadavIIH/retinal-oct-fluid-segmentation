@@ -61,6 +61,30 @@ FLUID_CODE_VALUES: dict[str, str] = {
 }
 
 
+#: Measurement and evaluation names in the SR for which no verified generic concept exists
+#: (docs/11 section 10 item 5). Declared in this scheme by the author's decision of
+#: 2026-10-16, on the same reasoning as the fluid classes. The volume measurement and the
+#: review evaluation's value are verified standard codes and are not here.
+MEASUREMENT_CODE_VALUES: dict[str, str] = {
+    "VOXELCOUNT": "Predicted voxel count",
+    "VOXELVOLUME": "Voxel volume",
+    "MCCONF": "MC-dropout scan-level confidence",
+    "REVIEW": "Review recommended",
+}
+
+
+def measurement_code(value: str) -> CodedConcept:
+    """The declared local code for one SR measurement or evaluation name."""
+    if value not in MEASUREMENT_CODE_VALUES:
+        declared = sorted(MEASUREMENT_CODE_VALUES)
+        raise KeyError(f"{value!r} is not a declared measurement name {declared}")
+    return CodedConcept(
+        value=value,
+        scheme_designator=OCUVAL_SCHEME_DESIGNATOR,
+        meaning=MEASUREMENT_CODE_VALUES[value],
+    )
+
+
 def fluid_code(label: str, *, scheme_uid: str = DEFAULT_SCHEME_UID) -> CodedConcept:
     """The declared local code for one RETOUCH fluid class.
 
