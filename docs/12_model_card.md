@@ -20,6 +20,12 @@ Change history: docs/13_change_control_log.md
 > evaluated again (`docs/08` §5i). **Every figure above the last section is corrected.** The
 > trained models were not affected, and neither were detection or AUROC.
 
+> **Every HD95 in this card was computed with the voxel spacing on the wrong axes (found
+> 2026-10-25),** in both the corrected and the earlier figures ([`docs/13`, finding of
+> 2026-10-25](13_change_control_log.md)). The HD95 figures and the statements about which HD95
+> intervals overlap are not reliable until a re-evaluation corrects them. **Dice, detection,
+> AUROC and the volumes are unaffected**, and so is every Dice-based conclusion.
+
 > **How to read this card.** It adds no result. Every figure is copied from `docs/10` or
 > `docs/08`, or for measured dataset figures from `docs/06` §3.2, and cited by section; where they differ in presentation, `docs/10` governs. Each
 > figure keeps its standing from `docs/10`: **primary, pre-registered** (`docs/07` §17),
@@ -224,8 +230,8 @@ patients.
 | topcon (cirrus + spectralis) | PED | 1.3743 [0.6482, 2.1124] n=9 | 4.4120 (single patient, no spread) n=1 | +3.0376 | **no** |
 
 **Dice: 8 of 9 comparisons overlap; spectralis SRF does not**, with the held-out vendor higher.
-Point differences: worse on the unseen vendor in 4 of 9, better in 5. **HD95: two do not
-overlap**, cirrus PED and topcon PED, with in-domain arms of 3 and 1 patients; nothing is
+Point differences: worse on the unseen vendor in 4 of 9, better in 5. **HD95, computed with the
+spacing on the wrong axes (notice at the top): two do not overlap**, cirrus PED and topcon PED, with in-domain arms of 3 and 1 patients; nothing is
 concluded from either (`docs/10` §3).
 
 **Cirrus has an earlier, unseeded draw** from 2026-10-01, kept in `docs/10` §3.1 beside the

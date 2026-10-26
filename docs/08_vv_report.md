@@ -468,6 +468,8 @@ would show throttling.
 
 ## 5d. Stage 2 — the one-time evaluation of the held-out vendor
 
+> **Its HD95 figures carry the spacing-axis defect found 2026-10-25** (notice at §5g).
+
 > **Label added 2026-10-04: these figures are a single unseeded draw.** Evaluation at
 > `767c8e5` did not seed the MC-dropout passes or request deterministic kernels, and two
 > evaluations of one checkpoint have since been shown to differ (`docs/13`, 2026-10-04). No
@@ -827,6 +829,13 @@ moved between 8.50 and 14.65 GB with the page file, and no threshold was approac
 > states what happened. **The corrected figures, from the re-evaluation of 2026-10-24, are in
 > §5i.** The detection figures of §5g.2–§5g.4 and the §19 results were unchanged by the
 > correction and remain the record (§5i.2, §5i.4).
+
+> **Every HD95 in this report, in §5d, §5g and §5i alike, was computed with the voxel spacing
+> on the wrong axes (found 2026-10-25).** `measure_volume` passed the spacing in the project's
+> (axial, lateral, separation) order to an HD95 that applies it to the array's (B-scan, row,
+> column) axes ([`docs/13`, finding of 2026-10-25](13_change_control_log.md)). The HD95 figures
+> are kept as recorded and are not reliable. **Dice, sensitivity, specificity, AUROC and the
+> volume counts are unaffected.**
 
 Run 2026-10-04 21:36 to 2026-10-05 03:07 local, under `docs/07` §17 as amended in §17.10
 **before any unlock**. One chain, `scripts/run_remaining.ps1` at **`5d0dc3c`**, was launched by
@@ -1288,7 +1297,8 @@ topcon `val` steps, estimated from their in-domain runs and in fact slower.
 
 Conventions as §5g: `n` is patients; **gap = in-domain − held-out**, so for Dice a positive gap
 is worse on the unseen vendor; HD95 drops volumes where exactly one side is empty. The §5g
-columns are the figures measured through the defect.
+columns are the figures measured through the defect. **Every HD95 below, corrected or not,
+carries the spacing-axis defect** (notice at §5g).
 
 #### Cirrus held out
 
