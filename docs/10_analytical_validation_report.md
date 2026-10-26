@@ -18,6 +18,16 @@ Change history: docs/13_change_control_log.md
 > as measured through the defect, because the record states what happened. Detection, AUROC
 > and the §19.1 and §19.2 results were unchanged by the correction (`docs/08` §5i.2, §5i.4).
 
+> **Every HD95 in this report was computed with the voxel spacing on the wrong axes (found
+> 2026-10-25).** Volumes are stored as (B-scans, rows, columns), but HD95 received the spacing
+> in the project's (axial, lateral, separation) order, so the B-scan axis was measured in axial
+> steps, rows in lateral steps and columns in B-scan steps ([`docs/13`, finding of
+> 2026-10-25](13_change_control_log.md)). **The HD95 figures in §3 and §10, and the statements
+> about which HD95 intervals overlap, are not reliable.** **Dice, sensitivity, specificity, AUROC
+> and the mm³ volumes are unaffected**, so the headline and every Dice-based conclusion stand.
+> Corrected HD95 needs a re-evaluation under `docs/07` §17.7(b); until then the HD95 figures
+> stay as recorded, marked.
+
 > **Every per-fold figure in this document is copied from the committed record of the run that
 > produced it**: `docs/08` §5i, built from the corrected evaluation records under `artifacts/`,
 > and `docs/08` §5c–§5g for what the correction did not change. The pooled, class-present and
@@ -185,7 +195,8 @@ lower is better, a positive gap means the in-domain arm is worse. `n` is patient
 
 **Dice:** the held-out and in-domain intervals overlap: 8 of 9 comparisons. The point
 differences point both ways, worse on the unseen vendor in 4 of 9 and better in 5 of 9.
-**HD95: two do not overlap**, cirrus PED and topcon PED, and their in-domain arms hold **3** and
+**HD95, computed with the spacing on the wrong axes (see the notice at the top): two do not
+overlap**, cirrus PED and topcon PED, and their in-domain arms hold **3** and
 **1** patients. An interval over one patient has no spread, so nothing is concluded from either.
 
 **Headline — primary, pre-registered.** By the pre-registered criterion, the overlap of the two
@@ -822,7 +833,8 @@ Read this way, the earlier report found every per-fold Dice comparison overlappi
 Dice. The correction changed all three; it did not change detection, AUROC, or which
 class-absent volumes scored 0 or 1.
 
-**§3, Dice and HD95 per fold.** Gap = in-domain − held-out.
+**§3, Dice and HD95 per fold.** Gap = in-domain − held-out. These HD95 figures carry the
+spacing-axis defect as well as the inversion defect (notices at the top).
 
 | Status | Held-out vendor (trained on) | Class | Held-out Dice | In-domain reference Dice | Gap | Intervals overlap |
 |---|---|---|---|---|---|---|
