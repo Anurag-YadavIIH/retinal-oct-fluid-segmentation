@@ -86,6 +86,18 @@ def assert_spacing_unchanged(used: Sequence[float], recorded: Sequence[float], s
     return u
 
 
+def array_axis_spacing(spacing: Sequence[float]) -> tuple[float, float, float]:
+    """The project's (axial, lateral, separation) spacing, reordered to a volume's array axes.
+
+    Volumes are stored (B-scans, rows, columns), with rows axial and columns lateral, so the
+    per-axis spacing is (separation, axial, lateral). Needed wherever a computation applies
+    spacing axis by axis, as HD95 does. Before 2026-10-26 the project order reached HD95
+    unchanged and put every component on the wrong axis (docs/13, finding of 2026-10-25).
+    """
+    axial, lateral, separation = (float(v) for v in spacing)
+    return (separation, axial, lateral)
+
+
 def measure_volume(
     prediction: np.ndarray,
     reference: np.ndarray,
@@ -95,17 +107,24 @@ def measure_volume(
 ) -> list[dict]:
     """Per-class segmentation metrics for one volume, in native geometry.
 
-    `prediction` and `reference` are integer label volumes already on the native grid.
-    Returns one row per class per metric, which is the shape `subgroup.by_vendor` consumes.
+    `prediction` and `reference` are integer label volumes already on the native grid, shaped
+    (B-scans, rows, columns). `spacing` is in the project's (axial, lateral, separation) order,
+    as recorded at ingestion. Returns one row per class per metric, which is the shape
+    `subgroup.by_vendor` consumes.
+
+    **HD95 gets the spacing reordered to the array's axes** (SRS-032 as amended 2026-10-26);
+    the volumes keep the recorded order, since only their product enters and leaving it
+    untouched keeps every recorded volume bit-identical.
     """
     if prediction.shape != reference.shape:
         raise ValueError(f"prediction {prediction.shape} and reference {reference.shape} differ")
+    per_axis = array_axis_spacing(spacing)
     rows = []
     for index, name in enumerate(classes, start=1):
         p = prediction == index
         r = reference == index
         rows.append({"fluid_class": name, "metric": "dice", "value": dice(p, r)})
-        rows.append({"fluid_class": name, "metric": "hd95", "value": hd95(p, r, tuple(spacing))})
+        rows.append({"fluid_class": name, "metric": "hd95", "value": hd95(p, r, per_axis)})
         predicted_mm3, predicted_voxels, _ = volume_mm3(p, tuple(spacing))
         reference_mm3, reference_voxels, _ = volume_mm3(r, tuple(spacing))
         rows.append(
