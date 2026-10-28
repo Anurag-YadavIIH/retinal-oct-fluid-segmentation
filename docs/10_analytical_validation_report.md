@@ -620,17 +620,22 @@ Made by the author on reviewing those six images, 2026-10-15:
 two images chosen as the largest false positives of their kind, which are by construction not
 typical.
 
-**Against the regenerated images: the author's reassessment is not yet recorded.** What the
-selection records establish, without any image being opened in a Claude Code session:
+**Against the regenerated images: confirmed by the author, 2026-10-28. Still a qualitative
+observation, not a measured finding.** On reviewing Figures 9 to 11:
 
-- **The IRF case is a different scan now.** The rule on the corrected records chose a
-  different held-out scan for Figure 9, so the first observation describes an image that is
-  no longer shown. Whether the new Figure 9 shows the same pattern is for the author to judge.
-- **The PED case is the same scan and the same B-scan** (Figure 11), but the regenerated
-  image differs from the earlier one, so the prediction drawn is not the same. Whether the second observation still holds is for the author to judge.
+- **Figure 9 (IRF).** The model's IRF outline lies below the RPE, within the dome of the lifted
+  RPE, where intraretinal fluid cannot occur. This is a different scan from the 2026-10-14 IRF
+  case, since the rule on the corrected records chose another, so it is the same pattern seen
+  again rather than the same image re-examined.
+- **Figure 11 (PED).** Every predicted outline lies below the lower bright line, in what appears
+  to be the choroid, where no retinal fluid can occur. Same scan and same B-scan as before, with
+  the prediction redrawn from the corrected records.
+- **Figure 10 (SRF).** No separate observation recorded.
 
-Until the author records a reassessment, the observation stands as made on the earlier images,
-neither confirmed nor withdrawn for the present ones.
+**The pattern survives the inversion fix**, so it was not an artefact of that defect. **How often
+it happens across the held-out scans is still not measured**: it is seen in images chosen as the
+largest false positives of their kind, which are by construction not typical. Measuring it would
+need an anatomical-location count over every scan, which has not been done.
 
 ## 8. Limitations
 

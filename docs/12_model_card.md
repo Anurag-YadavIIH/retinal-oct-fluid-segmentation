@@ -342,10 +342,10 @@ unreliably (`docs/10` Summary, §5.4).
 Six B-scans, chosen by a rule committed before any was rendered, are in `docs/10` §7.4. They
 were **regenerated from the corrected records** (`docs/07` §21.9) and approved by the author,
 replacing the images drawn through the defect. They are not results and not typical. A
-qualitative observation the author made on the earlier images (predicted fluid in locations
-where that fluid type cannot occur) is recorded there, labelled as such. It has not yet been
-reassessed against the regenerated images, and how often the pattern occurs has not been
-measured (`docs/10` §7.4).
+qualitative observation the author made (predicted fluid in locations where that fluid type
+cannot occur, in the IRF and PED false-positive cases) is recorded there, labelled as such. The
+author confirmed it on the regenerated images, so it is not an artefact of the inversion defect.
+How often the pattern occurs has not been measured (`docs/10` §7.4).
 
 ## Ethical considerations
 
