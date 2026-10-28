@@ -320,9 +320,14 @@ def parse_args(argv):
     return args
 
 
-def held_out_records(figures) -> dict[str, Path]:
-    """The held-out records the run selects and gates from: the corrected ones, and only them."""
-    paths = {f: Path(figures.RECORDS[f]["test"]) for f in FOLDS}
+def held_out_records(records: dict) -> dict[str, Path]:
+    """The held-out records the run selects and gates from: the corrected ones, and only them.
+
+    `records` is `{fold: {"test": path}}`. Section 21.9 ran on the 24 October records under
+    `corrected/`. Since docs/07 section 17.12 the current figures come from `corrected_hd95/`,
+    which differ in HD95 only; the selection reads no HD95, but the run keeps its own records.
+    """
+    paths = {f: Path(records[f]["test"]) for f in FOLDS}
     for fold, path in paths.items():
         if path.parent.name != "corrected" or path.name != "evaluation_test.json":
             raise SystemExit(f"{fold}: {path} is not a corrected held-out record (section 21.9)")
@@ -354,7 +359,8 @@ def main(argv: list[str] | None = None) -> int:
 
     figures = load_module("make_figures", REPO / "scripts" / "07_make_figures.py")
     evaluation = load_module("evaluate", REPO / "scripts" / "05_evaluate.py")
-    records = {f: figures.load(p) for f, p in held_out_records(figures).items()}
+    run_records = figures.report.record_paths(figures.RUNS)["wrong_axes"]  # section 17.11's
+    records = {f: figures.load(p) for f, p in held_out_records(run_records).items()}
     threshold = int(cfg["inference"]["presence_voxel_threshold"])
     passes = int(cfg["inference"]["mc_dropout_passes"])
     for f, rec in records.items():

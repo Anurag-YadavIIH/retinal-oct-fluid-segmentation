@@ -95,7 +95,8 @@ def test_TC_137_the_comparison_reads_exactly_the_two_reproducibility_records():
 def test_TC_137_the_expected_counts_are_the_ones_section_17_11_states():
     """The script's counts must not drift from the document that pre-registers them."""
     protocol = (REPO / "docs" / "07_vv_protocol.md").read_text(encoding="utf-8")
-    section = protocol.split("### 17.11", 1)[1].split("\n---", 1)[0]
+    # The section ends at the next heading or rule: §17.12 follows it with a table of its own.
+    section = re.split(r"\n### |\n---", protocol.split("### 17.11", 1)[1], maxsplit=1)[0]
     stated = {
         (f"{fold}_holdout", bucket): int(now)
         for fold, bucket, now in re.findall(

@@ -468,6 +468,9 @@ would show throttling.
 
 ## 5d. Stage 2 — the one-time evaluation of the held-out vendor
 
+> **Its HD95 figures carry the spacing-axis defect found 2026-10-25** (notice at §5g); the
+> corrected HD95 is in §5j.
+
 > **Label added 2026-10-04: these figures are a single unseeded draw.** Evaluation at
 > `767c8e5` did not seed the MC-dropout passes or request deterministic kernels, and two
 > evaluations of one checkpoint have since been shown to differ (`docs/13`, 2026-10-04). No
@@ -827,6 +830,14 @@ moved between 8.50 and 14.65 GB with the page file, and no threshold was approac
 > states what happened. **The corrected figures, from the re-evaluation of 2026-10-24, are in
 > §5i.** The detection figures of §5g.2–§5g.4 and the §19 results were unchanged by the
 > correction and remain the record (§5i.2, §5i.4).
+
+> **Every HD95 in this report, in §5d, §5g and §5i alike, was computed with the voxel spacing
+> on the wrong axes (found 2026-10-25).** `measure_volume` passed the spacing in the project's
+> (axial, lateral, separation) order to an HD95 that applies it to the array's (B-scan, row,
+> column) axes ([`docs/13`, finding of 2026-10-25](13_change_control_log.md)). The HD95 figures
+> are kept as recorded and are superseded by **§5j**, the gated re-evaluation of 2026-10-26.
+> **Dice, sensitivity, specificity, AUROC and the volume counts are unaffected**, as §5j's gate
+> confirmed bucket by bucket.
 
 Run 2026-10-04 21:36 to 2026-10-05 03:07 local, under `docs/07` §17 as amended in §17.10
 **before any unlock**. One chain, `scripts/run_remaining.ps1` at **`5d0dc3c`**, was launched by
@@ -1288,7 +1299,8 @@ topcon `val` steps, estimated from their in-domain runs and in fact slower.
 
 Conventions as §5g: `n` is patients; **gap = in-domain − held-out**, so for Dice a positive gap
 is worse on the unseen vendor; HD95 drops volumes where exactly one side is empty. The §5g
-columns are the figures measured through the defect.
+columns are the figures measured through the defect. **Every HD95 below, corrected or not,
+carries the spacing-axis defect** (notice at §5g); the corrected HD95 is in §5j.
 
 #### Cirrus held out
 
@@ -1355,6 +1367,58 @@ PED, spectralis IRF, topcon IRF) and better in 5. Topcon IRF changed sign, −0.
   specificities with intervals, as §5g.7.
 - **§19.3 under the §19.5 rule, pooled:** all three classes still overlap; figures in `docs/10`
   §5.2.
+
+## 5j. HD95 re-evaluation under `docs/07` §17.12 — the spacing-axis fix, gated
+
+> **What this is.** The six sealed buckets evaluated again after the HD95 spacing fix (SRS-032
+> as amended, `docs/13` 2026-10-26), under §17.12 and §17.7(b). **Each was gated:** the chain
+> would have stopped before the next unlock had any value other than HD95 differed from the
+> §5i record. **§5i stays exactly as recorded**; this section reports HD95 beside it.
+
+### 5j.1 The run
+
+| Field | Value | Source |
+|---|---|---|
+| Chain | `scripts/12_reevaluate_hd95.py` (SRS-102), launched by the author on 2026-10-26 at 16:22:17; ended 21:53:19, **5 h 31 min 02 s**, every step exit 0 | `artifacts/chain/hd95_status.txt` |
+| Evaluation code | **`682dd3e`** (merge of `hd95-spacing`), `dirty: false`, in all eight records | `notes.evaluation_source` |
+| Determinism | **0 fallbacks** in all eight records | `notes.determinism` |
+| Access counts | as §17.12 stated before; after, cirrus `test` **7** and `in_domain_ref` **5**, spectralis and topcon `test` **5** and `in_domain_ref` **3** | status log; `sealed.access_count` |
+| Reproducibility check | two seeded cirrus `val` runs **IDENTICAL** | status log |
+| **Gate** | **passed for all six buckets**: only HD95 differs from §5i | status log |
+| Records | eight new files under `corrected_hd95/`; nothing earlier overwritten | file listing |
+
+| Step | Duration (measured, status log) |
+|---|---|
+| cirrus `val` a / b | 18 min 13 s / 17 min 43 s |
+| cirrus `test` / `in_domain_ref` | 2 h 00 min 21 s / 19 min 52 s |
+| spectralis `test` / `in_domain_ref` | 33 min 33 s / 25 min 32 s |
+| topcon `test` / `in_domain_ref` | 1 h 20 min 22 s / 15 min 25 s |
+
+### 5j.2 HD95, corrected
+
+Printed by `eval/report.py` from the §17.12 records; `n` is patients; gap = in-domain − held-out;
+for HD95, lower is better. The same rows are `docs/10` §3, where the report check verifies them.
+The wrong-axes figures of §5i are kept, and checked against their records, in `docs/10` §10.2.
+
+| Held-out vendor (trained on) | Class | Held-out HD95 (mm) | In-domain reference HD95 (mm) | Gap | Intervals overlap |
+|---|---|---|---|---|---|
+| cirrus (spectralis + topcon) | IRF | 0.7563 [0.2970, 1.3089] n=18 | 0.5145 [0.0674, 0.9726] n=6 | -0.2418 | yes |
+| cirrus (spectralis + topcon) | SRF | 0.5957 [0.1657, 1.1234] n=12 | 1.6413 [0.0375, 3.3656] n=3 | +1.0456 | yes |
+| cirrus (spectralis + topcon) | PED | 0.9630 [0.4608, 1.5244] n=12 | 0.0709 [0.0000, 0.1189] n=3 | -0.8921 | **no** |
+| spectralis (cirrus + topcon) | IRF | 0.5301 [0.3573, 0.7463] n=21 | 0.3986 [0.0539, 1.0619] n=5 | -0.1315 | yes |
+| spectralis (cirrus + topcon) | SRF | 0.4345 [0.1551, 0.8227] n=21 | 0.8365 [0.0469, 1.6261] n=2 | +0.4020 | yes |
+| spectralis (cirrus + topcon) | PED | 0.3465 [0.1825, 0.5473] n=16 | 0.8684 [0.0943, 1.6424] n=2 | +0.5219 | yes |
+| topcon (cirrus + spectralis) | IRF | 1.3066 [0.7753, 1.9468] n=17 | 0.5174 [0.0927, 1.3117] n=6 | -0.7892 | yes |
+| topcon (cirrus + spectralis) | SRF | 1.6308 [0.8750, 2.5045] n=11 | 1.7393 [1.0889, 2.3897] n=2 | +0.1084 | yes |
+| topcon (cirrus + spectralis) | PED | 0.9723 [0.5206, 1.4189] n=9 | 1.6630 (single patient, no spread) n=1 | +0.6907 | **no** |
+
+### 5j.3 What the corrected HD95 establishes
+
+**The same two comparisons fail to overlap, cirrus PED and topcon PED**, with in-domain arms of 3 and
+1 patients, so nothing is concluded from either. Every gap points the same way as in §5i. The values
+moved a great deal: the wrong-axes figures were larger in 17 of the 18 arms, up to 5.6 times
+(topcon in-domain SRF), and smaller in one, cirrus in-domain PED, at 0.34 times (derived from the two
+sets of records). **Every other figure in §5i stands as the record**, as the gate showed.
 
 ## 6. Conclusion
 

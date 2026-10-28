@@ -7,9 +7,9 @@ the per-fold arms equal their records, the pooled arms equal `docs/10` §5.2 and
 differences equal `docs/10` §5.4. Every count the page states is computed here and asserted
 against the document that states it.
 
-The records are the corrected ones of the `docs/07` §17.11 re-evaluation, through
-`07_make_figures.RECORDS`. The one exception is the fragility shift of `docs/10` §7.2, which is
-between two draws measured through the inversion defect and is read from those records.
+The records are those of the `docs/07` §17.12 re-evaluation (§17.11's, with HD95 corrected),
+through `07_make_figures.RECORDS`. The one exception is the fragility shift of `docs/10` §7.2,
+which is between two draws measured through the inversion defect and is read from those records.
 
 Two stages, so the page can be rebuilt and tested where the records are absent:
 

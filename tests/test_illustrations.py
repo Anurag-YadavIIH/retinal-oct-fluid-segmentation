@@ -321,14 +321,17 @@ def test_TC_146_selection_and_gate_read_only_the_corrected_held_out_records():
         )
     )
     spec.loader.exec_module(figures)
-    paths = ILL.held_out_records(figures)
+    paths = ILL.held_out_records(figures.report.record_paths(figures.RUNS)["wrong_axes"])
     assert set(paths) == set(ILL.FOLDS)
     assert all(p.parent.name == "corrected" and p.name == "evaluation_test.json"
                for p in paths.values())  # fmt: skip
+    # The source main() passes is the section 17.11 set, not the figures' current one.
+    source = (REPO / "scripts" / "09_illustrative_bscans.py").read_text(encoding="utf-8")
+    assert 'record_paths(figures.RUNS)["wrong_axes"]' in source
 
-    class Superseded:
-        RECORDS = {f: {"test": REPO / "artifacts" / "runs" / f / "evaluation_test.json"}
-                   for f in ILL.FOLDS}  # fmt: skip
-
-    with pytest.raises(SystemExit, match="not a corrected held-out record"):
-        ILL.held_out_records(Superseded)
+    superseded = {f: {"test": REPO / "artifacts" / "runs" / f / "evaluation_test.json"}
+                  for f in ILL.FOLDS}  # fmt: skip
+    current = figures.RECORDS  # section 17.12's corrected_hd95, which section 21.9 never read
+    for wrong in (superseded, current):
+        with pytest.raises(SystemExit, match="not a corrected held-out record"):
+            ILL.held_out_records(wrong)
