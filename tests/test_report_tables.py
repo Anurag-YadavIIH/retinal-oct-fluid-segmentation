@@ -311,6 +311,21 @@ def test_TC_143_a_superseded_row_is_compared_only_with_the_superseded_table():
     assert differences[0].where == f"line {lines.index('| through the defect | x | 0.1000 |') + 1}"
 
 
+def test_TC_143_current_hd95_and_wrong_axes_hd95_come_from_their_own_records():
+    # docs/07 section 17.12: the current figures are the gated re-evaluation's; the 24 October
+    # records are read only for the HD95 kept as measured on the wrong spacing axes.
+    paths = report.record_paths(Path("runs"))
+    for fold in report.FOLDS:
+        for arm in report.ARMS:
+            assert paths["corrected"][fold][arm].parent.name == "corrected_hd95"
+            assert paths["wrong_axes"][fold][arm].parent.name == "corrected"
+            assert paths["corrected"][fold][arm].name == paths["wrong_axes"][fold][arm].name
+    # The page and figures read what the documents are checked against, not their own copy.
+    figs = load_script("make_figures_tc143", "07_make_figures.py")
+    current = report.record_paths(figs.RUNS)["corrected"]
+    assert {f: {a: figs.RECORDS[f][a] for a in report.ARMS} for f in report.FOLDS} == current
+
+
 def test_TC_143_findings_from_the_records_are_reported_too():
     g = generated()
     g.findings.append("AUROC differs from the record")

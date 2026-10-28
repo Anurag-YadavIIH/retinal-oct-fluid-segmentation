@@ -51,6 +51,9 @@ RUN_DIRS = {
 # docs/07 section 19.2, declared before any Stage 3 result. TC-140 compares it with the text.
 THRESHOLD_GRID = (1, 2, 5, 10, 20, 50, 100, 200, 500, 1000)
 DEFECT = "through the defect"
+# HD95 of the 24 October records, measured with the spacing on the wrong axes (docs/13,
+# finding of 2026-10-25). Its own first column, so its header differs from section 10's.
+WRONG_AXES = "wrong spacing axes"
 DOCS = {
     "docs/10": "docs/10_analytical_validation_report.md",
     "docs/12": "docs/12_model_card.md",
@@ -74,13 +77,23 @@ class RecordSets:
     superseded: dict
     unseeded_cirrus: dict
     val: dict
+    # The 24 October corrected records: identical to `corrected` in everything but HD95
+    # (docs/07 section 17.12's gate), kept for their HD95 measured on the wrong spacing axes.
+    wrong_axes: dict | None = None
 
 
 def record_paths(runs: Path) -> dict:
     """Where each record set lives under `artifacts/runs`."""
     d = {f: runs / RUN_DIRS[f] for f in FOLDS}
     return {
+        # The record of record: the docs/07 section 17.12 re-evaluation, with HD95 on the right
+        # spacing axes and everything else gated equal to the 24 October records.
         "corrected": {
+            f: {a: d[f] / "corrected_hd95" / f"evaluation_{a}.json" for a in ARMS} for f in FOLDS
+        },
+        # The 24 October records of section 17.11: HD95 measured with the spacing on the wrong
+        # axes (docs/13, finding of 2026-10-25); every other value equals `corrected`.
+        "wrong_axes": {
             f: {a: d[f] / "corrected" / f"evaluation_{a}.json" for a in ARMS} for f in FOLDS
         },
         # The seeded records of 2026-10-05, measured through the inversion defect.
@@ -96,7 +109,7 @@ def record_paths(runs: Path) -> dict:
         # Cirrus's single unseeded draw of 2026-10-01, also through the defect (docs/10 3.1).
         "unseeded_cirrus": {a: d["cirrus"] / f"evaluation_{a}.json" for a in ARMS},
         "val": {
-            "cirrus": d["cirrus"] / "corrected" / "evaluation_val_seeded_a.json",
+            "cirrus": d["cirrus"] / "corrected_hd95" / "evaluation_val_seeded_a.json",
             "spectralis": d["spectralis"] / "corrected" / "evaluation_val.json",
             "topcon": d["topcon"] / "corrected" / "evaluation_val.json",
         },
@@ -105,7 +118,8 @@ def record_paths(runs: Path) -> dict:
 
 def records_present(runs: Path) -> bool:
     paths = record_paths(runs)
-    files = [p for s in ("corrected", "superseded") for f in FOLDS for p in paths[s][f].values()]
+    sets = ("corrected", "wrong_axes", "superseded")
+    files = [p for s in sets for f in FOLDS for p in paths[s][f].values()]
     files += list(paths["unseeded_cirrus"].values()) + list(paths["val"].values())
     return all(p.is_file() for p in files)
 
@@ -120,6 +134,7 @@ def load_records(runs: Path) -> RecordSets:
         superseded={f: {a: load(p) for a, p in paths["superseded"][f].items()} for f in FOLDS},
         unseeded_cirrus={a: load(p) for a, p in paths["unseeded_cirrus"].items()},
         val={f: load(p) for f, p in paths["val"].items()},
+        wrong_axes={f: {a: load(p) for a, p in paths["wrong_axes"][f].items()} for f in FOLDS},
     )
 
 
@@ -591,6 +606,24 @@ def generate(sets: RecordSets) -> Generated:
     for doc in ("docs/10", "docs/12"):
         g.table(doc, H_DICE, dice_rows)
         g.table(doc, H_HD95, hd95_rows)
+    # HD95's overlap verdicts, stated in the prose and so checked like every other count.
+    hd95_apart = [
+        f"{f} {c}"
+        for f, c in keys9
+        if not overlaps(
+            cur[f]["test"]["segmentation"]["all_vendors"][c]["hd95"],
+            cur[f]["in_domain_ref"]["segmentation"]["all_vendors"][c]["hd95"],
+        )
+    ]
+    if hd95_apart:
+        listed = ", ".join(hd95_apart[:-1]) + (" and " if len(hd95_apart) > 1 else "")
+        listed += hd95_apart[-1]
+        for doc in ("docs/10", "docs/12"):
+            g.say(doc, f"**HD95: {word(len(hd95_apart))} do not overlap**, {listed}")
+    if sets.wrong_axes is not None:
+        rows = per_fold_rows(sets.wrong_axes, "hd95", WRONG_AXES)
+        for doc in ("docs/10", "docs/12"):
+            g.table(doc, f"| Spacing {H_HD95}", rows)
     fold_cmp = [comps[("all-volume", f, c)] for f, c in keys9]
     n_overlap = sum(overlaps(c["held"], c["ref"]) for c in fold_cmp)
     worse = sum(c["diff"][0] < 0 for c in fold_cmp)
