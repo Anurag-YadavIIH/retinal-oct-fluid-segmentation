@@ -163,7 +163,12 @@ reader to discover.
    positions are exact by definition rather than estimates. Frame positions step by the
    recorded B-scan separation, so the spacing governing the volume computation appears
    twice in the object — once in Pixel Measures as `SliceThickness`, once as the step
-   between consecutive `ImagePositionPatient` values. **That redundancy is the point.** A
+   between consecutive `ImagePositionPatient` values. **Since 2026-10-29 it is also written as
+   `SpacingBetweenSlices` (0018,0088) in Pixel Measures** (SRS-010 as amended), the attribute
+   that names the distance between slices. Its usage there is Type 3 by our reading of the
+   Pixel Measures macro in PS3.3; the shipped highdicom tables do not cover functional group
+   macros, so that reading is not machine-checked. Whether `SliceThickness`, which RETOUCH does
+   not record, should go on carrying the separation is **open**, and is left to this document. **That redundancy is the point.** A
    declared geometry can be cross-checked against itself; a fabricated value can be
    cross-checked against nothing. TC-024 asserts the two agree, so a defect in either is
    detectable rather than silent (HAZ-012).

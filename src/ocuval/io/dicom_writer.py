@@ -256,11 +256,17 @@ def _pixel_measures(volume: OCTVolume) -> Dataset:
     (axial, lateral, b-scan separation). Within a frame the rows run axially and the
     columns laterally, so PixelSpacing is [axial, lateral] — row spacing first, per
     PS3.3 — and SliceThickness is the separation between B-scans.
+
+    **SpacingBetweenSlices carries the separation too** (SRS-010, amended 2026-10-29, finding
+    D12): it is the attribute that names the distance between slices. Its macro usage is
+    Type 3 by our reading of PS3.3, not machine-checked (`docs/11`); whether SliceThickness,
+    which RETOUCH does not record, should keep carrying the separation is open there.
     """
     axial, lateral, bscan_separation = volume.spacing_mm
     measures = Dataset()
     measures.PixelSpacing = [float(axial), float(lateral)]
     measures.SliceThickness = float(bscan_separation)
+    measures.SpacingBetweenSlices = float(bscan_separation)
     return measures
 
 
@@ -328,6 +334,9 @@ def _build_dataset(
     software_version: str,
 ) -> Dataset:
     pixels = np.asarray(volume.pixel_array)
+    # SRS-066 (clarified 2026-10-29, D12): the values are carried, not the byte order. The
+    # transfer syntax is little endian, so a big-endian source is converted value for value.
+    pixels = pixels.astype(pixels.dtype.newbyteorder("<"), copy=False)
     if pixels.ndim != 3:
         raise ValueError(f"expected a 3-D volume (frames, rows, columns), got {pixels.shape}")
     n_frames, rows, columns = pixels.shape
