@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-099, SRS-102 and NFR-001..NFR-008 (SRS-100 and SRS-101 are reserved for branch `wire-dicom`, not yet merged). Every requirement here derives
+Allocates SRS-001..SRS-099, SRS-102, SRS-103 and NFR-001..NFR-008 (SRS-100 and SRS-101 are reserved for branch `wire-dicom`, not yet merged). Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -136,6 +136,7 @@ measurement, and that gap is HAZ-012.
 | SRS-091 | Evaluation shall be **reproducible from the committed configuration**. Before any tensor reaches the device, the evaluation path shall make the same determinism request training makes (seeded from `run.seed`) and record what was requested and achieved, including every non-deterministic fallback, in the evaluation record. Each volume's MC-dropout passes shall draw from a generator **re-seeded from `(run.seed, the volume's source subject identifier)`**, so that a volume's result does not depend on processing order, `--limit`, or which other volumes were evaluated. The derived seed shall be recorded per volume. The subject identifier is used rather than the SOP Instance UID, because UIDs are minted per conversion (SRS-023). **The method is unchanged:** the mean of the configured passes, the same threshold and the same metrics. **Added 2026-10-04**, after two unseeded evaluations of one checkpoint differed in 49 aggregate figures (`docs/13`). | URS-010, NFR-002 | TC-128 |
 | SRS-096 | The re-evaluation of `docs/07` §17.11 shall run through one chain that performs its steps in §17.11's order and stops at the first failure without retrying: (1) refuse to start unless the working tree is clean, the inversion fix is an ancestor of `HEAD`, every checkpoint is present, no output exists and the chain has not run before; (2) read `sealed.access_count` for all six sealed buckets and stop on any difference from the counts §17.11 states; (3) run two seeded evaluations of `cirrus_holdout`'s open `val` bucket and stop unless both are seeded and IDENTICAL under SRS-090; (4) evaluate the open `val` buckets of `spectralis_holdout` and `topcon_holdout`; (5) evaluate the six sealed buckets, each opened with an `Unlock` naming §17.11. Every output shall be a new file under a `corrected/` folder of its run directory. **Added 2026-10-22.** | URS-007, URS-010 | TC-137 |
 | SRS-102 | The HD95 re-evaluation of `docs/07` §17.12 shall run through one chain with the steps, refusals and order of SRS-096, taking the HD95 fix as the required ancestor and writing only new files under a `corrected_hd95/` folder of each run directory. **It shall stop, after each evaluation and before the next unlock, unless every value of the new record other than HD95 equals the 24 October corrected record exactly**: every Dice, sensitivity, specificity and AUROC with its interval and `n`, every per-volume row's Dice, predicted and reference voxel counts, reference presence and detection score, and every record field outside segmentation, provenance excepted. **Only HD95 may change.** **Added 2026-10-26.** | URS-007, URS-010 | TC-150 |
+| SRS-103 | An **independent cross-check** shall recompute every segmentation metric of every volume in the **open `val` buckets only**, refusing any sealed bucket through the SRS-088 gate with no unlock. It shall use an implementation that shares no code with the project's reader or metrics: its own MetaImage parse, Dice from counts, mm³ from the header's spacings, and HD95 by a different algorithm (surface points and a nearest-neighbour tree). It shall compare the result per volume and class with the pipeline's and with the stored record: Dice and voxel counts exactly, mm³ to 1e-12 relative, HD95 to 1e-9 mm. It shall write numbers only, never a mask or pixel value. **Added 2026-10-29** from the audit of 2026-10-28, step 2. | URS-007, URS-010 | TC-152 |
 
 ### 3.5 Training
 
@@ -243,6 +244,7 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `scripts/05_evaluate.py` | SRS-091 |
 | `scripts/10_reevaluate.py` | SRS-096 |
 | `scripts/12_reevaluate_hd95.py` | SRS-102 |
+| `scripts/13_crosscheck_val.py` | SRS-103 |
 | `eval/report.py`, `scripts/11_report_tables.py` | SRS-097, SRS-098 |
 | `scripts/check_report_tables_hook.py`, `.pre-commit-config.yaml` hook `report-tables` | SRS-099 |
 | `scripts/08_build_site.py` | SRS-092 |
