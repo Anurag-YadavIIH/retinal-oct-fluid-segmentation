@@ -336,7 +336,7 @@ lists SRS, NFR and RC identifiers.
 | TC-064 | Results table states class, vendor, CI and n | SRS-037, RC-006 | U | Every rendered figure carries all four | yes |
 | TC-065 | Detection derived, not a second model | SRS-050 | U | Static check: no classifier is trained, stored or served; no forward pass beyond the MC-dropout passes | yes |
 | TC-066 | Presence threshold from configuration | SRS-051 | U | Threshold read from config, not hard-coded; resolved value written to run output | yes |
-| TC-067 | AUROC score from MC-dropout mean | SRS-052 | U | Continuous score traced to the mean class probability, per class per volume | yes |
+| TC-067 | AUROC score from MC-dropout mean | SRS-052 | U | Continuous score traced to the mean class probability, per class per volume. **Amended 2026-10-29 (finding D4):** through `05_evaluate.predict_volume` with a stand-in network whose class probability is highest in the padded rows, the score equals the highest mean probability inside the content box, not the padded maximum, and a probability placed inside the box is the score exactly. The box is the one `invert_axial_resample` crops. Shown failing on `predict_volume` as it was | yes |
 | TC-068 | Detection metrics per class and vendor | SRS-053, RC-006 | U | Sensitivity, specificity and AUROC with CI and n, broken out per class and vendor | yes |
 | TC-069 | Report generation runs on CPU | NFR-003 | S | Full evaluation and report complete with no GPU present | yes |
 

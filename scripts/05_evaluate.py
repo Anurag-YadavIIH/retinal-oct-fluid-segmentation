@@ -95,7 +95,7 @@ def build_unlock(args) -> sealed.Unlock | None:
     )
 
 
-def predict_volume(model, frames: np.ndarray, device: str, passes: int, chunk: int):
+def predict_volume(model, frames: np.ndarray, device: str, passes: int, chunk: int, box):
     """MC-dropout prediction for one volume's frames, in chunks of `chunk` frames.
 
     Returns (labels, mean_probability_per_class). The label map is the argmax of the
@@ -113,7 +113,13 @@ def predict_volume(model, frames: np.ndarray, device: str, passes: int, chunk: i
 
     Each chunk draws its own `passes` samples. That is correct for a per-voxel standard
     deviation, which is computed within a frame and never across frames.
+
+    **The score reads the native content only** (SRS-052 as amended 2026-10-29, finding D4).
+    `box` is `transforms.content_box`, the rows and columns `invert_axial_resample` keeps; the
+    padding added to reach `roi_size` holds no acquisition. Until 2026-10-29 the maximum ran
+    over the whole padded frame.
     """
+    rows, cols = box
     labels, maxima = [], np.zeros(len(CLASS_NAMES), dtype=float)
     for start in range(0, frames.shape[0], chunk):
         block = (
@@ -124,7 +130,7 @@ def predict_volume(model, frames: np.ndarray, device: str, passes: int, chunk: i
         mean, _std = mc_dropout_predict(model, block, passes)
         labels.append(mean.argmax(axis=1).astype(np.uint8))
         for index in range(len(CLASS_NAMES)):
-            maxima[index] = max(maxima[index], float(mean[:, index + 1].max()))
+            maxima[index] = max(maxima[index], float(mean[:, index + 1, rows, cols].max()))
         del block
         if device == "cuda":
             torch.cuda.empty_cache()
@@ -166,7 +172,12 @@ def main(argv: list[str] | None = None) -> int:
     meta = load_verified(run_dir / args.checkpoint, model, map_location=device, restore_rng=False)
     print(f"checkpoint {args.checkpoint} epoch {meta['epoch']} on {device}", flush=True)
 
-    from ocuval.data.transforms import axial_target, eval_transforms, invert_axial_resample
+    from ocuval.data.transforms import (
+        axial_target,
+        content_box,
+        eval_transforms,
+        invert_axial_resample,
+    )
 
     chain = eval_transforms(cfg)
     volumes, volume_seeds = [], {}
@@ -201,13 +212,18 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 prepared.append(np.asarray(sample["image"]).squeeze())
             # SRS-091: this volume's dropout masks depend on (seed, subject) and nothing else.
+            frames = np.stack(prepared)
+            box = content_box(
+                frames.shape[-2:], reference.shape[1:], recorded[0], axial_target(cfg)
+            )
             volume_seeds[subject] = reseed_for_volume(seed, subject)
             labels, scores = predict_volume(
                 model,
-                np.stack(prepared),
+                frames,
                 device,
                 int(cfg["inference"]["mc_dropout_passes"]),
                 args.frames_per_chunk,
+                box,
             )
 
             # SRS-074: back to the acquisition's grid before anything is measured, removing

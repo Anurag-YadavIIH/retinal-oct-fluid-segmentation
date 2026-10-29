@@ -404,6 +404,49 @@ def test_TC_067_auroc_uses_the_score_and_not_the_thresholded_decision():
     assert entry["auroc"]["n_unit"] == "patients"
 
 
+def _evaluate_script():
+    import importlib.util
+
+    path = Path(__file__).resolve().parents[1] / "scripts" / "05_evaluate.py"
+    spec = importlib.util.spec_from_file_location("evaluate_for_tc067", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_TC_067_the_score_ignores_the_padding_and_reads_the_native_content():
+    """D4: the maximum runs over the rows and columns the inversion keeps, never the padding.
+
+    A stand-in network outputs, for each class, a logit equal to 12 times the input in that
+    class's channel position. Frames hold 1.0 in a padded row (probability near 1 for IRF)
+    and 0.25 inside the content (a known, lower probability): the score must be the latter.
+    """
+    import torch
+
+    from ocuval.data.transforms import content_box
+
+    class StandIn(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.dropout = torch.nn.Dropout(p=0.0)  # MC-dropout requires one; p=0 keeps it exact
+
+        def forward(self, x):
+            x = self.dropout(x)
+            zeros = torch.zeros_like(x)
+            return torch.cat([zeros, 12 * x, zeros, zeros], dim=1)
+
+    native_shape, spacing = (496, 512), (0.003872, 0.011, 0.12)
+    frames = np.zeros((2, 576, 512), dtype=np.float32)
+    rows, cols = content_box(frames.shape[-2:], native_shape, spacing[0], 0.004)
+    assert rows.start > 0, "the fixture needs padding above the content"
+    frames[1, rows.start - 1, 10] = 1.0  # padding
+    frames[0, rows.start + 5, 20] = 0.25  # content
+    module = _evaluate_script()
+    _labels, scores = module.predict_volume(StandIn(), frames, "cpu", 2, 1, (rows, cols))
+    inside = float(torch.softmax(torch.tensor([0.0, 3.0, 0.0, 0.0]), dim=0)[1])
+    assert scores["IRF"] == pytest.approx(inside, rel=1e-6)
+
+
 def test_TC_067_auroc_is_nan_for_a_single_class_subgroup():
     """Expected per vendor on the rarer classes. 0.5 would read as a measured coin flip."""
     assert np.isnan(auroc([0.1, 0.9], [1, 1]))

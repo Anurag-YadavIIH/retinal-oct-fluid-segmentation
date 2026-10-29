@@ -349,7 +349,12 @@ def main(argv: list[str] | None = None) -> int:
 
     request_determinism(seed)  # first, before any CUDA context (as 05_evaluate.py:145)
 
-    from ocuval.data.transforms import axial_target, eval_transforms, invert_axial_resample
+    from ocuval.data.transforms import (
+        axial_target,
+        content_box,
+        eval_transforms,
+        invert_axial_resample,
+    )
     from ocuval.eval import sealed
     from ocuval.eval.pipeline import assert_spacing_unchanged, measure_volume
     from ocuval.io.retouch_reader import apply_intensity_window, read_volume
@@ -405,9 +410,12 @@ def main(argv: list[str] | None = None) -> int:
                 ).squeeze()
                 for i in range(native.pixel_array.shape[0])
             ]  # fmt: skip
-            reseed_for_volume(seed, p["subject"])  # as 05_evaluate.py:202, nothing in between
+            frames = np.stack(frames)
+            box = content_box(frames.shape[-2:], reference.shape[1:], recorded[0],
+                              axial_target(cfg))  # fmt: skip
+            reseed_for_volume(seed, p["subject"])  # as 05_evaluate.py, nothing in between
             labels, _scores = evaluation.predict_volume(
-                model, np.stack(frames), "cuda", passes, FRAMES_PER_CHUNK
+                model, frames, "cuda", passes, FRAMES_PER_CHUNK, box
             )
             prediction = invert_axial_resample(
                 labels,

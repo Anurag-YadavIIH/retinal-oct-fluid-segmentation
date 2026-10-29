@@ -3,7 +3,9 @@
 Traces to: SRS-103. Its independent half is verified by TC-152. Run by the author on
 2026-10-29 on the tree that merges `hd95-results` into `images`: 21 volumes, no difference
 from the pipeline or from the stored records (`docs/13`). It mirrors the evaluation glue as it
-stood then; it writes nothing under `docs/`.
+stood then; it writes nothing under `docs/`. **Since the D4 fix (2026-10-29) the evaluation's score
+is this script's native-region score**, the second of each pair it records; its comparison with
+a stored record written after that fix must read that one.
 
 For each fold's open `val` bucket (never a sealed one: `sealed.require_unsealed` is called
 with no unlock, so a sealed bucket is refused), it:

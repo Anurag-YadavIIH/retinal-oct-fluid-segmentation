@@ -278,6 +278,31 @@ def resampled_height(native_height: int, native_axial_mm: float, target_axial_mm
     return max(1, int(round(native_height * factor)))
 
 
+def content_box(
+    prepared_shape: tuple[int, int],
+    native_shape: tuple[int, int],
+    native_axial_mm: float,
+    target_axial_mm: float,
+) -> tuple[slice, slice]:
+    """The rows and columns of a prepared frame that hold the acquisition, not the padding.
+
+    The chain resamples the axial axis and pads symmetrically to `roi_size`, `width // 2`
+    before the content (MONAI `SpatialPad`, method symmetric). One function, so that the
+    inversion (SRS-074) and the detection score (SRS-052) read the same box.
+    """
+    height, width = (int(v) for v in prepared_shape)
+    native_height, native_width = (int(v) for v in native_shape)
+    content_height = resampled_height(native_height, float(native_axial_mm), target_axial_mm)
+    if height < content_height or width < native_width:
+        raise ValueError(
+            f"prediction {(height, width)} is smaller than the resampled frame "
+            f"({content_height}, {native_width}); the chain pads and never crops, so this "
+            f"is not a prediction this chain produced"
+        )
+    top, left = (height - content_height) // 2, (width - native_width) // 2
+    return slice(top, top + content_height), slice(left, left + native_width)
+
+
 def label_source_rows(
     native_height: int, native_axial_mm: float, target_axial_mm: float
 ) -> np.ndarray:
@@ -345,20 +370,11 @@ def invert_axial_resample(
         if isinstance(prediction, torch.Tensor)
         else torch.as_tensor(np.asarray(prediction))
     )
-    native_height, native_width = (int(v) for v in native_shape)
-    content_height = resampled_height(
-        native_height, float(native_spacing_mm[AXIAL]), float(target_axial_mm)
+    native_height = int(native_shape[0])
+    rows, cols = content_box(
+        tuple(array.shape[-2:]), native_shape, float(native_spacing_mm[AXIAL]), target_axial_mm
     )
-    height, width = array.shape[-2], array.shape[-1]
-    if height < content_height or width < native_width:
-        raise ValueError(
-            f"prediction {tuple(array.shape[-2:])} is smaller than the resampled frame "
-            f"({content_height}, {native_width}); the chain pads and never crops, so this "
-            f"is not a prediction this chain produced"
-        )
-    top = (height - content_height) // 2
-    left = (width - native_width) // 2
-    array = array[..., top : top + content_height, left : left + native_width]
+    array = array[..., rows, cols]
     source = label_source_rows(native_height, float(native_spacing_mm[AXIAL]), target_axial_mm)
     rows = nearest_source(native_height, source)
     return array.numpy()[..., rows, :]
