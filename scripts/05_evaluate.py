@@ -1,6 +1,7 @@
 """Evaluate a finished run under the protocol pre-registered in `docs/07` §17.
 
-Traces to: SRS-032, SRS-033, SRS-050..SRS-053, SRS-057, SRS-074, SRS-087, SRS-088, SRS-091
+Traces to: SRS-032, SRS-033, SRS-050..SRS-053, SRS-057, SRS-074, SRS-087, SRS-088, SRS-091,
+SRS-106
 
 Volume-level metrics, per fluid class and per vendor, each with a **patient-level**
 bootstrap interval and its `n` in patients; predictions inverted to native geometry before
@@ -17,6 +18,11 @@ metrics. Only the source of the dropout masks is now fixed.
 and need `--unlock-bucket` with `--unlock-reason` and `--approved-by`; every such access is
 appended to `artifacts/sealed_access.jsonl`, because `docs/07` §17.1 permits exactly one
 evaluation of the test set and a limit nobody counts is not a limit.
+
+**Predictions can be saved (SRS-106).** With `--save-predictions DIR`, every label map is written
+to DIR as it was measured, with its spacing and scores, and the record carries a checksum
+manifest under `predictions`. A later measurement defect is then corrected by re-measuring the
+saved maps, without the model. DIR must be empty or absent; it is refused before anything is read.
 
 Usage:
     python scripts/05_evaluate.py --run artifacts/runs/cirrus_holdout_stage2 --bucket val
@@ -40,11 +46,11 @@ from ocuval.eval.pipeline import (
     CLASS_NAMES,
     EvaluationPlan,
     assert_spacing_unchanged,
-    detection_rows,
     evaluate,
-    measure_volume,
     write_record,
 )
+from ocuval.eval.predictions import manifest as prediction_manifest
+from ocuval.eval.predictions import measured_volume, require_empty, save_prediction
 from ocuval.models.uncertainty import mc_dropout_predict, reseed_for_volume
 from ocuval.runs import load_manifest, manifest_path, source_record
 from ocuval.training.checkpoint import describe_determinism, request_determinism
@@ -75,6 +81,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument("--output", type=Path, default=None)
+    parser.add_argument(
+        "--save-predictions",
+        type=Path,
+        default=None,
+        help="save every measured label map here, with a manifest in the record (SRS-106)",
+    )
     parser.add_argument("--unlock-bucket", action="store_true", help="open a sealed bucket")
     parser.add_argument("--unlock-reason", default=None)
     parser.add_argument("--approved-by", default=None)
@@ -142,6 +154,11 @@ def predict_volume(model, frames: np.ndarray, device: str, passes: int, chunk: i
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    if args.save_predictions is not None:
+        try:
+            require_empty(args.save_predictions)
+        except FileExistsError as error:
+            raise SystemExit(str(error)) from None
     cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
     data_cfg = yaml.safe_load(Path(args.data_config).read_text(encoding="utf-8"))
     device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
@@ -180,7 +197,8 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     chain = eval_transforms(cfg)
-    volumes, volume_seeds = [], {}
+    threshold = int(cfg["inference"].get("presence_voxel_threshold", 10))
+    volumes, volume_seeds, saved = [], {}, {}
     # Captured, not filtered: a kernel with no deterministic implementation announces itself
     # as a warning, and `describe_determinism` folds those into the record -- as training does.
     with warnings.catch_warnings(record=True) as captured:
@@ -237,34 +255,37 @@ def main(argv: list[str] | None = None) -> int:
             )
             prediction = np.asarray(prediction).astype(np.uint8).reshape(reference.shape)
 
-            seg = measure_volume(prediction, reference, recorded)
-            predicted_voxels = {
-                r["fluid_class"]: r["voxels"] for r in seg if r["metric"] == "volume_mm3_predicted"
-            }
-            reference_voxels = {
-                r["fluid_class"]: r["voxels"] for r in seg if r["metric"] == "volume_mm3_reference"
-            }
             volumes.append(
-                {
-                    "sample_id": row["sample_id"],
-                    "patient_id": subject,
-                    "vendor": row["vendor"],
-                    "segmentation": seg,
-                    "detection": detection_rows(
-                        predicted_voxels,
-                        reference_voxels,
-                        scores,
-                        threshold=int(cfg["inference"].get("presence_voxel_threshold", 10)),
-                    ),
-                }
+                measured_volume(
+                    sample_id=row["sample_id"],
+                    patient_id=subject,
+                    vendor=row["vendor"],
+                    prediction=prediction,
+                    reference=reference,
+                    spacing_mm=recorded,
+                    scores=scores,
+                    threshold=threshold,
+                )
             )
+            # SRS-106: the map exactly as measured, with the spacing and scores it was measured
+            # with, so the measurement can be repeated without the model.
+            if args.save_predictions is not None:
+                saved[subject] = save_prediction(
+                    args.save_predictions,
+                    patient_id=subject,
+                    sample_id=row["sample_id"],
+                    vendor=row["vendor"],
+                    labels=prediction,
+                    spacing_mm=recorded,
+                    scores=scores,
+                )
             print(f"  {subject} ({row['vendor']}) measured", flush=True)
 
     plan = EvaluationPlan(
         fold_id=fold_id,
         bucket=args.bucket,
         seed=seed,
-        presence_voxel_threshold=int(cfg["inference"].get("presence_voxel_threshold", 10)),
+        presence_voxel_threshold=threshold,
         mc_passes=int(cfg["inference"]["mc_dropout_passes"]),
         unlock=unlock,
         notes={
@@ -282,9 +303,14 @@ def main(argv: list[str] | None = None) -> int:
                 "keyed_on": "source subject identifier, not SOP Instance UID (SRS-023)",
                 "per_volume": volume_seeds,
             },
+            "predictions_directory": (
+                None if args.save_predictions is None else args.save_predictions.as_posix()
+            ),
         },
     )
     result = evaluate(plan, volumes)
+    if args.save_predictions is not None:
+        result["predictions"] = prediction_manifest(saved)
     destination = args.output or run_dir / f"evaluation_{args.bucket}.json"
     write_record(result, destination)
     print(json.dumps(result["segmentation"]["all_vendors"], indent=2))

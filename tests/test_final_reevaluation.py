@@ -262,3 +262,75 @@ def test_TC_154_the_d4_d5_and_d3_checks_fail_when_their_fix_is_undone(monkeypatc
 
     monkeypatch.delattr(pipeline, "secondary_hd95")
     assert CHAIN.d3_fixed() is False
+
+
+# --- SRS-106: every evaluation saves its maps, and the gate checks them ----------------------
+
+
+def test_TC_154_every_evaluation_saves_its_maps_to_a_distinct_folder_under_predictions_final():
+    folders = []
+    for step in plan():
+        if step.kind not in ("open", "sealed"):
+            continue
+        folder = Path(step.argv[step.argv.index("--save-predictions") + 1])
+        assert folder.parent.parent == CHAIN.PREDICTIONS, step.name
+        assert folder.parent.name in FOLDS and step.name.startswith(
+            folder.parent.name.split("_")[0]
+        )
+        assert folder.name == step.output.stem.removeprefix("evaluation_"), step.name
+        folders.append(folder)
+    assert len(folders) == 10 and len(set(folders)) == 10
+
+
+def saved_record(tmp_path):
+    from ocuval.eval import predictions
+
+    folder = tmp_path / "artifacts" / "predictions_final" / "f" / "val"
+    labels = np.zeros((2, 4, 4), dtype=np.uint8)
+    entries = {
+        pid: predictions.save_prediction(folder, patient_id=pid, sample_id=f"s{pid}",
+                                         vendor="cirrus", labels=labels,
+                                         spacing_mm=(0.002, 0.01, 0.05),
+                                         scores={"IRF": 0.1, "SRF": 0.2, "PED": 0.3})
+        for pid in ("p1", "p2")
+    }  # fmt: skip
+    r = record()
+    r["notes"] = {"predictions_directory": folder.relative_to(tmp_path).as_posix()}
+    r["predictions"] = predictions.manifest(entries)
+    return r, folder
+
+
+def test_TC_154_the_gate_passes_saved_maps_that_match_and_names_every_mismatch(tmp_path):
+    r, folder = saved_record(tmp_path)
+    assert CHAIN.saved_prediction_problems(r, tmp_path) == []
+    assert CHAIN.saved_prediction_problems(record(), tmp_path) == [
+        "the record carries no prediction manifest"
+    ]
+    (folder / "p2.npz").write_bytes(b"altered")
+    assert any("p2" in p for p in CHAIN.saved_prediction_problems(r, tmp_path))
+    (folder / "p1.npz").unlink()
+    assert any("p1" in p for p in CHAIN.saved_prediction_problems(r, tmp_path))
+
+
+def test_TC_154_a_non_empty_predictions_folder_is_refused(tmp_path, monkeypatch):
+    monkeypatch.setattr(CHAIN, "REPO", tmp_path)
+    monkeypatch.setattr(CHAIN, "missing_fixes", lambda: [])  # they read this repository's files
+    (tmp_path / CHAIN.PREDICTIONS / "earlier").mkdir(parents=True)
+    assert any("predictions_final" in reason for reason in CHAIN.refusals(plan()))
+
+
+def test_TC_154_the_space_bound_counts_every_saved_map_at_the_largest_size(tmp_path):
+    steps = plan()
+    counts = {}
+    for index, step in enumerate(s for s in steps if s.kind == "gate"):
+        path = tmp_path / step.inputs[0]
+        path.parent.mkdir(parents=True, exist_ok=True)
+        counts[step.inputs[1]] = index + 1
+        path.write_text(f'{{"n_volumes": {index + 1}}}', encoding="utf-8")
+    val_a = CHAIN.RUNS["cirrus_holdout"] / "audited" / "evaluation_val.json"
+    expected = (sum(counts.values()) + counts[val_a]) * 128 * 1024 * 512  # val_b saves as many
+    assert CHAIN.bytes_needed(steps, tmp_path) == expected
+    assert (
+        CHAIN.space_problem(expected - 1, expected)
+        and CHAIN.space_problem(expected, expected) is None
+    )

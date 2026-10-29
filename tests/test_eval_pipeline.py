@@ -322,7 +322,11 @@ def test_TC_073_every_evaluation_path_checks_the_spacing_read_against_the_manife
                 checks.append(node)
             elif name == "measure_volume":
                 measured_with.append(node.args[2] if len(node.args) > 2 else None)
+            elif name == "measured_volume":  # SRS-106: measures through measure_volume
+                keywords = {k.arg: k.value for k in node.keywords}
+                measured_with.append(keywords.get("spacing_mm"))
     assert checks, f"{path} never checks the spacing (SRS-057)"
+    assert measured_with, f"{path} measures nothing this test can see, so it checks nothing"
     for call in checks:
         first, second = call.args[0], call.args[1]
         assert (

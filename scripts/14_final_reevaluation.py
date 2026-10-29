@@ -1,6 +1,6 @@
 """The final re-evaluation after the audit of 2026-10-28 (`docs/07` §17.13), with the B-scans.
 
-Traces to: SRS-105 (and SRS-088, SRS-090, SRS-091, SRS-093 through the scripts it calls)
+Traces to: SRS-105, SRS-106 (and SRS-088, SRS-090, SRS-091, SRS-093 through the scripts it calls)
 
 **Launched by the author** from an interactive terminal kept open (`docs/07` §17.8). Never run
 by Claude Code, and never as a tool call a time limit can kill. It runs once: it refuses to
@@ -10,7 +10,8 @@ The order is §17.13's, and the chain stops at the first failure without retryin
 
   0. Pre-flight refusals: a dirty tree; **any fix §17.13 names absent**, checked by behaviour
      (D1 placement against integer arithmetic, D4 content box, D5 spacing source, D3 secondary
-     block); a checkpoint or previous record missing; any output present; a previous start.
+     block); a checkpoint or previous record missing; any output present, saved predictions
+     included; a previous start; less free space than the saved maps could take uncompressed.
   1. **Access counts**: the six sealed buckets must have exactly the counts §17.13 states.
   2. **The reproducibility check**: two seeded evaluations of `cirrus_holdout`'s open `val`
      bucket must compare IDENTICAL (SRS-090), and the first must pass the gate.
@@ -23,9 +24,15 @@ The order is §17.13's, and the chain stops at the first failure without retryin
   6. **Access counts after**: each sealed bucket one more than in step 1, and each `test`
      bucket holding a chosen scan one more again.
 
-**Outputs are new files only**, under `audited/` of each run directory and in
-`artifacts/illustrations_audited/`. Each step logs its stdout and stderr under `artifacts/chain/`,
-and appends to `artifacts/chain/audited_status.txt`, which is never truncated.
+**Every evaluation saves its label maps (SRS-106)** under
+`artifacts/predictions_final/<fold>/<bucket>/`, and every gate also checks them against the
+record's manifest: one file per measured volume, each matching its SHA-256. They are local
+derived data (`docs/06` DMP-C13), never uploaded.
+
+**Outputs are new files only**, under `audited/` of each run directory, in
+`artifacts/predictions_final/` and in `artifacts/illustrations_audited/`. Each step logs its
+stdout and stderr under `artifacts/chain/`, and appends to `artifacts/chain/audited_status.txt`,
+which is never truncated.
 
 Usage, from the repository root:
     .venv\\Scripts\\python.exe scripts\\14_final_reevaluation.py --approved-by "Anurag Yadav"
@@ -37,6 +44,7 @@ import argparse
 import importlib.util
 import inspect
 import json
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -50,6 +58,10 @@ STATUS = CHAIN_DIR / "audited_status.txt"
 MARKER = "AUDITED CHAIN START"
 OUT_DIR = "audited"
 ILLUSTRATIONS = Path("artifacts") / "illustrations_audited"
+PREDICTIONS = Path("artifacts") / "predictions_final"
+# The largest acquisition, cirrus: 128 B-scans of 1024 x 512 uint8 (docs/06 section 3.1). The
+# space refusal assumes every map is this size and none compresses: an upper bound, not an estimate.
+MAX_MAP_BYTES = 128 * 1024 * 512
 
 RUNS = {
     "cirrus_holdout": Path("artifacts/runs/cirrus_holdout_stage2"),
@@ -110,9 +122,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return args
 
 
-def evaluate_argv(python: str, run: Path, bucket: str, output: Path) -> tuple[str, ...]:
-    return (python, "-u", "scripts/05_evaluate.py", "--run", str(run), "--bucket", bucket,
-            "--output", str(output))  # fmt: skip
+def predictions_folder(fold: str, output: Path) -> Path:
+    """`artifacts/predictions_final/<fold>/<bucket>`, the bucket named as the record is."""
+    return PREDICTIONS / fold / output.stem.removeprefix("evaluation_")
+
+
+def evaluate_argv(python: str, fold: str, bucket: str, output: Path) -> tuple[str, ...]:
+    return (python, "-u", "scripts/05_evaluate.py", "--run", str(RUNS[fold]), "--bucket", bucket,
+            "--output", str(output), "--save-predictions",
+            str(predictions_folder(fold, output)))  # fmt: skip
 
 
 def build_plan(args: argparse.Namespace) -> list[Step]:
@@ -122,8 +140,18 @@ def build_plan(args: argparse.Namespace) -> list[Step]:
     val_b = cirrus / OUT_DIR / "evaluation_val_seeded_b.json"
     plan = [
         Step("access_counts", "counts"),
-        Step("cirrus_val_a", "open", evaluate_argv(args.python, cirrus, "val", val_a), val_a),
-        Step("cirrus_val_b", "open", evaluate_argv(args.python, cirrus, "val", val_b), val_b),
+        Step(
+            "cirrus_val_a",
+            "open",
+            evaluate_argv(args.python, "cirrus_holdout", "val", val_a),
+            val_a,
+        ),
+        Step(
+            "cirrus_val_b",
+            "open",
+            evaluate_argv(args.python, "cirrus_holdout", "val", val_b),
+            val_b,
+        ),
         Step("reproducibility_seeded", "seeded_check", inputs=(val_a, val_b)),
         Step(
             "reproducibility_compare",
@@ -141,14 +169,14 @@ def build_plan(args: argparse.Namespace) -> list[Step]:
         run = RUNS[fold]
         output = run / OUT_DIR / "evaluation_val.json"
         base = run / PREVIOUS["other_val"] / "evaluation_val.json"
-        plan.append(Step(f"{fold}_val", "open", evaluate_argv(args.python, run, "val", output),
+        plan.append(Step(f"{fold}_val", "open", evaluate_argv(args.python, fold, "val", output),
                          output))  # fmt: skip
         plan.append(Step(f"{fold}_val_gate", "gate", inputs=(base, output)))
     for fold, run in RUNS.items():
         for bucket in SEALED_ORDER:
             output = run / OUT_DIR / f"evaluation_{bucket}.json"
             base = run / PREVIOUS["sealed"] / f"evaluation_{bucket}.json"
-            argv = evaluate_argv(args.python, run, bucket, output) + (
+            argv = evaluate_argv(args.python, fold, bucket, output) + (
                 "--unlock-bucket", "--unlock-reason", REASON, "--approved-by", args.approved_by,
             )  # fmt: skip
             plan.append(Step(f"{fold}_{bucket}", "sealed", argv, output))
@@ -199,6 +227,16 @@ def population_differences(previous: dict, new: dict) -> list[str]:
             found.append(f"AUROC +/- {key}: {a['auroc_counts'].get(key)} -> "
                          f"{b['auroc_counts'].get(key)}")  # fmt: skip
     return found
+
+
+def saved_prediction_problems(record: dict, root: Path) -> list[str]:
+    """SRS-106: the record's manifest names exactly its volumes, and every file matches."""
+    from ocuval.eval.predictions import manifest_problems
+
+    folder = record.get("notes", {}).get("predictions_directory")
+    if "predictions" not in record or not folder:
+        return ["the record carries no prediction manifest"]
+    return manifest_problems(record["predictions"], root / folder, record["per_volume"])
 
 
 # --- refusals and running ------------------------------------------------------------------
@@ -275,6 +313,25 @@ def expected_after(picked_runs: set[str]) -> dict[tuple[str, str], int]:
     }
 
 
+def bytes_needed(plan: list[Step], root: Path) -> int:
+    """Every map the plan saves at the largest size, uncompressed, counted from the records the
+    gates compare with. The second reproducibility run saves as many as the first."""
+    bases = {s.inputs[1]: s.inputs[0] for s in plan if s.kind == "gate"}
+    total = 0
+    for step in plan:
+        if step.kind in ("open", "sealed"):
+            base = bases.get(step.output) or bases[step.output.with_name("evaluation_val.json")]
+            total += json.loads((root / base).read_text(encoding="utf-8"))["n_volumes"]
+    return total * MAX_MAP_BYTES
+
+
+def space_problem(free: int, needed: int) -> str | None:
+    if free < needed:
+        return (f"{free / 1e9:.1f} GB free on the drive holding artifacts/, and the saved maps "
+                f"could take {needed / 1e9:.1f} GB uncompressed (SRS-106)")  # fmt: skip
+    return None
+
+
 def git(*args: str) -> subprocess.CompletedProcess:
     return subprocess.run(["git", *args], cwd=REPO, capture_output=True, text=True, check=False)
 
@@ -299,6 +356,14 @@ def refusals(plan: list[Step]) -> list[str]:
     folder = REPO / ILLUSTRATIONS
     if folder.exists() and any(folder.iterdir()):
         found.append(f"{ILLUSTRATIONS} holds files; section 21.10 never overwrites")
+    saved = REPO / PREDICTIONS
+    if saved.exists() and any(saved.iterdir()):
+        found.append(f"{PREDICTIONS} holds files; saved predictions are never overwritten")
+    if not any("is missing; the gate" in reason for reason in found):
+        free = shutil.disk_usage(REPO / "artifacts").free
+        problem = space_problem(free, bytes_needed(plan, REPO))
+        if problem:
+            found.append(problem)
     if list((REPO / CHAIN_DIR).glob("audited_*.log")):
         found.append(f"audited_* logs already exist in {CHAIN_DIR}")
     return found
@@ -372,7 +437,13 @@ def main(argv: list[str] | None = None) -> int:
                 for difference in differences[:50]:
                     log(f"GATE DIFFERS {difference}")
                 return stop(f"{step.name}: the population or the reference changed")
-            log(f"GATE PASSED {step.name}: population and reference unchanged")
+            problems = saved_prediction_problems(new, REPO)
+            if problems:
+                for problem in problems[:50]:
+                    log(f"SAVED PREDICTIONS {problem}")
+                return stop(f"{step.name}: the saved predictions do not match the record")
+            log(f"GATE PASSED {step.name}: population and reference unchanged; "
+                f"{len(new['predictions']['files'])} saved maps match the manifest")  # fmt: skip
         elif step.kind == "counts_after":
             selection = json.loads((REPO / ILLUSTRATIONS / "selection.json").read_text("utf-8"))
             picked = {p["run"] for p in selection["picks"]}
