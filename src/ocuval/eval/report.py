@@ -64,8 +64,8 @@ DOCS = {
     "README": "README.md",
 }
 WORDS = {
-    1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight",
-    9: "nine", 10: "ten", 11: "eleven", 12: "twelve", 13: "thirteen", 14: "fourteen",
+    0: "zero", 1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven",
+    8: "eight", 9: "nine", 10: "ten", 11: "eleven", 12: "twelve", 13: "thirteen", 14: "fourteen",
     15: "fifteen", 16: "sixteen", 17: "seventeen", 18: "eighteen",
 }  # fmt: skip
 
@@ -352,8 +352,15 @@ def interval_text(d: tuple[float, float, float]) -> str:
 
 
 def word(n: int, capital: bool = False) -> str:
-    w = WORDS[n]
+    w = WORDS.get(n, str(n))  # beyond eighteen the document writes digits
     return w.capitalize() if capital else w
+
+
+def listing(items: list[str]) -> str:
+    """`a`, `a and b`, `a, b and c`; "none" for an empty list (D10: `names[-1]` raised)."""
+    if not items:
+        return "none"
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
 
 
 def pct(k: int, n: int) -> int:
@@ -618,7 +625,8 @@ def present_beats_all(records: dict) -> int:
             for cls in CLASSES:
                 rows = rows_of(records[fold][arm], cls)
                 present = [r["dice"] for r in rows if r["reference_present"]]
-                count += sum(present) / len(present) > sum(r["dice"] for r in rows) / len(rows)
+                if present:  # a cell with no class-present volume has no class-present Dice
+                    count += sum(present) / len(present) > sum(r["dice"] for r in rows) / len(rows)
     return count
 
 
@@ -678,8 +686,7 @@ def generate(sets: RecordSets) -> Generated:
         )
     ]
     if hd95_apart:
-        listed = ", ".join(hd95_apart[:-1]) + (" and " if len(hd95_apart) > 1 else "")
-        listed += hd95_apart[-1]
+        listed = listing(hd95_apart)
         for doc in ("docs/10", "docs/12"):
             g.say(doc, f"**HD95: {word(len(hd95_apart))} do not overlap**, {listed}")
     secondary = secondary_hd95_rows(cur)
@@ -772,14 +779,18 @@ def generate(sets: RecordSets) -> Generated:
                      f"negative")  # fmt: skip
     g.say("docs/10", f"**{word(len(informative), True)} cells have AUROC below 1**, "
                      f"{word(len(held_inf))} of them held-out")  # fmt: skip
-    g.say("docs/10", f"lower bounds {span(lows, 4)} in the held-out arms")
-    g.say("docs/12", f"lower bounds {span(lows, 4)}", f"{word(len(none), True)} of the eighteen "
-                     "cells have AUROC")  # fmt: skip
+    if lows:
+        g.say("docs/10", f"lower bounds {span(lows, 4)} in the held-out arms")
+        g.say("docs/12", f"lower bounds {span(lows, 4)}")
+    g.say("docs/12", f"{word(len(none), True)} of the eighteen cells have AUROC")
     g.say("README", f"For {word(len(none))} of the eighteen the interval is not estimable")
     gap = max(
-        abs(a - b)
-        for x in held_inf.values()
-        for a, b in zip(x["stratified"], x["unstratified"][:2], strict=True)
+        (
+            abs(a - b)
+            for x in held_inf.values()
+            for a, b in zip(x["stratified"], x["unstratified"][:2], strict=True)
+        ),
+        default=0.0,
     )
     if gap >= 0.005:
         g.findings.append(f"unstratified AUROC bounds differ by {gap:.4f} in a held-out cell, "
@@ -839,9 +850,8 @@ def generate(sets: RecordSets) -> Generated:
     strata = [comps[("class-present", f, c)]["ref"]["n"] for f, c in fold_apart]
     g.say(
         "docs/10",
-        f"Per fold, {word(len(fold_apart))} comparisons do not overlap: "
-        f"{', '.join(names[:-1])} and {names[-1]}",
-        f"with {', '.join(map(str, strata[:-1]))} and {strata[-1]} in-domain patients",
+        f"Per fold, {word(len(fold_apart))} comparisons do not overlap: {listing(names)}",
+        f"with {listing([str(n) for n in strata])} in-domain patients",
     )
 
     # --- section 5.4: differences, exclusions, detection limit ------------------------------
@@ -879,8 +889,9 @@ def generate(sets: RecordSets) -> Generated:
     present_pooled_lower = [k for k, c in pooled_excl.items()
                             if k[0] == "class-present" and c["diff"][0] < 0]  # fmt: skip
     g.say("README", f"lower for {word(len(present_pooled_lower))} of the three fluid types")
-    smallest = min(pooled_excl.values(), key=lambda c: c["ref"]["n"])
-    g.say("README", f"rests on {smallest['ref']['n']} familiar-brand patients")
+    if pooled_excl:
+        smallest = min(pooled_excl.values(), key=lambda c: c["ref"]["n"])
+        g.say("README", f"rests on {smallest['ref']['n']} familiar-brand patients")
 
     # --- section 7.1 and 8.3 ----------------------------------------------------------------
     split = absent_split(cur)
@@ -1008,6 +1019,21 @@ def table_body(lines: list[str], header: str) -> tuple[int, list[str]] | None:
     return start + 3, body
 
 
+def whole(statement: str, text: str) -> bool:
+    """`statement` occurs in `text` and not as part of a longer number or word (D10).
+
+    A statement that starts with a word character must not follow one, nor a digit-led one a
+    decimal point; one that ends with a word character must not be followed by one, nor by a
+    decimal point and a digit. "5% against" is then not found in "15% against", nor "about
+    0.14" in "about 0.145"; a statement followed by a comma or full stop still is.
+    """
+    before = (
+        r"(?<![\w.])" if statement[:1].isdigit() else r"(?<!\w)" if statement[:1].isalnum() else ""
+    )
+    after = r"(?!\w|\.\d)" if statement[-1:].isalnum() else ""
+    return re.search(before + re.escape(statement) + after, text) is not None
+
+
 def check(generated: Generated, texts: dict[str, str]) -> list[Difference]:
     """Every difference between what the records give and what the documents say.
 
@@ -1037,7 +1063,7 @@ def check(generated: Generated, texts: dict[str, str]) -> list[Difference]:
     for doc, statements in generated.statements.items():
         flat = normalise(texts[doc])
         for s in statements:
-            if normalise(s) not in flat:
+            if not whole(normalise(s), flat):
                 out.append(Difference(doc, "statement", f"not found: {s}"))
     for f in generated.findings:
         out.append(Difference("records", "consistency", f))

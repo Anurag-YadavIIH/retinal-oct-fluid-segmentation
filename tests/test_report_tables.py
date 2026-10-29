@@ -393,6 +393,76 @@ def test_TC_143_findings_from_the_records_are_reported_too():
     assert [d.doc for d in report.check(g, {"docs/10": DOC})] == ["records"]
 
 
+def test_TC_143_a_statement_is_not_found_inside_a_longer_number_or_word():
+    """D10: substring matching found "5% against 30%" inside "15% against 30%"."""
+    g = report.Generated()
+    g.say("docs/10", "5% against 30% for SRF", "smaller than about 0.14 Dice")
+    found = report.check(g, {"docs/10": "It is 15% against 30% for SRF; about 0.145 Dice."})
+    assert len(found) == 2, [str(d) for d in found]
+    fine = report.check(
+        g, {"docs/10": "It is 5% against 30% for SRF, smaller than about 0.14 Dice."}
+    )
+    assert fine == []
+
+
+def _synthetic_sets(tmp_path):
+    """Complete record sets from `pipeline.evaluate`: arms identical, every AUROC 1.
+
+    Each fold's held-out and in-domain arms carry the same Dice, so no difference excludes zero
+    and no per-fold comparison is apart; every class-present volume outscores every absent one.
+    """
+    from ocuval.eval.pipeline import EvaluationPlan, detection_rows, evaluate
+
+    def volume(patient, vendor, k):
+        seg, pv, rv, scores = [], {}, {}, {}
+        for c, cls in enumerate(report.CLASSES):
+            present = (k + c) % 3 != 0
+            voxels = 50 if present else 0
+            seg += [
+                {"fluid_class": cls, "metric": "dice", "value": 0.6 if present else 1.0},
+                {"fluid_class": cls, "metric": "hd95", "value": 0.3 if present else 0.0},
+                {
+                    "fluid_class": cls,
+                    "metric": "volume_mm3_predicted",
+                    "value": 1e-3,
+                    "voxels": voxels,
+                },
+                {
+                    "fluid_class": cls,
+                    "metric": "volume_mm3_reference",
+                    "value": 1e-3,
+                    "voxels": voxels,
+                },
+            ]
+            pv[cls], rv[cls], scores[cls] = voxels, voxels, 0.9 if present else 0.1
+        detection = detection_rows(pv, rv, scores, threshold=10)
+        return {"sample_id": f"s{patient}", "patient_id": patient, "vendor": vendor,
+                "segmentation": seg, "detection": detection}  # fmt: skip
+
+    def rec(prefix, vendor):
+        vols = [volume(f"{prefix}{k}", vendor, k) for k in range(6)]
+        plan = EvaluationPlan(fold_id="f", bucket="val", seed=20260916, n_resamples=50)
+        return evaluate(plan, vols, artifacts_root=tmp_path)
+
+    fold_sets = {
+        f: {"test": rec(f"{f}H", f), "in_domain_ref": rec(f"{f}R", "other")} for f in report.FOLDS
+    }
+    return report.RecordSets(
+        corrected=fold_sets,
+        superseded=fold_sets,
+        unseeded_cirrus=fold_sets["cirrus"],
+        val={f: fold_sets[f]["test"] for f in report.FOLDS},
+    )
+
+
+def test_TC_143_the_generator_states_zero_and_empty_without_failing(tmp_path):
+    """D10: `word(0)` raised KeyError and empty lists raised IndexError or ValueError."""
+    g = report.generate(_synthetic_sets(tmp_path))
+    said = " ".join(s for texts in g.statements.values() for s in texts)
+    assert "Per fold, zero comparisons do not overlap: none" in said
+    assert "zero of the 24 difference intervals excluding zero" in said
+
+
 def test_TC_143_neither_the_module_nor_the_script_can_write_a_document():
     for path in (REPO / "src/ocuval/eval/report.py", REPO / "scripts/11_report_tables.py"):
         source = path.read_text(encoding="utf-8")
