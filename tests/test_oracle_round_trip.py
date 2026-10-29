@@ -47,14 +47,6 @@ REPO = Path(__file__).resolve().parents[1]
 CFG = yaml.safe_load((REPO / "configs" / "train_seg.yaml").read_text(encoding="utf-8"))
 FULL = os.environ.get("OCUVAL_ORACLE_FULL") == "1"
 
-# D1 (docs/13, 2026-10-29): the inversion resizes with torch's legacy nearest mode, which moves
-# every prediction about one native row deeper. Strict, so CI fails the moment D1 is fixed and
-# this marker is still here. Remove it in the commit that fixes D1.
-D1 = pytest.mark.xfail(
-    strict=True,
-    reason="D1: legacy nearest-neighbour inversion moves predictions about one native row deeper",
-)
-
 # vendor, B-scans, rows (axial), columns (lateral), (lateral, axial, separation) mm, dtype.
 GEOMETRIES = {
     "cirrus_sep_min": ("cirrus", 128, 1024, 512, (0.011742, 0.001955, 0.046878), np.uint8),
@@ -226,7 +218,6 @@ def test_TC_151_the_forward_sampling_is_the_one_this_test_computes(geometry):
     assert np.array_equal(column[top : top + prepared], sampled_rows(rows, prepared))
 
 
-@D1
 @pytest.mark.parametrize("geometry", sorted(GEOMETRIES))
 def test_TC_151_surviving_fluid_is_recovered_exactly(tmp_path, geometry):
     truth, reference, prediction, seg, spacing = oracle_round_trip(tmp_path, geometry)
@@ -234,7 +225,6 @@ def test_TC_151_surviving_fluid_is_recovered_exactly(tmp_path, geometry):
     assert_perfect(summarise(truth, prediction, seg, spacing))
 
 
-@D1
 @pytest.mark.parametrize("geometry", sorted(GEOMETRIES))
 def test_TC_151_bands_at_every_phase_come_back_without_a_systematic_shift(geometry):
     """One frame, one band per column: 11 heights at 40 consecutive native positions."""

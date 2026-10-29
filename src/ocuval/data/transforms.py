@@ -2,7 +2,7 @@
 
 Traces to: SRS-070, SRS-072, SRS-073, SRS-074 (preprocessing)
 Implements risk control: RC-031 (inheritance), and supports RC-021..RC-023 (spacing)
-Verifies: TC-044, TC-046, TC-047, TC-048
+Verifies: TC-044, TC-046, TC-047, TC-048, TC-151
 
 Two design decisions carry the weight here, and both are about not letting a vendor
 identify itself to the network through something other than its images.
@@ -278,6 +278,36 @@ def resampled_height(native_height: int, native_axial_mm: float, target_axial_mm
     return max(1, int(round(native_height * factor)))
 
 
+def label_source_rows(
+    native_height: int, native_axial_mm: float, target_axial_mm: float
+) -> np.ndarray:
+    """The native row each resampled row's label is taken from, read off the forward resampling.
+
+    A ramp of native row numbers goes through `ResampleAxiald`'s own label path, so the answer
+    is whatever that path does and can never drift from it. For torch's legacy nearest mode it
+    is `floor(i * native_height / resampled_height)`, which TC-151 checks independently.
+    """
+    ramp = np.arange(int(native_height), dtype=np.float32)[None, :, None]
+    resample = ResampleAxiald(keys=(LABEL,), target_axial_mm=target_axial_mm, label_keys=(LABEL,))
+    out = resample({LABEL: ramp, SPACING: (float(native_axial_mm), 1.0, 1.0)})[LABEL]
+    return np.asarray(out)[0, :, 0].astype(np.int64)
+
+
+def nearest_source(native_height: int, source_rows: np.ndarray) -> np.ndarray:
+    """For each native row, the resampled row whose source row is nearest; ties to the even one.
+
+    The tie rule is a choice, and it is stated because every alternative that always picks one
+    side moves boundaries that way: ties occur wherever two sampled rows are an even distance
+    apart, which for cirrus is most rows. Alternating by parity has no preferred direction.
+    """
+    rows = np.arange(int(native_height))
+    above = np.searchsorted(source_rows, rows, side="left").clip(0, len(source_rows) - 1)
+    below = (above - 1).clip(0)
+    d_below, d_above = rows - source_rows[below], source_rows[above] - rows
+    tie = np.where(below % 2 == 0, below, above)
+    return np.where(d_below < d_above, below, np.where(d_above < d_below, above, tie))
+
+
 def invert_axial_resample(
     prediction: np.ndarray | torch.Tensor,
     native_spacing_mm: tuple[float, float, float],
@@ -295,14 +325,20 @@ def invert_axial_resample(
     Nearest-neighbour throughout: this inverts a label map, and any interpolation would
     invent boundary voxels in exactly the place HD95 measures.
 
-    **The padding is removed first, then the frame is resized.** The chain resamples the
-    axial axis and then pads symmetrically to `roi_size`, placing `width // 2` rows before
-    the content (MONAI `SpatialPad`, method symmetric). Until 2026-10-16 this function
-    resized the padded frame whole, which compressed every cirrus and spectralis prediction
-    towards the middle of the B-scan (`docs/13`). It now crops back to the resampled size,
-    computed by `ResampleAxiald`'s own formula from the native height, native axial spacing
-    and the declared target, and only then resizes. `target_axial_mm` is required rather
-    than defaulted, because it is a declared constant (SRS-072).
+    **The padding is removed first.** The chain resamples the axial axis and then pads
+    symmetrically to `roi_size`, placing `width // 2` rows before the content (MONAI
+    `SpatialPad`, method symmetric). Until 2026-10-16 this function resized the padded frame
+    whole, which compressed every cirrus and spectralis prediction towards the middle of the
+    B-scan (`docs/13`). It crops back to the resampled size, computed by `ResampleAxiald`'s own
+    formula. `target_axial_mm` is required rather than defaulted, because it is a declared
+    constant (SRS-072).
+
+    **Then each native row takes the resampled row that stands for it** (amended 2026-10-29,
+    finding D1). The models were trained on labels taken from native rows
+    `label_source_rows(...)`, so a prediction at resampled row i describes that native row;
+    each native row takes the resampled row whose source row is nearest. Until 2026-10-29 this
+    step was a second resize with torch's legacy nearest mode, which filled each native row
+    from the resampled row above it and so moved every prediction about one native row deeper.
     """
     array = (
         prediction
@@ -323,9 +359,6 @@ def invert_axial_resample(
     top = (height - content_height) // 2
     left = (width - native_width) // 2
     array = array[..., top : top + content_height, left : left + native_width]
-    working = array.float()
-    while working.ndim < 4:
-        working = working.unsqueeze(0)
-    restored = functional_nn.interpolate(working, size=tuple(native_shape), mode="nearest")
-    restored = restored.reshape(*array.shape[:-2], *native_shape)
-    return restored.to(array.dtype).numpy()
+    source = label_source_rows(native_height, float(native_spacing_mm[AXIAL]), target_axial_mm)
+    rows = nearest_source(native_height, source)
+    return array.numpy()[..., rows, :]
