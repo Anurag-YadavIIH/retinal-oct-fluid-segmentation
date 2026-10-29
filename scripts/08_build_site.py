@@ -489,6 +489,7 @@ def extract() -> dict[str, bytes]:
             if d["view"] == view and (d["comparison"] == "pooled") == pooled_rows
         ]
 
+    unrounded = {}
     for key, view, pooled_rows, label in (
         ("halfwidth_fold", "all-volume", False, "all-volume, per fold"),
         ("halfwidth_pooled", "all-volume", True, "all-volume, pooled"),
@@ -497,10 +498,12 @@ def extract() -> dict[str, bytes]:
         hw = half_widths(view, pooled_rows)
         lo, hi = round(min(hw), 2), round(max(hw), 2)
         facts[key] = [lo, hi]
+        unrounded[key] = max(hw)
         claim("docs/10_analytical_validation_report.md",
               rf"\| {label} \| {lo:.2f}–{hi:.2f} \|")  # fmt: skip
     facts["detection_limit"] = min(facts["halfwidth_fold"][0], facts["halfwidth_pooled"][0])
-    facts["unreliable_below"] = round(facts["halfwidth_fold"][1], 1)
+    # Rounded once, from the unrounded value (D9); rounding the two-place figure gave 0.2 for 0.251.
+    facts["unreliable_below"] = round(unrounded["halfwidth_fold"], 1)
     claim("docs/10_analytical_validation_report.md",
           rf"ifferences\s+smaller than about {facts['detection_limit']:.2f} Dice cannot be\s+"
           r"detected")  # fmt: skip

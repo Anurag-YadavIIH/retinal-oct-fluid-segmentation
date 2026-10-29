@@ -357,7 +357,8 @@ def word(n: int, capital: bool = False) -> str:
 
 
 def pct(k: int, n: int) -> int:
-    return round(100 * k / n)
+    """A percentage rounded half up, as a reader rounds (D9): 1 of 8 is 13%, not 12%."""
+    return (200 * k + n) // (2 * n)
 
 
 def span(values, digits: int = 2) -> str:
@@ -537,8 +538,13 @@ def half_widths(comps: dict) -> dict[str, tuple[float, float]]:
             for (v, comp, _), c in comps.items()
             if v == view and (comp == "pooled") == pooled
         ]
-        out[key] = (round(min(w), 2), round(max(w), 2))
+        out[key] = (min(w), max(w))  # unrounded: each stated figure is rounded once (D9)
     return out
+
+
+def unreliable_below(hw: dict[str, tuple[float, float]]) -> str:
+    """The per-fold maximum half-width to one place, rounded once from the unrounded value."""
+    return f"{hw['all-volume, per fold'][1]:.1f}"
 
 
 def half_rows(comps: dict, prefix: str | None = None) -> list[str]:
@@ -855,7 +861,7 @@ def generate(sets: RecordSets) -> Generated:
         f"**pooled across folds:** {span(hw['all-volume, pooled'])} Dice",
         f"smaller than about {limit:.2f} Dice cannot be detected",
         f"cross-vendor Dice differences below about {limit:.2f}",
-        f"per-fold differences below about {round(hw['all-volume, per fold'][1], 1):.1f}",
+        f"per-fold differences below about {unreliable_below(hw)}",
         f"half-widths of about {hw['class-present, pooled'][0]:.2f}",
     )
     g.say(

@@ -149,8 +149,29 @@ def test_TC_139_half_widths_are_half_the_difference_interval_rounded():
                 width = 0.4 if comp == "cirrus" else 0.3
                 comps[(view, comp, cls)] = {"diff": (0.0, -width / 2, width / 2)}
     hw = report.half_widths(comps)
-    assert hw["all-volume, per fold"] == (0.15, 0.2)
-    assert hw["all-volume, pooled"] == (0.15, 0.15)
+    assert hw["all-volume, per fold"] == pytest.approx((0.15, 0.2))
+    assert hw["all-volume, pooled"] == pytest.approx((0.15, 0.15))
+
+
+def test_TC_139_a_stated_figure_is_rounded_once_and_percentages_round_half_up():
+    """D9: rounding to two places and then to one printed 0.2 for 0.251."""
+    comps = {}
+    for view in ("all-volume", "class-present"):
+        for comp in (*report.FOLDS, "pooled"):
+            for cls in report.CLASSES:
+                half = 0.251 if comp == "cirrus" else 0.1
+                comps[(view, comp, cls)] = {"diff": (0.0, -half, half)}
+    hw = report.half_widths(comps)
+    assert hw["all-volume, per fold"][1] == pytest.approx(0.251)
+    assert report.unreliable_below(hw) == "0.3"
+    comps[("all-volume", "cirrus", "IRF")]["diff"] = (0.0, -0.351, 0.351)
+    assert report.unreliable_below(report.half_widths(comps)) == "0.4"
+    assert [report.pct(1, 8), report.pct(5, 8), report.pct(1, 3), report.pct(2, 3)] == [
+        13,
+        63,
+        33,
+        67,
+    ]
 
 
 # --- TC-140: the section 19.2 threshold ----------------------------------------------------
