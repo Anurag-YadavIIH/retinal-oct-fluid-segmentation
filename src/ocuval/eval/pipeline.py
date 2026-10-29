@@ -1,7 +1,7 @@
 """The evaluation pipeline, exactly as pre-registered in `docs/07` §17.
 
 Traces to: SRS-032, SRS-033, SRS-034, SRS-050, SRS-051, SRS-052, SRS-053, SRS-057,
-SRS-074, SRS-087, SRS-088, SRS-089
+SRS-074, SRS-087, SRS-088, SRS-089, SRS-104
 Verifies: TC-055, TC-056, TC-065, TC-066, TC-067, TC-073, TC-124, TC-125, TC-126
 
 The protocol was committed before any Stage 2 training started, and this module implements
@@ -50,6 +50,13 @@ from ocuval.eval.metrics import auroc, dice, hd95, sensitivity_specificity, volu
 
 CLASS_NAMES = ("IRF", "SRF", "PED")
 SEGMENTATION_METRICS = ("dice", "hd95")
+# SRS-104: HD95 without the volumes where prediction and reference are both empty. Secondary;
+# the pre-registered HD95, which scores those volumes 0 mm, stays the primary figure.
+SECONDARY_HD95 = "hd95_excluding_both_empty"
+SECONDARY_LABEL = (
+    "secondary (SRS-104, docs/13 2026-10-29): HD95 without the volumes where prediction and "
+    "reference are both empty; the pre-registered HD95 in `segmentation` is the primary figure"
+)
 
 
 @dataclass
@@ -343,6 +350,7 @@ def evaluate(
 
     reportable = [r for r in seg_rows if r["metric"] in SEGMENTATION_METRICS]
     segmentation = subgroup.by_vendor(reportable, n_resamples=plan.n_resamples, alpha=plan.alpha)
+    segmentation_secondary = secondary_hd95(seg_rows, plan)
     detection = aggregate_detection(
         det_rows, seed=plan.seed, n_resamples=plan.n_resamples, alpha=plan.alpha
     )
@@ -370,11 +378,40 @@ def evaluate(
         "presence_voxel_threshold": plan.presence_voxel_threshold,
         "mc_passes": plan.mc_passes,
         "segmentation": segmentation,
+        "segmentation_secondary": segmentation_secondary,
         "detection": detection,
         # SRS-089, `docs/08` D7. Every aggregate above is recomputable from these rows.
         "per_volume": per_volume_rows(volumes),
         "notes": plan.notes,
     }
+
+
+def secondary_hd95(seg_rows: Sequence[dict], plan: EvaluationPlan) -> dict:
+    """SRS-104: HD95 per class and vendor over the volumes not both empty, labelled secondary.
+
+    Both-empty is read from the volume's own predicted and reference voxel counts, the same
+    counts the per-volume rows carry, so the figure is recomputable from those rows. A class
+    whose every volume is both empty gets no figure rather than an empty one.
+    """
+    voxels = {
+        (r["sample_id"], r["fluid_class"], r["metric"]): r.get("voxels")
+        for r in seg_rows
+        if r["metric"] in ("volume_mm3_predicted", "volume_mm3_reference")
+    }
+    kept = [
+        {**r, "metric": SECONDARY_HD95}
+        for r in seg_rows
+        if r["metric"] == "hd95"
+        and not (
+            voxels.get((r["sample_id"], r["fluid_class"], "volume_mm3_predicted")) == 0
+            and voxels.get((r["sample_id"], r["fluid_class"], "volume_mm3_reference")) == 0
+        )
+    ]
+    if kept:
+        block = subgroup.by_vendor(kept, n_resamples=plan.n_resamples, alpha=plan.alpha)
+    else:
+        block = {"n_unit": subgroup.UNIT, "by_vendor": {}, "all_vendors": {}, "vendors": []}
+    return {**block, "label": SECONDARY_LABEL}
 
 
 def write_record(result: dict, destination: Path) -> Path:
@@ -386,6 +423,7 @@ def write_record(result: dict, destination: Path) -> Path:
 
 __all__ = [
     "CLASS_NAMES",
+    "SECONDARY_HD95",
     "SEGMENTATION_METRICS",
     "EvaluationPlan",
     "aggregate_detection",

@@ -1,6 +1,6 @@
 """Generate the derived figures of `docs/10` from the evaluation records, and check documents.
 
-Traces to: SRS-097 (generation), SRS-098 (the check), SRS-037.
+Traces to: SRS-097 (generation), SRS-098 (the check), SRS-104 (secondary HD95), SRS-037.
 
 A *derived* figure is computed from records rather than copied from one: the pooled and
 class-present comparisons, the directly bootstrapped differences, the counts the prose states,
@@ -54,6 +54,10 @@ DEFECT = "through the defect"
 # HD95 of the 24 October records, measured with the spacing on the wrong axes (docs/13,
 # finding of 2026-10-25). Its own first column, so its header differs from section 10's.
 WRONG_AXES = "wrong spacing axes"
+# SRS-104: HD95 without both-empty volumes, beside the primary and labelled secondary.
+SECONDARY = "secondary"
+SECONDARY_HD95 = "hd95_excluding_both_empty"
+NOT_DEFINED = "not defined: every volume both empty"
 DOCS = {
     "docs/10": "docs/10_analytical_validation_report.md",
     "docs/12": "docs/12_model_card.md",
@@ -398,6 +402,29 @@ def per_fold_rows(records: dict, metric: str, prefix: str | None = None) -> list
     return out
 
 
+def secondary_hd95_rows(records: dict) -> list[str] | None:
+    """SRS-104: the per-fold HD95 without both-empty volumes, or None if a record lacks it."""
+    if any("segmentation_secondary" not in records[f][a] for f in FOLDS for a in ARMS):
+        return None
+    out = []
+    for fold in FOLDS:
+        for cls in CLASSES:
+            h, r = (
+                records[fold][arm]["segmentation_secondary"]["all_vendors"]
+                .get(cls, {})
+                .get(SECONDARY_HD95)
+                for arm in ARMS
+            )
+            cells = [iv(h) if h else NOT_DEFINED, iv(r) if r else NOT_DEFINED]
+            if h and r:
+                cells += [signed(r["value"] - h["value"]), "yes" if overlaps(h, r) else "**no**"]
+            else:
+                cells += ["—", "—"]
+            out.append(f"| {SECONDARY} | {fold} ({TRAINED_ON[fold]}) | {cls} | " + " | ".join(cells)
+                       + " |")  # fmt: skip
+    return out
+
+
 def absent_counts(records: dict, cls: str, arm: str) -> tuple[int, int]:
     """Class-absent patients, and all patients, of one arm pooled over folds (patient as unit)."""
     present: dict[str, bool] = {}
@@ -620,6 +647,9 @@ def generate(sets: RecordSets) -> Generated:
         listed += hd95_apart[-1]
         for doc in ("docs/10", "docs/12"):
             g.say(doc, f"**HD95: {word(len(hd95_apart))} do not overlap**, {listed}")
+    secondary = secondary_hd95_rows(cur)
+    if secondary is not None:
+        g.table("docs/10", f"| HD95 {H_HD95}", secondary)
     if sets.wrong_axes is not None:
         rows = per_fold_rows(sets.wrong_axes, "hd95", WRONG_AXES)
         for doc in ("docs/10", "docs/12"):

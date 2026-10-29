@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-099, SRS-102, SRS-103 and NFR-001..NFR-008 (SRS-100 and SRS-101 are reserved for branch `wire-dicom`, not yet merged). Every requirement here derives
+Allocates SRS-001..SRS-099, SRS-102..SRS-104 and NFR-001..NFR-008 (SRS-100 and SRS-101 are reserved for branch `wire-dicom`, not yet merged). Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
@@ -137,6 +137,7 @@ measurement, and that gap is HAZ-012.
 | SRS-096 | The re-evaluation of `docs/07` §17.11 shall run through one chain that performs its steps in §17.11's order and stops at the first failure without retrying: (1) refuse to start unless the working tree is clean, the inversion fix is an ancestor of `HEAD`, every checkpoint is present, no output exists and the chain has not run before; (2) read `sealed.access_count` for all six sealed buckets and stop on any difference from the counts §17.11 states; (3) run two seeded evaluations of `cirrus_holdout`'s open `val` bucket and stop unless both are seeded and IDENTICAL under SRS-090; (4) evaluate the open `val` buckets of `spectralis_holdout` and `topcon_holdout`; (5) evaluate the six sealed buckets, each opened with an `Unlock` naming §17.11. Every output shall be a new file under a `corrected/` folder of its run directory. **Added 2026-10-22.** | URS-007, URS-010 | TC-137 |
 | SRS-102 | The HD95 re-evaluation of `docs/07` §17.12 shall run through one chain with the steps, refusals and order of SRS-096, taking the HD95 fix as the required ancestor and writing only new files under a `corrected_hd95/` folder of each run directory. **It shall stop, after each evaluation and before the next unlock, unless every value of the new record other than HD95 equals the 24 October corrected record exactly**: every Dice, sensitivity, specificity and AUROC with its interval and `n`, every per-volume row's Dice, predicted and reference voxel counts, reference presence and detection score, and every record field outside segmentation, provenance excepted. **Only HD95 may change.** **Added 2026-10-26.** | URS-007, URS-010 | TC-150 |
 | SRS-103 | An **independent cross-check** shall recompute every segmentation metric of every volume in the **open `val` buckets only**, refusing any sealed bucket through the SRS-088 gate with no unlock. It shall use an implementation that shares no code with the project's reader or metrics: its own MetaImage parse, Dice from counts, mm³ from the header's spacings, and HD95 by a different algorithm (surface points and a nearest-neighbour tree). It shall compare the result per volume and class with the pipeline's and with the stored record: Dice and voxel counts exactly, mm³ to 1e-12 relative, HD95 to 1e-9 mm. It shall write numbers only, never a mask or pixel value. **Added 2026-10-29** from the audit of 2026-10-28, step 2. | URS-007, URS-010 | TC-152 |
+| SRS-104 | Beside the pre-registered HD95, in which a volume whose prediction and reference are both empty scores 0 mm and is averaged in, the evaluation record shall carry a **secondary HD95** per fluid class and per vendor that **excludes those volumes**, with its patient-level interval and `n` (SRS-087), in a block of its own labelled secondary. The pre-registered HD95 shall stay the primary figure and shall not change. The report generator shall print the secondary HD95 beside the primary, labelled secondary, wherever the records carry it. Both-empty is decided from the volume's own predicted and reference voxel counts, so the figure is recomputable from the per-volume rows (SRS-089). **Added 2026-10-29** (finding D3): the both-empty zeros pull a mean HD95 toward 0 in proportion to the class-absent case mix, which differs by vendor and arm. | URS-007 | TC-153 |
 
 ### 3.5 Training
 
@@ -236,7 +237,7 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `runs.py` | SRS-031, SRS-086 |
 | `eval/metrics.py` | SRS-032..SRS-035, SRS-052, SRS-053, SRS-087 |
 | `eval/sealed.py` | SRS-088 |
-| `eval/pipeline.py` | SRS-050..SRS-053, SRS-074, SRS-087, SRS-088, SRS-089 |
+| `eval/pipeline.py` | SRS-050..SRS-053, SRS-074, SRS-087, SRS-088, SRS-089, SRS-104 |
 | `eval/subgroup.py` | SRS-087 |
 | `models/uncertainty.py` | SRS-029, SRS-030, SRS-091 |
 | `scripts/benchmark_device.py` | SRS-031 |
@@ -245,7 +246,7 @@ whose docstring names an SRS identifier not listed here, is a defect.
 | `scripts/10_reevaluate.py` | SRS-096 |
 | `scripts/12_reevaluate_hd95.py` | SRS-102 |
 | `scripts/13_crosscheck_val.py` | SRS-103 |
-| `eval/report.py`, `scripts/11_report_tables.py` | SRS-097, SRS-098 |
+| `eval/report.py`, `scripts/11_report_tables.py` | SRS-097, SRS-098, SRS-104 |
 | `scripts/check_report_tables_hook.py`, `.pre-commit-config.yaml` hook `report-tables` | SRS-099 |
 | `scripts/08_build_site.py` | SRS-092 |
 | `scripts/09_illustrative_bscans.py` | SRS-093 |

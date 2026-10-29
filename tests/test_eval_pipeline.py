@@ -731,6 +731,74 @@ def test_TC_126_adding_the_rows_changes_no_aggregate(tmp_path):
     )
 
 
+# --- TC-153: the secondary HD95 without both-empty volumes ---------------------------------
+
+
+def _hd95_volume(patient, vendor, cases):
+    """`cases` maps class -> (hd95, predicted voxels, reference voxels)."""
+    seg = []
+    for cls, (hd, pv, rv) in cases.items():
+        seg += [
+            {"fluid_class": cls, "metric": "dice", "value": 1.0 if pv == rv == 0 else 0.5},
+            {"fluid_class": cls, "metric": "hd95", "value": hd},
+            {
+                "fluid_class": cls,
+                "metric": "volume_mm3_predicted",
+                "value": pv * 1e-6,
+                "voxels": pv,
+            },
+            {
+                "fluid_class": cls,
+                "metric": "volume_mm3_reference",
+                "value": rv * 1e-6,
+                "voxels": rv,
+            },
+        ]
+    return {"sample_id": f"s-{patient}", "patient_id": patient, "vendor": vendor,
+            "segmentation": seg, "detection": []}  # fmt: skip
+
+
+def hd95_volumes():
+    nan = float("nan")
+    return [
+        _hd95_volume("P1", "cirrus", {"IRF": (0.0, 0, 0), "SRF": (0.0, 0, 0), "PED": (0.3, 9, 9)}),
+        _hd95_volume("P2", "cirrus", {"IRF": (0.4, 9, 9), "SRF": (0.0, 0, 0), "PED": (0.5, 9, 9)}),
+        _hd95_volume("P3", "topcon", {"IRF": (nan, 5, 0), "SRF": (0.0, 0, 0), "PED": (0.7, 9, 9)}),
+        _hd95_volume("P4", "topcon", {"IRF": (0.8, 9, 9), "SRF": (0.0, 0, 0), "PED": (0.9, 9, 9)}),
+    ]
+
+
+def test_TC_153_the_secondary_hd95_excludes_both_empty_volumes_and_says_it_is_secondary(tmp_path):
+    plan = EvaluationPlan(fold_id="f", bucket="val", seed=SEED, n_resamples=150, alpha=0.1)
+    result = evaluate(plan, hd95_volumes(), artifacts_root=tmp_path)
+    secondary = result["segmentation_secondary"]
+    assert "secondary" in secondary["label"]
+    irf = secondary["all_vendors"]["IRF"]["hd95_excluding_both_empty"]
+    assert irf["value"] == pytest.approx(0.6)  # P2 and P4; P1 both empty, P3 undefined
+    assert irf["n"] == 2 and irf["n_unit"] == "patients"
+    assert irf["bootstrap"]["n_resamples"] == 150 and irf["bootstrap"]["alpha"] == 0.1
+    assert "SRF" not in secondary["all_vendors"], "every SRF volume is both empty: no figure"
+    assert result["segmentation"]["all_vendors"]["IRF"]["hd95"]["value"] == pytest.approx(0.4)
+
+
+def test_TC_153_the_primary_block_is_unchanged_and_the_secondary_is_recomputable(tmp_path):
+    plan = EvaluationPlan(fold_id="f", bucket="val", seed=SEED, n_resamples=200)
+    volumes = hd95_volumes()
+    result = evaluate(plan, volumes, artifacts_root=tmp_path)
+    primary = [
+        {**r, "patient_id": v["patient_id"], "vendor": v["vendor"], "sample_id": v["sample_id"],
+         "seed": SEED}
+        for v in volumes for r in v["segmentation"] if r["metric"] in ("dice", "hd95")
+    ]  # fmt: skip
+    assert result["segmentation"] == subgroup.by_vendor(primary, n_resamples=200, alpha=0.05)
+    for cls in ("IRF", "PED"):
+        kept = [r["hd95"] for r in result["per_volume"] if r["fluid_class"] == cls
+                and not (r["predicted_voxels"] == 0 and r["reference_voxels"] == 0)]  # fmt: skip
+        finite = [v for v in kept if not np.isnan(v)]
+        reported = result["segmentation_secondary"]["all_vendors"][cls]
+        assert float(np.mean(finite)) == reported["hd95_excluding_both_empty"]["value"]
+
+
 def test_the_record_carries_everything_section_17_5_requires(tmp_path):
     """`docs/07` §17.5 is a list of fields. This asserts the list, item by item."""
     plan = EvaluationPlan(fold_id="cirrus_holdout", bucket="val", seed=SEED, n_resamples=200)

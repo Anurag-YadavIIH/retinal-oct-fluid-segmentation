@@ -256,6 +256,25 @@ def test_TC_142_a_per_fold_row_matches_docs_10_character_for_character():
     assert old[0].startswith("| through the defect | cirrus (spectralis + topcon) | IRF | 0.6057 ")
 
 
+def test_TC_153_the_secondary_hd95_prints_in_the_per_fold_format_and_only_when_recorded():
+    held, ref = est(0.6517, 0.5, 0.8, 14), est(0.4, 0.3, 0.5, 6)
+    recs = per_fold_records(held, ref)
+    assert report.secondary_hd95_rows(recs) is None, "no record carries the block: no table"
+    for f in report.FOLDS:
+        for arm, e in (("test", held), ("in_domain_ref", ref)):
+            block = {c: {report.SECONDARY_HD95: e} for c in ("IRF", "PED")}
+            recs[f][arm]["segmentation_secondary"] = {"all_vendors": block}
+    rows = report.secondary_hd95_rows(recs)
+    assert rows[0] == (
+        "| secondary | cirrus (spectralis + topcon) | IRF | 0.6517 [0.5000, 0.8000] n=14 | "
+        "0.4000 [0.3000, 0.5000] n=6 | -0.2517 | yes |"
+    )
+    assert rows[1] == (
+        "| secondary | cirrus (spectralis + topcon) | SRF | not defined: every volume both empty "
+        "| not defined: every volume both empty | — | — |"
+    )
+
+
 def test_TC_142_prose_negatives_use_the_minus_sign():
     assert report.minus("IRF -0.1232 [-0.2100, -0.0347]") == "IRF −0.1232 [−0.2100, −0.0347]"
     assert report.signed(0.0881) == "+0.0881" and report.signed(-0.0339) == "-0.0339"
