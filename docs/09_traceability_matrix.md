@@ -37,6 +37,7 @@ A stale matrix is worse than no matrix (CLAUDE.md rule 5).
 | URS-007 | SRS-092 | HAZ-005, HAZ-009 | RC-006, RC-030 | TC-129, TC-130, TC-131 | `scripts/08_build_site.py`, `site/` — the report page is generated from the records, every number on it from the generated data, with no image data and nothing that relinks a row to a subject |
 | URS-007, URS-010 | SRS-097, SRS-098 | HAZ-005, HAZ-016 | RC-006, RC-032 | TC-138, TC-139, TC-140, TC-141, TC-142, TC-143, TC-144 | `src/ocuval/eval/report.py`, `scripts/11_report_tables.py` — every derived figure in `docs/10` generated from the records by committed code, and a check that fails when `docs/10`, `docs/12` or the README differ from it |
 | URS-010 | SRS-099 | HAZ-016 | RC-032 | TC-145 | `scripts/check_report_tables_hook.py`, `.pre-commit-config.yaml` — runs the check when those documents change; blocks on a difference, warns and never skips silently when the records are absent |
+| URS-002, URS-008 | SRS-074 | HAZ-005 | RC-006 | TC-151 | `tests/test_oracle_round_trip.py` against `data/transforms.py`, `io/retouch_reader.py`, `eval/pipeline.py` — oracle round trip on every vendor geometry: surviving fluid exact, swept bands without systematic shift; a strict expected failure while D1 stands |
 | URS-007 | SRS-032 | HAZ-005 | RC-006 | TC-149 | `src/ocuval/eval/pipeline.py` `measure_volume` — HD95 with each spacing component on its own array axis, (separation, axial, lateral) for a (B-scans, rows, columns) volume |
 | URS-007, URS-010 | SRS-102 | HAZ-005, HAZ-016 | RC-006, RC-032 | TC-150 | `scripts/12_reevaluate_hd95.py` — the §17.12 HD95 re-evaluation; after each sealed bucket, stops unless everything but HD95 equals the 24 October corrected record |
 | URS-007, URS-010 | SRS-096 | HAZ-005, HAZ-016 | RC-006, RC-032 | TC-137 | `scripts/10_reevaluate.py` — the §17.11 re-evaluation chain: access counts checked first, the seeded reproducibility check must be IDENTICAL, then the open `val` buckets, then the six sealed buckets, writing only new files under `corrected/` |
@@ -87,9 +88,9 @@ implemented.
 - Software requirements with a verifying test case **allocated**: **100 of 100**
   SRS and **8 of 8** NFR. Every SRS names a test case in its own row; each NFR is named by
   at least one row of `docs/07` §6 instead, the allocation running in that direction.
-- Test cases **registered** in `docs/07` §6: **134**.
-  Test cases **written**: **110**. Of those,
-  **110 are executed** by the suite and
+- Test cases **registered** in `docs/07` §6: **135**.
+  Test cases **written**: **111**. Of those,
+  **111 are executed** by the suite and
   **0 have never been run**. TC-080, TC-081 and TC-082 need a PACS, which is not available
   on this workstation; until 2026-10-16 they had never been run. CI's `pacs` job now runs them
   against an ephemeral Orthanc (SRS-094), and their first run passed (`docs/08` §5h). A

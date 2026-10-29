@@ -172,7 +172,7 @@ order of preference — information for safety is the weakest.
 | RC-003 | The disjointness test gates CI and is never skipped or weakened | Protective | NFR-005 | `.github/workflows/ci.yml` | TC-004 |
 | RC-004 | Splits seeded, persisted and reproducible from committed configuration | Design | SRS-023, NFR-002 | `data/splits.py` | TC-041 |
 | RC-005 | Test split contains only the held-out vendor | Design | SRS-021 | `data/splits.py` | TC-004 |
-| RC-006 | Per-class and per-vendor reporting with bootstrap CI and sample size | Protective | SRS-032, SRS-033, SRS-036, SRS-037, SRS-053, SRS-092, SRS-097, SRS-098 | `eval/metrics.py`, `eval/subgroup.py`, `eval/pipeline.py`, `scripts/08_build_site.py`, `eval/report.py` | TC-060, TC-061, TC-063, TC-064, TC-068, TC-129, TC-138, TC-139, TC-140, TC-143, TC-144, TC-149 |
+| RC-006 | Per-class and per-vendor reporting with bootstrap CI and sample size | Protective | SRS-032, SRS-033, SRS-036, SRS-037, SRS-053, SRS-092, SRS-097, SRS-098 | `eval/metrics.py`, `eval/subgroup.py`, `eval/pipeline.py`, `scripts/08_build_site.py`, `eval/report.py` | TC-060, TC-061, TC-063, TC-064, TC-068, TC-129, TC-138, TC-139, TC-140, TC-143, TC-144, TC-149, TC-151 |
 | RC-007 | Accuracy is not provided and not reported | Design | SRS-035 | `eval/metrics.py` | TC-002 |
 | RC-008 | Vendor preserved through conversion, de-identification and into evaluation output | Design | SRS-009, SRS-017 | `io/dicom_writer.py`, `io/deident.py` | TC-023, TC-035, TC-110 |
 | RC-009 | MC-dropout scan-level confidence and review-recommended indication, carried in the SR | Protective | SRS-029, SRS-030, SRS-041 | `models/uncertainty.py`, `report/sr_object.py` | TC-055, TC-056, TC-076 |

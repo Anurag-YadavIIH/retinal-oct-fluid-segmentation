@@ -136,9 +136,9 @@
  },
  "docs": {
   "srs": 100,
-  "registered": 134,
-  "written": 110,
-  "executed": 110,
+  "registered": 135,
+  "written": 111,
+  "executed": 111,
   "hazards": 16,
   "controls": 32,
   "safety_class": "B",
