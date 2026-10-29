@@ -33,9 +33,12 @@ Callers with verified codes from a scheme they trust pass them instead.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
+import yaml
 from highdicom import AlgorithmIdentificationSequence
 from highdicom.seg import SegmentAlgorithmTypeValues, Segmentation, SegmentDescription
 from highdicom.sr import CodedConcept
@@ -48,6 +51,16 @@ from ocuval.report.coding import FLUID_CODE_VALUES, declare_scheme, fluid_code
 # own tables. Changing either is a coded-concept change and belongs in docs/13.
 SEGMENTED_PROPERTY_CATEGORY = codes.SCT.MorphologicallyAbnormalStructure
 RETINA = codes.SCT.Retina
+
+
+# SRS-002: label indices live in configs/data.yaml and nowhere else.
+DATA_CONFIG = Path(__file__).resolve().parents[3] / "configs" / "data.yaml"
+
+
+def configured_label_indices(path: Path = DATA_CONFIG) -> dict[str, int]:
+    """The fluid label indices of `configs/data.yaml`, background excluded (SRS-002)."""
+    labels = yaml.safe_load(Path(path).read_text(encoding="utf-8"))["labels"]
+    return {str(name): int(index) for name, index in labels.items() if int(index) > 0}
 
 
 class SegmentCodingError(ValueError):
@@ -93,6 +106,7 @@ def build_segmentation(
     manufacturer: str = "OcuVal",
     manufacturer_model_name: str = "OcuVal fluid segmentation",
     device_serial_number: str = "N/A",
+    label_indices: Mapping[str, int] | None = None,
 ) -> Segmentation:
     """Build a DICOM Segmentation from per-class masks.
 
@@ -100,8 +114,12 @@ def build_segmentation(
     writes the referenced series and instance UIDs from it, and TC-071 asserts they
     match the input.
 
-    Segments are written in the order given; the caller is responsible for that order
-    matching the frozen label indices in `configs/data.yaml`.
+    **Each segment's number is its label index** (SRS-038, clarified 2026-10-29, finding D11),
+    read from `configs/data.yaml` unless `label_indices` is given, whatever order the segments
+    arrive in. highdicom numbers segments consecutively from 1, so every configured fluid
+    class must be present, an absent one as an empty mask; a subset, a repeated class or an
+    unknown label is refused rather than renumbered. Until 2026-10-29 the number was the
+    segment's position in the caller's list.
     """
     from ocuval import __version__
 
@@ -112,6 +130,17 @@ def build_segmentation(
         )
     if not segments:
         raise ValueError("at least one segment is required")
+    indices = dict(label_indices) if label_indices is not None else configured_label_indices()
+    given = [s.label for s in segments]
+    if sorted(given) != sorted(indices) or sorted(indices.values()) != list(
+        range(1, len(indices) + 1)
+    ):
+        raise ValueError(
+            f"segments {given} must be each configured fluid class exactly once, "
+            f"{sorted(indices, key=indices.get)} at label indices 1..{len(indices)} "
+            f"(SRS-038, SRS-002); an absent class is an empty mask, never left out"
+        )
+    segments = sorted(segments, key=lambda s: indices[s.label])
 
     algorithm = AlgorithmIdentificationSequence(
         name="OcuVal fluid segmentation",
@@ -121,7 +150,7 @@ def build_segmentation(
 
     descriptions = [
         SegmentDescription(
-            segment_number=index + 1,
+            segment_number=indices[segment.label],
             segment_label=segment.label,
             segmented_property_category=SEGMENTED_PROPERTY_CATEGORY,
             segmented_property_type=segment.coded_type,
@@ -129,7 +158,7 @@ def build_segmentation(
             algorithm_identification=algorithm,
             anatomic_regions=[RETINA],
         )
-        for index, segment in enumerate(segments)
+        for segment in segments
     ]
 
     # (frames, rows, columns, segments), which is what highdicom expects for a

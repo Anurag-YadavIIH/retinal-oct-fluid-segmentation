@@ -345,7 +345,7 @@ lists SRS, NFR and RC identifiers.
 
 | ID | Title | Verifies | Method | Acceptance criterion | Auto |
 |---|---|---|---|---|---|
-| TC-070 | SEG written via highdicom, one segment per class | SRS-038 | U | Three segments at the frozen label indices | yes |
+| TC-070 | SEG written via highdicom, one segment per class | SRS-038 | U | Three segments at the frozen label indices. **Amended 2026-10-29 (finding D11):** segments passed in the order PED, IRF, SRF are written as IRF 1, SRF 2, PED 3, each carrying its own mask, the numbers read from `configs/data.yaml`; a subset, a repeated class and an unknown label are refused. Shown failing on the writer as it was | yes |
 | TC-071 | SEG references its source instances | SRS-039, RC-013 | U | Referenced instance UIDs match the source series | yes |
 | TC-072 | **Volume arithmetic from known spacing** | SRS-040, RC-024, RC-026 | U | See §7.1. Exactly predictable mm³ from a synthetic mask and anisotropic spacing | yes |
 | TC-149 | **HD95 puts each spacing component on its own array axis, through the real call path** | SRS-032, RC-006 | U | Through `eval.pipeline.measure_volume`, not `hd95` alone, with an anisotropic fixture in project order (axial, lateral, separation) on a (B-scans, rows, columns) volume: a prediction displaced by one B-scan scores exactly the separation, one row the axial spacing, one column the lateral spacing. **Shown failing on the code before the fix.** Volumes and Dice are unchanged by the fix. Recorded beside it: **TC-072 could not have caught this**, because a volume is invariant to axis order | yes |

@@ -22,6 +22,7 @@ from ocuval.report import seg_object as seg
 from ocuval.report import sr_object as sr
 
 UID_ROOT = "1.2.826.0.1.3680043.10.9999"
+REPO = __import__("pathlib").Path(__file__).resolve().parents[1]
 SPACING_MM = (0.0039, 0.0117, 0.047)
 FRAMES, ROWS, COLUMNS = 4, 16, 12
 
@@ -89,6 +90,34 @@ def test_TC_070_one_segment_per_fluid_class(source_images, segments):
     )
     assert len(obj.SegmentSequence) == 3
     assert [s.SegmentLabel for s in obj.SegmentSequence] == ["IRF", "SRF", "PED"]
+
+
+def test_TC_070_segment_numbers_are_the_configured_label_indices_in_any_order(
+    source_images, segments
+):
+    """D11: segments were numbered by their position in the caller's list."""
+    import yaml
+
+    labels = yaml.safe_load((REPO / "configs" / "data.yaml").read_text(encoding="utf-8"))["labels"]
+    shuffled = [segments[2], segments[0], segments[1]]  # PED, IRF, SRF
+    obj = seg.build_segmentation(
+        source_images, shuffled, series_instance_uid=f"{UID_ROOT}.71",
+        sop_instance_uid=f"{UID_ROOT}.72",
+    )  # fmt: skip
+    numbered = {str(d.SegmentLabel): int(d.SegmentNumber) for d in obj.SegmentSequence}
+    assert numbered == {name: labels[name] for name in ("IRF", "SRF", "PED")}
+    by_label = {s.label: int(np.asarray(s.mask).sum()) for s in segments}
+    pixels = np.asarray(obj.pixel_array).reshape(len(obj.PerFrameFunctionalGroupsSequence), -1)
+    per_number: dict[int, int] = {}
+    for frame, group in zip(pixels, obj.PerFrameFunctionalGroupsSequence, strict=True):
+        number = int(group.SegmentIdentificationSequence[0].ReferencedSegmentNumber)
+        per_number[number] = per_number.get(number, 0) + int(frame.sum())
+    for name, number in numbered.items():
+        assert per_number.get(number, 0) == by_label[name], f"{name}'s mask is not segment {number}"
+    for bad in ([segments[1]], [segments[0], segments[0], segments[1]]):
+        with pytest.raises(ValueError, match="configured fluid class"):
+            seg.build_segmentation(source_images, bad, series_instance_uid=f"{UID_ROOT}.73",
+                                   sop_instance_uid=f"{UID_ROOT}.74")  # fmt: skip
 
 
 def test_TC_070_segments_carry_coded_descriptions_not_free_text(source_images, segments):
@@ -341,8 +370,9 @@ def test_TC_076_declared_scheme_used_when_no_code_supplied(source_images):
 
 
 def test_TC_076_scheme_is_identified_in_the_object(source_images):
-    segments = [
-        seg.FluidSegment(label="IRF", mask=np.zeros((FRAMES, ROWS, COLUMNS), dtype=np.uint8))
+    segments = [  # every configured class, as SRS-038 requires since 2026-10-29
+        seg.FluidSegment(label=name, mask=np.zeros((FRAMES, ROWS, COLUMNS), dtype=np.uint8))
+        for name in ("IRF", "SRF", "PED")
     ]
     obj = seg.build_segmentation(
         source_images,
@@ -367,12 +397,13 @@ def test_TC_076_unknown_label_still_refuses():
 
 def test_TC_076_caller_supplied_code_takes_precedence(source_images):
     supplied = CodedConcept(value="12345", scheme_designator="SCT", meaning="Something verified")
-    segments = [
+    segments = [  # every configured class, each with a supplied code (SRS-038 since 2026-10-29)
         seg.FluidSegment(
-            label="IRF",
+            label=name,
             mask=np.zeros((FRAMES, ROWS, COLUMNS), dtype=np.uint8),
             coded_type=supplied,
         )
+        for name in ("IRF", "SRF", "PED")
     ]
     obj = seg.build_segmentation(
         source_images,
