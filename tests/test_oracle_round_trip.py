@@ -149,7 +149,7 @@ def oracle_round_trip(tmp_path: Path, geometry: str):
     # Evaluation, mirroring scripts/05_evaluate.py lines 177-222, the model replaced by the oracle.
     native = read_volume(subject, row["vendor"])
     reference = np.asarray(native.label_array)
-    recorded = assert_spacing_unchanged(row["spacing_mm"], row["spacing_mm"], subject.name)
+    recorded = assert_spacing_unchanged(native.spacing_mm, row["spacing_mm"], subject.name)
     chain = eval_transforms(CFG)
     labels = []
     for index in range(native.pixel_array.shape[0]):

@@ -351,7 +351,7 @@ def main(argv: list[str] | None = None) -> int:
 
     from ocuval.data.transforms import axial_target, eval_transforms, invert_axial_resample
     from ocuval.eval import sealed
-    from ocuval.eval.pipeline import measure_volume
+    from ocuval.eval.pipeline import assert_spacing_unchanged, measure_volume
     from ocuval.io.retouch_reader import apply_intensity_window, read_volume
     from ocuval.models.seg_unet import build_model, load_verified
     from ocuval.models.uncertainty import reseed_for_volume
@@ -395,6 +395,8 @@ def main(argv: list[str] | None = None) -> int:
             row = manifest[p["subject"]]
             native = read_volume(Path(row["source_path"]), row["vendor"])
             reference = np.asarray(native.label_array)
+            # SRS-057: named by role, never by identifier, if it fails.
+            recorded = assert_spacing_unchanged(native.spacing_mm, row["spacing_mm"], p["role"])
             frames = [
                 np.asarray(
                     chain({"image": native.pixel_array[i], "label": reference[i],
@@ -414,7 +416,7 @@ def main(argv: list[str] | None = None) -> int:
                 target_axial_mm=axial_target(cfg),
             )
             prediction = np.asarray(prediction).astype(np.uint8).reshape(reference.shape)
-            seg = measure_volume(prediction, reference, tuple(row["spacing_mm"]))
+            seg = measure_volume(prediction, reference, recorded)
             dice_of = {r["fluid_class"]: r["value"] for r in seg if r["metric"] == "dice"}
             voxels_of = {
                 r["fluid_class"]: int(r["voxels"])

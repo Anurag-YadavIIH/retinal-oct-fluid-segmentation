@@ -288,6 +288,53 @@ def test_TC_073_a_difference_in_the_last_digit_aborts():
         assert_spacing_unchanged(used, recorded, "TRAIN001")
 
 
+EVALUATION_PATHS = (
+    "scripts/05_evaluate.py",
+    "scripts/09_illustrative_bscans.py",
+    "scripts/13_crosscheck_val.py",
+    "tests/test_oracle_round_trip.py",
+)
+
+
+@pytest.mark.parametrize("path", EVALUATION_PATHS)
+def test_TC_073_every_evaluation_path_checks_the_spacing_read_against_the_manifest(path):
+    """D5: the check is only a check if its two arguments can differ.
+
+    `05_evaluate.py` called `assert_spacing_unchanged(row["spacing_mm"], row["spacing_mm"], ...)`,
+    which cannot fail. Inspected in the source: the first argument is the reader's
+    `.spacing_mm`, the second is not the same expression, and every `measure_volume` call
+    measures with the name the assertion's result was bound to.
+    """
+    import ast
+
+    tree = ast.parse((Path(__file__).resolve().parents[1] / path).read_text(encoding="utf-8"))
+    checks, checked_names, measured_with = [], set(), []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Call):
+            func = node.value.func
+            name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", "")
+            if name == "assert_spacing_unchanged":
+                checked_names |= {t.id for t in node.targets if isinstance(t, ast.Name)}
+        if isinstance(node, ast.Call):
+            func = node.func
+            name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", "")
+            if name == "assert_spacing_unchanged":
+                checks.append(node)
+            elif name == "measure_volume":
+                measured_with.append(node.args[2] if len(node.args) > 2 else None)
+    assert checks, f"{path} never checks the spacing (SRS-057)"
+    for call in checks:
+        first, second = call.args[0], call.args[1]
+        assert (
+            isinstance(first, ast.Attribute) and first.attr == "spacing_mm"
+        ), f"{path}:{call.lineno}: the first argument is not the spacing the reader returned"
+        assert ast.dump(first) != ast.dump(second), f"{path}:{call.lineno}: compares with itself"
+    for spacing in measured_with:
+        assert (
+            isinstance(spacing, ast.Name) and spacing.id in checked_names
+        ), f"{path}: measure_volume is given a spacing the assertion did not return"
+
+
 # --- TC-065 / TC-066 / TC-067: detection derived from the segmentation -----------------
 
 

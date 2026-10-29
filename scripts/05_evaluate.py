@@ -184,7 +184,9 @@ def main(argv: list[str] | None = None) -> int:
                     f"and is not silently skipped."
                 )
             reference = np.asarray(native.label_array)
-            recorded = assert_spacing_unchanged(row["spacing_mm"], row["spacing_mm"], subject)
+            # SRS-057 (clarified 2026-10-29, D5): the spacing read from the source now, against the
+            # manifest's ingestion record. Until then this compared the record with itself.
+            recorded = assert_spacing_unchanged(native.spacing_mm, row["spacing_mm"], subject)
 
             prepared = []
             for index in range(native.pixel_array.shape[0]):

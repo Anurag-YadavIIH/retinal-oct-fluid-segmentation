@@ -293,7 +293,7 @@ def main(argv: list[str] | None = None) -> int:
             row = manifest[subject]
             native = read_volume(Path(row["source_path"]), row["vendor"])
             reference = np.asarray(native.label_array)
-            recorded = assert_spacing_unchanged(row["spacing_mm"], row["spacing_mm"], subject)
+            recorded = assert_spacing_unchanged(native.spacing_mm, row["spacing_mm"], subject)
             prepared, oracle_labels = [], []
             for index in range(native.pixel_array.shape[0]):
                 sample = chain({
