@@ -335,3 +335,32 @@ def test_TC_146_selection_and_gate_read_only_the_corrected_held_out_records():
     for wrong in (superseded, current):
         with pytest.raises(SystemExit, match="not a corrected held-out record"):
             ILL.held_out_records(wrong)
+
+
+AUDITED_REASON = "illustrations under docs/07 section 17.13 and section 21 (21.10)"
+
+
+def test_TC_146_the_audited_set_needs_17_13_and_21_and_writes_to_its_own_directory(tmp_path):
+    with pytest.raises(SystemExit):  # a section 17.11 reason does not open the audited set
+        ILL.parse_args(["--unlock-reason", REASON, "--approved-by", "a", "--record-set",
+                        "audited", "--output-dir", str(tmp_path / "new")])  # fmt: skip
+    args = ILL.parse_args(["--unlock-reason", AUDITED_REASON, "--approved-by", "a",
+                           "--record-set", "audited"])  # fmt: skip
+    assert args.output_dir == REPO / "artifacts" / "illustrations_audited"
+    assert ILL.RECORD_SETS["corrected"][2] == ILL.OUT  # the default set keeps section 21.9's
+
+
+def test_TC_146_the_audited_set_reads_only_audited_held_out_records():
+    figures = importlib.util.module_from_spec(
+        spec := importlib.util.spec_from_file_location(
+            "figs_tc146b", REPO / "scripts" / "07_make_figures.py"
+        )
+    )
+    spec.loader.exec_module(figures)
+    sets = figures.report.record_paths(figures.RUNS)
+    paths = ILL.held_out_records(sets["audited"], "audited")
+    assert all(p.parent.name == "audited" and p.name == "evaluation_test.json"
+               for p in paths.values())  # fmt: skip
+    for wrong in (sets["corrected"], sets["wrong_axes"]):
+        with pytest.raises(SystemExit, match="not a audited held-out record"):
+            ILL.held_out_records(wrong, "audited")

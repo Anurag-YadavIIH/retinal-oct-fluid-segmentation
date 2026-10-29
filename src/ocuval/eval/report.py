@@ -110,6 +110,11 @@ def record_paths(runs: Path) -> dict:
             }
             for f in FOLDS
         },
+        # The final re-evaluation of docs/07 section 17.13, after the audit (D1, D4 fixed). Not
+        # read by `records_present` or `load_records` until the documents move to it.
+        "audited": {
+            f: {a: d[f] / "audited" / f"evaluation_{a}.json" for a in (*ARMS, "val")} for f in FOLDS
+        },
         # Cirrus's single unseeded draw of 2026-10-01, also through the defect (docs/10 3.1).
         "unseeded_cirrus": {a: d["cirrus"] / f"evaluation_{a}.json" for a in ARMS},
         "val": {

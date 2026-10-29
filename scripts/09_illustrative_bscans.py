@@ -58,7 +58,15 @@ FORBIDDEN_CHUNKS = frozenset({b"tEXt", b"iTXt", b"zTXt", b"tIME", b"eXIf"})
 FRAMES_PER_CHUNK = 8  # as the sealed evaluations ran; checked against each record's notes
 # docs/07 section 21.9: a new directory, so the images of section 21.7 are never overwritten.
 OUT = REPO / "artifacts" / "illustrations_corrected"
-CITED = (re.compile(r"17\.11"), re.compile(r"(?<![\d.])21(?![\d])"))
+# docs/07 section 21.10: the records of section 17.13, into another new directory.
+OUT_AUDITED = REPO / "artifacts" / "illustrations_audited"
+SECTION_21 = re.compile(r"(?<![\d.])21(?![\d])")
+CITED = (re.compile(r"17\.11"), SECTION_21)
+RECORD_SETS = {
+    # set: (record folder, sections the unlock reason must cite, default output directory)
+    "corrected": ("corrected", CITED, OUT),
+    "audited": ("audited", (re.compile(r"17\.13"), SECTION_21), OUT_AUDITED),
+}
 
 
 def load_module(name: str, path: Path):
@@ -304,12 +312,23 @@ def parse_args(argv):
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--config", type=Path, default=REPO / "configs" / "train_seg.yaml")
     parser.add_argument("--data-config", type=Path, default=REPO / "configs" / "data.yaml")
-    parser.add_argument("--output-dir", type=Path, default=OUT)
+    parser.add_argument("--output-dir", type=Path, default=None)
+    parser.add_argument(
+        "--record-set",
+        choices=sorted(RECORD_SETS),
+        default="corrected",
+        help="corrected: section 21.9's records; audited: section 17.13's (section 21.10)",
+    )
     args = parser.parse_args(argv)
+    folder, cited, default_out = RECORD_SETS[args.record_set]
+    args.output_dir = args.output_dir or default_out
     if not (args.unlock_reason.strip() and args.approved_by.strip()):
         parser.error("--unlock-reason and --approved-by must say something; they are logged")
-    if not all(p.search(args.unlock_reason) for p in CITED):
-        parser.error("the unlock reason must cite docs/07 section 17.11 and section 21 (21.9)")
+    if not all(p.search(args.unlock_reason) for p in cited):
+        sections = (
+            "17.11 and section 21 (21.9)" if folder == "corrected" else "17.13 and 21 (21.10)"
+        )
+        parser.error(f"the unlock reason must cite docs/07 section {sections}")
     if args.output_dir.exists() and any(args.output_dir.iterdir()):
         parser.error(f"{args.output_dir} already holds files; an earlier run is never overwritten")
     if args.device != "cuda":
@@ -320,17 +339,18 @@ def parse_args(argv):
     return args
 
 
-def held_out_records(records: dict) -> dict[str, Path]:
-    """The held-out records the run selects and gates from: the corrected ones, and only them.
+def held_out_records(records: dict, folder: str = "corrected") -> dict[str, Path]:
+    """The held-out records the run selects and gates from, under `folder/` and only there.
 
     `records` is `{fold: {"test": path}}`. Section 21.9 ran on the 24 October records under
-    `corrected/`. Since docs/07 section 17.12 the current figures come from `corrected_hd95/`,
-    which differ in HD95 only; the selection reads no HD95, but the run keeps its own records.
+    `corrected/`; since docs/07 section 17.12 the current figures came from `corrected_hd95/`,
+    which differ in HD95 only, and the selection reads no HD95. Section 21.10 runs on the
+    records of section 17.13 under `audited/`.
     """
     paths = {f: Path(records[f]["test"]) for f in FOLDS}
     for fold, path in paths.items():
-        if path.parent.name != "corrected" or path.name != "evaluation_test.json":
-            raise SystemExit(f"{fold}: {path} is not a corrected held-out record (section 21.9)")
+        if path.parent.name != folder or path.name != "evaluation_test.json":
+            raise SystemExit(f"{fold}: {path} is not a {folder} held-out record (section 21)")
     return paths
 
 
@@ -364,8 +384,12 @@ def main(argv: list[str] | None = None) -> int:
 
     figures = load_module("make_figures", REPO / "scripts" / "07_make_figures.py")
     evaluation = load_module("evaluate", REPO / "scripts" / "05_evaluate.py")
-    run_records = figures.report.record_paths(figures.RUNS)["wrong_axes"]  # section 17.11's
-    records = {f: figures.load(p) for f, p in held_out_records(run_records).items()}
+    folder = RECORD_SETS[args.record_set][0]
+    if folder == "corrected":
+        run_records = figures.report.record_paths(figures.RUNS)["wrong_axes"]  # section 17.11's
+    else:
+        run_records = figures.report.record_paths(figures.RUNS)["audited"]  # section 17.13's
+    records = {f: figures.load(p) for f, p in held_out_records(run_records, folder).items()}
     threshold = int(cfg["inference"]["presence_voxel_threshold"])
     passes = int(cfg["inference"]["mc_dropout_passes"])
     for f, rec in records.items():
