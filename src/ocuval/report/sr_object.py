@@ -27,6 +27,7 @@ dictionary, so those names are caller-supplied on the same rule as the fluid cla
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass
 
 from highdicom.sr import (
@@ -52,6 +53,17 @@ UNIT_NO_UNITS = codes.UCUM.NoUnits
 
 # Verified measurement name.
 VOLUME = codes.SCT.Volume
+
+
+def tracking_uid(device_uid: str, position: int) -> str:
+    """A Tracking Unique Identifier derived from the device UID and the group's position.
+
+    A name-based UUID (uuid5) in the `2.25.<integer>` form of PS3.5 section B.2, so it is a
+    valid UI value whatever the device UID's length, and the same inputs give the same value
+    (SRS-041, clarified 2026-10-29, finding D6). Appending to the device UID cannot work: a
+    device UID of full length leaves no room, and `.confidence` was never a UI value.
+    """
+    return f"2.25.{uuid.uuid5(uuid.NAMESPACE_OID, f'{device_uid}.{position}').int}"
 
 
 class MeasurementCodingError(ValueError):
@@ -152,7 +164,7 @@ def build_measurement_report(
         groups.append(
             MeasurementsAndQualitativeEvaluations(
                 tracking_identifier=TrackingIdentifier(
-                    uid=f"{device_uid}.{index + 1}", identifier=item.label
+                    uid=tracking_uid(device_uid, index + 1), identifier=item.label
                 ),
                 finding_type=item.coded_type,
                 measurements=items,
@@ -164,7 +176,8 @@ def build_measurement_report(
     groups.append(
         MeasurementsAndQualitativeEvaluations(
             tracking_identifier=TrackingIdentifier(
-                uid=f"{device_uid}.confidence", identifier="scan-level confidence"
+                uid=tracking_uid(device_uid, len(measurements) + 1),
+                identifier="scan-level confidence",
             ),
             measurements=[
                 Measurement(name=names.confidence, value=float(confidence), unit=UNIT_NO_UNITS)

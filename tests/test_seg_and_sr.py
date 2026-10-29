@@ -243,6 +243,38 @@ def report(source_images, names) -> Dataset:
     )
 
 
+def _uidrefs(dataset) -> list[str]:
+    found = []
+    for item in getattr(dataset, "ContentSequence", None) or []:
+        if getattr(item, "ValueType", None) == "UIDREF":
+            found.append(str(item.UID))
+        found += _uidrefs(item)
+    return found
+
+
+def test_TC_076_every_tracking_uid_is_a_valid_ui_value(report, source_images, names):
+    """D6: the confidence group's tracking UID was `{device_uid}.confidence`."""
+    from pydicom.uid import UID
+
+    uids = _uidrefs(report)
+    assert len(uids) >= 4, "a tracking UID per fluid class and one for the confidence group"
+    assert all(UID(u).is_valid for u in uids), [u for u in uids if not UID(u).is_valid]
+    assert len(set(uids)) == len(uids)
+    long_device = "1.2." + "3" * 59  # 63 characters, itself valid
+
+    def build(device):
+        return sr.build_measurement_report(
+            source_images, [], names, confidence=0.5,
+            procedure_reported=local_code("OCTSEG", "OCT fluid segmentation (local)"),
+            device_uid=device, series_instance_uid=dw.generate_uid(UID_ROOT),
+            sop_instance_uid=dw.generate_uid(UID_ROOT),
+        )  # fmt: skip
+
+    long_uids = _uidrefs(build(long_device))
+    assert long_uids and all(UID(u).is_valid for u in long_uids)
+    assert _uidrefs(build(long_device)) == long_uids, "derived, so repeatable"
+
+
 def test_TC_074_every_quantity_carries_a_coded_unit(report):
     found = sr.numeric_measurements(report)
     assert found, "no NUM content items were emitted"
