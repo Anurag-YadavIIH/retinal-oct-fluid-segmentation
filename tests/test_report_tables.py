@@ -62,8 +62,11 @@ def test_TC_138_the_class_present_view_drops_exactly_the_absent_rows():
 
 
 def test_TC_138_the_difference_is_seeded_held_out_first_and_reproducible():
+    """With no shared patient, the joint draw is the independent one, held-out first."""
     held, ref = np.array([0.2, 0.4, 0.9, 0.1]), np.array([0.5, 0.7])
-    first, second = report.difference(held, ref, B), report.difference(held, ref, B)
+    hp, ip = ["a", "b", "c", "d"], ["e", "f"]
+    first = report.difference(hp, held, ip, ref, B)
+    second = report.difference(hp, held, ip, ref, B)
     assert first == second
     assert first[0] == pytest.approx(held.mean() - ref.mean())
     rng = np.random.default_rng(B.seed)  # the documented order: held-out draws, then in-domain
@@ -71,8 +74,26 @@ def test_TC_138_the_difference_is_seeded_held_out_first_and_reproducible():
     di = rng.integers(0, 2, size=(B.n_resamples, 2))
     d = held[dh].mean(axis=1) - ref[di].mean(axis=1)
     assert first[1:] == pytest.approx(tuple(np.percentile(d, [2.5, 97.5])))
-    constant = report.difference(np.full(3, 0.5), np.full(3, 0.2), B)
+    constant = report.difference(
+        ["a", "b", "c"], np.full(3, 0.5), ["d", "e", "f"], np.full(3, 0.2), B
+    )
     assert constant == pytest.approx((0.3, 0.3, 0.3))
+
+
+def test_TC_138_shared_patients_are_drawn_once_for_both_arms():
+    """D2: the pooled arms share patients, and one draw must keep each patient's pair together.
+
+    Every held-out value sits 0.1 above the same patient's in-domain value, so every joint
+    replicate differs by exactly 0.1. The independent resample breaks the pairs and spreads.
+    """
+    patients = [f"p{k}" for k in range(10)]
+    ref = np.linspace(0.0, 0.9, 10)
+    point, low, high = report.difference(patients, ref + 0.1, patients, ref, B)
+    assert (point, low, high) == pytest.approx((0.1, 0.1, 0.1))
+    some = patients[:6] + ["q1", "q2"]  # two held-out-only patients as well
+    held = np.concatenate([ref[:6] + 0.1, [0.5, 0.6]])
+    p2, l2, h2 = report.difference(some, held, patients[:6], ref[:6], B)
+    assert p2 == pytest.approx(held.mean() - ref[:6].mean()) and l2 <= p2 <= h2
 
 
 def test_TC_138_overlap_is_closed_and_a_single_patient_is_its_point():

@@ -185,12 +185,40 @@ def estimate(values, patients, b: Boot) -> dict:
     )
 
 
-def difference(held: np.ndarray, ref: np.ndarray, b: Boot) -> tuple[float, float, float]:
-    """docs/10 section 5.4: arms resampled independently, held-out draws first."""
+def difference(
+    held_patients, held: np.ndarray, ref_patients, ref: np.ndarray, b: Boot
+) -> tuple[float, float, float]:
+    """Held-out minus in-domain mean, with its interval under one patient draw (SRS-097, D2).
+
+    Patients are grouped by the arms they belong to: held-out only, in-domain only, both.
+    Each group is resampled with its size fixed, in that order, and a patient drawn counts in
+    every arm it belongs to with that arm's value. The pooled arms share patients: every
+    in-domain patient is a held-out patient in its own vendor's fold. Until 2026-10-29 the arms
+    were resampled independently, which ignores that pairing (`docs/13`). With no shared
+    patient, as in every per-fold comparison, the draws are exactly the earlier ones.
+    """
+    held_at = {p: k for k, p in enumerate(held_patients)}
+    ref_at = {p: k for k, p in enumerate(ref_patients)}
+    held_only = [held_at[p] for p in held_patients if p not in ref_at]
+    ref_only = [ref_at[p] for p in ref_patients if p not in held_at]
+    both = [(held_at[p], ref_at[p]) for p in held_patients if p in ref_at]
     rng = np.random.default_rng(b.seed)
-    dh = rng.integers(0, len(held), size=(b.n_resamples, len(held)))
-    di = rng.integers(0, len(ref), size=(b.n_resamples, len(ref)))
-    d = held[dh].mean(axis=1) - ref[di].mean(axis=1)
+
+    def draw(size: int) -> np.ndarray:
+        return rng.integers(0, size, size=(b.n_resamples, size)) if size else None
+
+    dh, di, db = draw(len(held_only)), draw(len(ref_only)), draw(len(both))
+    held_sum = np.zeros(b.n_resamples)
+    ref_sum = np.zeros(b.n_resamples)
+    if dh is not None:
+        held_sum += held[np.asarray(held_only)][dh].sum(axis=1)
+    if di is not None:
+        ref_sum += ref[np.asarray(ref_only)][di].sum(axis=1)
+    if db is not None:
+        pairs = np.asarray(both)
+        held_sum += held[pairs[:, 0]][db].sum(axis=1)
+        ref_sum += ref[pairs[:, 1]][db].sum(axis=1)
+    d = held_sum / len(held) - ref_sum / len(ref)
     low, high = np.percentile(d, [100 * b.alpha / 2, 100 * (1 - b.alpha / 2)])
     return float(held.mean() - ref.mean()), float(low), float(high)
 
@@ -215,8 +243,9 @@ def comparisons(records: dict) -> dict:
     for view, present in (("all-volume", False), ("class-present", True)):
         for comp in (*FOLDS, "pooled"):
             for cls in CLASSES:
-                (_, h, he), (_, i, ie) = arms(records, comp, cls, present, b)
-                out[(view, comp, cls)] = {"held": he, "ref": ie, "diff": difference(h, i, b)}
+                (hp, h, he), (ip, i, ie) = arms(records, comp, cls, present, b)
+                diff = difference(hp, h, ip, i, b)
+                out[(view, comp, cls)] = {"held": he, "ref": ie, "diff": diff}
     return out
 
 
