@@ -55,7 +55,13 @@ def estimate(
     }
 
 
-def by_vendor(per_sample_metrics: Sequence[dict], vendor_field: str = "vendor") -> dict:
+def by_vendor(
+    per_sample_metrics: Sequence[dict],
+    vendor_field: str = "vendor",
+    *,
+    n_resamples: int = 2000,
+    alpha: float = 0.05,
+) -> dict:
     """Group per-sample metrics by vendor and return estimates with intervals.
 
     `per_sample_metrics` is a sequence of rows, each carrying at least `vendor`,
@@ -67,6 +73,10 @@ def by_vendor(per_sample_metrics: Sequence[dict], vendor_field: str = "vendor") 
     blocks, never in place of them: SRS-032 forbids a foreground aggregate standing in for
     per-class figures, and the same reasoning applies across vendors -- a pooled number
     hides exactly the variation this project exists to report.
+
+    `n_resamples` and `alpha` are passed through to every estimate, so the settings a record
+    states are the ones its intervals used (SRS-087, clarified 2026-10-29: until then they
+    were dropped here and the defaults applied).
     """
     seed = _one_seed(per_sample_metrics)
     out: dict = {"n_unit": UNIT, "by_vendor": {}, "all_vendors": {}}
@@ -74,13 +84,13 @@ def by_vendor(per_sample_metrics: Sequence[dict], vendor_field: str = "vendor") 
     vendors = sorted({row[vendor_field] for row in per_sample_metrics})
     for vendor in vendors:
         rows = [row for row in per_sample_metrics if row[vendor_field] == vendor]
-        out["by_vendor"][vendor] = _by_class(rows, seed)
-    out["all_vendors"] = _by_class(list(per_sample_metrics), seed)
+        out["by_vendor"][vendor] = _by_class(rows, seed, n_resamples, alpha)
+    out["all_vendors"] = _by_class(list(per_sample_metrics), seed, n_resamples, alpha)
     out["vendors"] = vendors
     return out
 
 
-def _by_class(rows: Sequence[dict], seed: int) -> dict:
+def _by_class(rows: Sequence[dict], seed: int, n_resamples: int, alpha: float) -> dict:
     classes = sorted({row["fluid_class"] for row in rows})
     metrics = sorted({row["metric"] for row in rows})
     result: dict = {}
@@ -94,6 +104,8 @@ def _by_class(rows: Sequence[dict], seed: int) -> dict:
                 [r["value"] for r in selected],
                 [r["patient_id"] for r in selected],
                 seed=seed,
+                n_resamples=n_resamples,
+                alpha=alpha,
             )
     return result
 

@@ -540,6 +540,22 @@ def varied_volumes(n_patients=10, seed=11):
     return volumes
 
 
+def test_TC_124_segmentation_intervals_use_the_plans_resample_count_and_alpha(tmp_path):
+    """D8: the record states the plan's settings, so the intervals must have used them."""
+    plan = EvaluationPlan(fold_id="f", bucket="val", seed=SEED, n_resamples=150, alpha=0.1)
+    volumes = varied_volumes()
+    result = evaluate(plan, volumes, artifacts_root=tmp_path)
+    reported = result["segmentation"]["all_vendors"]["IRF"]["dice"]
+    assert reported["bootstrap"]["n_resamples"] == 150
+    assert reported["bootstrap"]["alpha"] == 0.1
+    rows = [r for r in result["per_volume"] if r["fluid_class"] == "IRF"]
+    expected = subgroup.estimate(
+        [r["dice"] for r in rows], [r["patient_id"] for r in rows],
+        seed=SEED, n_resamples=150, alpha=0.1,
+    )  # fmt: skip
+    assert (reported["ci_low"], reported["ci_high"]) == (expected["ci_low"], expected["ci_high"])
+
+
 def test_TC_126_one_row_per_volume_per_class_with_every_required_field(tmp_path):
     volumes = varied_volumes()
     plan = EvaluationPlan(fold_id="f", bucket="val", seed=SEED, n_resamples=200)
@@ -705,7 +721,7 @@ def test_TC_126_adding_the_rows_changes_no_aggregate(tmp_path):
         for v in volumes
         for r in v["detection"]
     ]
-    expected_seg = subgroup.by_vendor(seg)
+    expected_seg = subgroup.by_vendor(seg, n_resamples=plan.n_resamples, alpha=plan.alpha)
     expected_det = aggregate_detection(det, seed=SEED, n_resamples=200, alpha=0.05)
     assert json.dumps(result["segmentation"], sort_keys=True, default=str) == json.dumps(
         expected_seg, sort_keys=True, default=str

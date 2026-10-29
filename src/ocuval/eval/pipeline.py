@@ -342,7 +342,7 @@ def evaluate(
             det_rows.append({**row, "patient_id": volume["patient_id"], "vendor": volume["vendor"]})
 
     reportable = [r for r in seg_rows if r["metric"] in SEGMENTATION_METRICS]
-    segmentation = subgroup.by_vendor(reportable)
+    segmentation = subgroup.by_vendor(reportable, n_resamples=plan.n_resamples, alpha=plan.alpha)
     detection = aggregate_detection(
         det_rows, seed=plan.seed, n_resamples=plan.n_resamples, alpha=plan.alpha
     )
