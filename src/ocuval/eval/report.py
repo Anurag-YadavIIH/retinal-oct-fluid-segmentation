@@ -55,6 +55,10 @@ DEFECT = "through the defect"
 # HD95 of the 24 October records, measured with the spacing on the wrong axes (docs/13,
 # finding of 2026-10-25). Its own first column, so its header differs from section 10's.
 WRONG_AXES = "wrong spacing axes"
+# docs/07 section 17.12's records, the record until section 17.13: measured through D1 (and,
+# for AUROC, D4). Kept in docs/10 section 10.3 under their own first column.
+THROUGH_D1 = "through D1"
+RECORD_COLUMN = "| Record "
 # SRS-104: HD95 without both-empty volumes, beside the primary and labelled secondary.
 SECONDARY = "secondary"
 SECONDARY_HD95 = "hd95_excluding_both_empty"
@@ -82,18 +86,23 @@ class RecordSets:
     superseded: dict
     unseeded_cirrus: dict
     val: dict
-    # The 24 October corrected records: identical to `corrected` in everything but HD95
-    # (docs/07 section 17.12's gate), kept for their HD95 measured on the wrong spacing axes.
+    # The 24 October corrected records, kept for their HD95 measured on the wrong spacing axes.
     wrong_axes: dict | None = None
+    # docs/07 section 17.12's records, measured through D1: docs/10 section 10.3.
+    through_d1: dict | None = None
 
 
 def record_paths(runs: Path) -> dict:
     """Where each record set lives under `artifacts/runs`."""
     d = {f: runs / RUN_DIRS[f] for f in FOLDS}
     return {
-        # The record of record: the docs/07 section 17.12 re-evaluation, with HD95 on the right
-        # spacing axes and everything else gated equal to the 24 October records.
+        # The record of record since 2026-10-30: the final re-evaluation of docs/07 section
+        # 17.13, after the audit (D1 and D4 fixed), gated on an unchanged population.
         "corrected": {
+            f: {a: d[f] / "audited" / f"evaluation_{a}.json" for a in ARMS} for f in FOLDS
+        },
+        # The record until then, section 17.12's: measured through D1 (docs/10 section 10.3).
+        "through_d1": {
             f: {a: d[f] / "corrected_hd95" / f"evaluation_{a}.json" for a in ARMS} for f in FOLDS
         },
         # The 24 October records of section 17.11: HD95 measured with the spacing on the wrong
@@ -111,24 +120,20 @@ def record_paths(runs: Path) -> dict:
             }
             for f in FOLDS
         },
-        # The final re-evaluation of docs/07 section 17.13, after the audit (D1, D4 fixed). Not
-        # read by `records_present` or `load_records` until the documents move to it.
+        # The same final records with the open `val` buckets, as the B-scan scripts read them.
         "audited": {
             f: {a: d[f] / "audited" / f"evaluation_{a}.json" for a in (*ARMS, "val")} for f in FOLDS
         },
         # Cirrus's single unseeded draw of 2026-10-01, also through the defect (docs/10 3.1).
         "unseeded_cirrus": {a: d["cirrus"] / f"evaluation_{a}.json" for a in ARMS},
-        "val": {
-            "cirrus": d["cirrus"] / "corrected_hd95" / "evaluation_val_seeded_a.json",
-            "spectralis": d["spectralis"] / "corrected" / "evaluation_val.json",
-            "topcon": d["topcon"] / "corrected" / "evaluation_val.json",
-        },
+        # Section 19.2 selects its threshold on `val`: the final run's open records.
+        "val": {f: d[f] / "audited" / "evaluation_val.json" for f in FOLDS},
     }
 
 
 def records_present(runs: Path) -> bool:
     paths = record_paths(runs)
-    sets = ("corrected", "wrong_axes", "superseded")
+    sets = ("corrected", "through_d1", "wrong_axes", "superseded")
     files = [p for s in sets for f in FOLDS for p in paths[s][f].values()]
     files += list(paths["unseeded_cirrus"].values()) + list(paths["val"].values())
     return all(p.is_file() for p in files)
@@ -145,6 +150,7 @@ def load_records(runs: Path) -> RecordSets:
         unseeded_cirrus={a: load(p) for a, p in paths["unseeded_cirrus"].items()},
         val={f: load(p) for f, p in paths["val"].items()},
         wrong_axes={f: {a: load(p) for a, p in paths["wrong_axes"][f].items()} for f in FOLDS},
+        through_d1={f: {a: load(p) for a, p in paths["through_d1"][f].items()} for f in FOLDS},
     )
 
 
@@ -1016,6 +1022,17 @@ def generate(sets: RecordSets) -> Generated:
     )
     g.say("docs/12", f"detection limit was about {limit_old:.2f} Dice")
     g.say("README", f"larger than about {limit_old:.2f} Dice. Every earlier figure")
+
+    # --- section 10.3: the section 17.12 records, measured through D1, as published ----------
+    if sets.through_d1 is not None:
+        d1 = sets.through_d1
+        comps_d1 = comparisons(d1, as_published=True)
+        labelled = RECORD_COLUMN.rstrip() + " "
+        for doc in ("docs/10", "docs/12"):
+            g.table(doc, labelled + H_DICE, per_fold_rows(d1, "dice", THROUGH_D1))
+            g.table(doc, labelled + H_HD95, per_fold_rows(d1, "hd95", THROUGH_D1))
+        g.table("docs/10", labelled + H_POOLED, pooled_rows(d1, comps_d1, THROUGH_D1))
+        g.table("docs/10", labelled + H_DIFF, diff_rows(comps_d1, THROUGH_D1))
     return g
 
 

@@ -1420,6 +1420,74 @@ moved a great deal: the wrong-axes figures were larger in 17 of the 18 arms, up 
 (topcon in-domain SRF), and smaller in one, cirrus in-domain PED, at 0.34 times (derived from the two
 sets of records). **Every other figure in §5i stands as the record**, as the gate showed.
 
+## 5k. Final re-evaluation under `docs/07` §17.13 — after the audit of 2026-10-28
+
+The audit of 2026-10-28 found twelve defects (D1–D12, `docs/13` 2026-10-29). Two changed what an
+evaluation measures: **D1**, the inversion's row placement, which put every prediction about one
+native row too deep, and **D4**, the detection score's maximum, which ran over the padding. Both
+were fixed in the evaluation code, the models were not retrained, and every bucket was evaluated
+again under §17.13, gated on an unchanged population and reference.
+
+### 5k.1 The run
+
+| Field | Value | Source |
+|---|---|---|
+| Chain | `scripts/14_final_reevaluation.py` (SRS-105), launched by the author on 2026-10-29 at 22:59:13; ended 2026-10-30 05:48:13, **6 h 49 min 00 s**. Every evaluation exited 0; the B-scan step exited 1 (§5l) | `artifacts/chain/audited_status.txt` |
+| Evaluation code | the commit the chain started at, recorded in the status log and in every record's `notes.evaluation_source`, `dirty: false`, in all ten records | `notes.evaluation_source` |
+| Determinism | **0 fallbacks** in all ten records | `notes.determinism` |
+| Reproducibility check | two seeded cirrus `val` runs **IDENTICAL**, including the checksums of all 7 saved maps of each (SRS-106) | status log |
+| **Gates** | **passed for all nine gated evaluations**: the population and the reference equal each bucket's previous record, and every saved map matches its manifest | status log |
+| Saved maps | **119**, one per measured volume, **9.79 MB** in all (measured), under `artifacts/predictions_final/` | file listing |
+| Access counts after the evaluations | cirrus `test` **8** and `in_domain_ref` **6**; spectralis and topcon `test` **6** and `in_domain_ref` **4** | `sealed.access_count` |
+| Records | ten new files under `audited/`; nothing earlier overwritten | file listing |
+
+| Step | Duration (measured, status log) |
+|---|---|
+| cirrus `val` a / b | 17 min 49 s / 17 min 40 s |
+| spectralis `val` / topcon `val` | 34 min 47 s / 27 min 36 s |
+| cirrus `test` / `in_domain_ref` | 1 h 58 min 35 s / 19 min 45 s |
+| spectralis `test` / `in_domain_ref` | 33 min 29 s / 25 min 06 s |
+| topcon `test` / `in_domain_ref` | 1 h 20 min 16 s / 15 min 27 s |
+
+### 5k.2 What changed, measured against the §17.12 records
+
+- **Detection: nothing.** Sensitivity, specificity and AUROC are identical in all 18 cells.
+- **Dice:** 151 of 273 per-volume values changed, by at most 0.0313; no arm mean moved by more than
+  0.0072 (topcon in-domain IRF, 0.5624 to 0.5696).
+- **HD95:** no arm moved by more than 0.0298 mm (topcon in-domain PED, 1.6630 to 1.6928).
+- **Which comparisons establish a difference: nothing.** By the pre-registered criterion, 1 of 9
+  Dice comparisons, spectralis SRF with the unseen vendor higher, as before. The pooled
+  class-present IRF and PED difference intervals still exclude zero, post-hoc.
+
+The figures are `docs/10` §3 to §7, printed by `eval/report.py` from these records and checked
+against them by the report check. The §17.12 figures are kept in `docs/10` §10.3, labelled as
+measured through D1.
+
+## 5l. Illustrative B-scans under `docs/07` §21.10 and §21.11
+
+### 5l.1 §21.10, in the §17.13 chain: failed, no image saved
+
+The B-scan step opened and logged the three `test` buckets, regenerated the six picks with the
+model and failed inside its own gate (`'tuple' object has no attribute 'get'`): the D5 fix had
+bound the spacing to the name holding the records the gate compares with (`docs/13`,
+2026-10-30). No image was saved, and whether the regenerated predictions matched their records is
+unknown. It took 18 min 28 s (measured). The three accesses are counted.
+
+### 5l.2 §21.11, from the saved maps: passed
+
+| Field | Value | Source |
+|---|---|---|
+| Chain | `scripts/15_final_bscans.py` (SRS-108), launched by the author on 2026-10-30 at 08:02:02; ended 08:05:14, **3 min 12 s**, every step exit 0 | `artifacts/chain/final_bscans_status.txt` |
+| Dry run (SRS-107) | all three steps completed on synthetic data in 4 s; the certificate was written at the commit the chain started at | status log |
+| Checksums | all six saved maps matched their manifest before any bucket was opened | step log |
+| **Gate** | **passed for all six picks**: every re-measured Dice and predicted voxel count equals its record | `selection.json` |
+| Access counts after | cirrus `test` **10**, spectralis `test` **8**, topcon `test` **8**; the `in_domain_ref` buckets unchanged at **6**, **4**, **4** | status log |
+| Picks | worst and best from spectralis, the median and the SRF and PED false-positive cases from topcon, the IRF false-positive case from cirrus | `selection.json` |
+
+Five picks are the same scans, on the same B-scans, as §21.9's; the median is a different scan.
+The author reviewed the six images outside any session (DMP-C12) and approved all six. The two
+caption sentences of §21.8 and §21.9 are kept, and one sentence is added to the median's.
+
 ## 6. Conclusion
 
 **Not drafted.** The validation conclusion requires the cross-vendor result, which is

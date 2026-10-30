@@ -43,17 +43,17 @@
  "pooled_present_excluding": [
   {
    "fluid": "IRF",
-   "value": -0.12315960933566783,
-   "ci_low": -0.20995032444098832,
-   "ci_high": -0.034700466822718476,
+   "value": -0.12683580386562887,
+   "ci_low": -0.2030312326409662,
+   "ci_high": -0.04625843828405114,
    "n_held_out": 55,
    "n_in_domain": 11
   },
   {
    "fluid": "PED",
-   "value": -0.15234974256776962,
-   "ci_low": -0.23851760109442208,
-   "ci_high": -0.062034526134422056,
+   "value": -0.15710076096693737,
+   "ci_low": -0.24742441029531145,
+   "ci_high": -0.061732120189439736,
    "n_held_out": 33,
    "n_in_domain": 3
   }
@@ -61,9 +61,9 @@
  "spectralis_srf": {
   "comparison": "spectralis",
   "fluid": "SRF",
-  "value": 0.4811143897224046,
-  "ci_low": 0.17574461781615544,
-  "ci_high": 0.7067771389597698
+  "value": 0.48199499722630557,
+  "ci_low": 0.1711580539861056,
+  "ci_high": 0.7110855428943402
  },
  "n_class_present_excluding": 4,
  "class_present_strata": [
@@ -71,18 +71,18 @@
   5
  ],
  "halfwidth_fold": [
-  0.17,
-  0.31
+  0.18,
+  0.32
  ],
  "halfwidth_pooled": [
-  0.16,
-  0.22
+  0.14,
+  0.2
  ],
  "halfwidth_present_pooled": [
-  0.09,
-  0.35
+  0.08,
+  0.31
  ],
- "detection_limit": 0.16,
+ "detection_limit": 0.14,
  "unreliable_below": 0.3,
  "n_cells": 18,
  "fp_cells": 14,
@@ -106,7 +106,7 @@
   "shift": 0.1430544016630039,
   "one_flip": 0.14285714285714285,
   "absent": 4,
-  "corrected": 0.13522935123511187
+  "corrected": 0.13769694736797178
  },
  "step0": {
   "leaves": 466,

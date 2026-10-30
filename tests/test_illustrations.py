@@ -361,6 +361,6 @@ def test_TC_146_the_audited_set_reads_only_audited_held_out_records():
     paths = ILL.held_out_records(sets["audited"], "audited")
     assert all(p.parent.name == "audited" and p.name == "evaluation_test.json"
                for p in paths.values())  # fmt: skip
-    for wrong in (sets["corrected"], sets["wrong_axes"]):
+    for wrong in (sets["through_d1"], sets["wrong_axes"]):
         with pytest.raises(SystemExit, match="not a audited held-out record"):
             ILL.held_out_records(wrong, "audited")
