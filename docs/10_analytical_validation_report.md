@@ -660,7 +660,17 @@ observation, not a measured finding.** On reviewing Figures 9 to 11:
 
 **On the final images, 2026-10-30, the author found Figures 9 to 11 unchanged** (the same scans
 and B-scans, redrawn from the saved maps). **The pattern survives the inversion fix and D1's**,
-so it was not an artefact of either. **How often
+so it was not an artefact of either.
+
+**The author's qualitative review of the published images, 2026-10-30. Not a measured
+finding; how often it occurs has not been measured.**
+
+- **Figure 10 (`bscan_fp_srf.png`).** The pattern appears here too: a small IRF region lies
+  below the RPE, where intraretinal fluid cannot occur.
+- **Figure 11 (`bscan_fp_ped.png`).** Besides the outlines below the RPE, the model draws a PED
+  outline at the inner retinal surface, where a pigment epithelial detachment cannot occur.
+
+**How often
 it happens across the held-out scans is still not measured**: it is seen in images chosen as the
 largest false positives of their kind, which are by construction not typical. Measuring it would
 need an anatomical-location count over every scan, which has not been done.
