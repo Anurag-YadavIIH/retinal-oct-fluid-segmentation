@@ -185,6 +185,7 @@ steered towards flattering examples. Carried into DMP-C2 below.
 | DMP-C5 | Single registered user | Data accessed under one registration by a single named recipient; not shared with any third party (§7) |
 | DMP-C12 | **No image, mask or pixel content enters a coding-assistant session** | Added 2026-10-13 (§7.3). Scripts that read pixel data print only shapes, types, value ranges and label sets. Images rendered from the data, including the illustrative B-scans of §2.2.2, are reviewed by the author outside any session and are never opened, read or described in one |
 | DMP-C11 | **No reidentification, and no attempt at it** | No linkage to any external dataset, no demographic inference, no attempt to recover subject identity from image content or metadata. Technically, the salted-hash pseudonyms of SRS-013 are one-way and the salt is never committed, so this project's own outputs cannot be relinked to source identifiers by anyone reading the repository. Carried as RC-030 in `docs/05` |
+| DMP-C13 | **Saved predicted label maps are local derived data, never redistributed** | Added 2026-10-29 (SRS-106). The final evaluation of `docs/07` §17.13 saves every predicted label map, one compressed file per volume, under `<repo>\artifacts\predictions_final`, with a checksum manifest in each evaluation record. They are mask volumes derived from the data and keyed on RETOUCH subject identifiers, so DMP-C1 and DMP-C2 apply to them as to the source: `artifacts/` is excluded by `.gitignore` (checked by TC-155), no code uploads them, and none is committed, pushed, published or attached anywhere. DMP-C12 applies too: a coding-assistant session reads only their checksums, shapes and the metrics measured from them, never their content. Their only purpose is re-measurement on this workstation: a measurement defect found later is corrected by re-measuring them against the references, without running the model. They are deleted with everything else (§8.1 step 7a) |
 
 ### 2.4 Decision gate — closed 2026-09-23, not triggered
 
@@ -575,6 +576,7 @@ not a link to it, and the audit found no project or dataset file in either OneDr
 | ~~`D:\ocuval_cache`~~ | The Topcon fold's frame cache, image and label arrays, placed there via `OCUVAL_CACHE_DIR` on 2026-10-04. **Deleted 2026-10-14** | 5.2 GB, now none |
 | ~~`<repo>\artifacts\cache`~~ | The Cirrus and Spectralis folds' frame caches: image and label arrays, each frame carrying its subject identifier. **Deleted 2026-10-14** | 12 GB, now none |
 | `<repo>\artifacts\runs` | Trained checkpoints, and evaluation records whose per-scan rows are keyed on RETOUCH subject identifiers | not measured |
+| `<repo>\artifacts\predictions_final` | **From the final run of `docs/07` §17.13 (2026-10-29 onwards):** every predicted label map in native geometry, one compressed file per volume named by its RETOUCH subject identifier, with its spacing and detection scores (DMP-C13) | not yet written; at most 8.0 GB uncompressed (derived: 119 maps of at most 128 × 1024 × 512 bytes each), compressed size not measured |
 | `<repo>\artifacts` (everything else) | Run logs, the evaluation chain's logs, benchmarks, telemetry, the sealed-access log | not measured |
 | `<repo>\data\splits` | Split records, keyed on RETOUCH subject identifiers | 28 KB (measured 2026-09-23, §4.1) |
 | `C:\Users\rites_ljry4pu\.claude\projects\c--Users-rites-ljry4pu-Documents-Projects-ocuval`, and the session's temporary folder under `%LOCALAPPDATA%\Temp\claude` | Claude Code session records and scratch files: dataset-derived text only (§7.3), no image data | not measured |
@@ -907,6 +909,8 @@ appearing to remove it, so the targets are named here, not the links. `<repo>` i
    2026-10-14** (§4.2). Steps 4 to 6 stay in this list because a future training run
    recreates a cache: delete wherever `OCUVAL_CACHE_DIR` or `data.cache_dir` then points.
 7. `<repo>\artifacts\runs`: trained checkpoints and evaluation records.
+7a. `<repo>\artifacts\predictions_final`: the saved predicted label maps (DMP-C13). Step 8
+    covers it too; it is named because it holds mask volumes, not only text.
 8. Everything else under `<repo>\artifacts` except `.gitkeep`: logs, the chain's logs,
    benchmarks, telemetry and the sealed-access log.
 9. `<repo>\data\splits`, then the three junctions in `<repo>\data`.

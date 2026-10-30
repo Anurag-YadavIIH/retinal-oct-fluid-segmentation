@@ -24,6 +24,7 @@ spec = importlib.util.spec_from_file_location(
 )
 ILL = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ILL)
+REASON = "illustration only: docs/07 section 21.9, after the section 17.11 re-evaluation"
 
 
 def scan(run, subject, present=None, absent_voxels=None, threshold_voxels=0):
@@ -264,7 +265,7 @@ def test_TC_134_one_failure_saves_no_image_for_any_scan(tmp_path):
 @pytest.mark.parametrize(
     "argv",
     [
-        ["--unlock-reason", "r", "--approved-by", "a", "--device", "cpu"],
+        ["--unlock-reason", REASON, "--approved-by", "a", "--device", "cpu"],
         ["--unlock-reason", "  ", "--approved-by", "a"],
         ["--unlock-reason", "r"],
         ["--approved-by", "a"],
@@ -276,3 +277,90 @@ def test_TC_134_the_script_refuses_before_anything_runs(argv, tmp_path, monkeypa
     with pytest.raises(SystemExit):
         ILL.parse_args(argv)
     assert not (tmp_path / "sealed_access.jsonl").exists(), "nothing may be logged or opened"
+
+
+# --- TC-146: the section 21.9 regeneration, on arguments and inputs only --------------------
+
+
+@pytest.mark.parametrize(
+    "reason",
+    ["illustration only, docs/07 section 21", "illustration only, docs/07 section 17.11",
+     "illustration only, section 21.17"],
+    ids=["no-17.11", "no-21", "21-only-inside-another-number"],
+)  # fmt: skip
+def test_TC_146_a_reason_not_citing_17_11_and_21_is_refused(reason, tmp_path):
+    with pytest.raises(SystemExit):
+        ILL.parse_args(["--unlock-reason", reason, "--approved-by", "a",
+                        "--output-dir", str(tmp_path / "new")])  # fmt: skip
+
+
+def test_TC_146_a_reason_citing_both_is_accepted(tmp_path):
+    args = ILL.parse_args(["--unlock-reason", REASON, "--approved-by", "a",
+                           "--output-dir", str(tmp_path / "new")])  # fmt: skip
+    assert args.unlock_reason == REASON
+
+
+def test_TC_146_an_output_directory_holding_files_is_refused(tmp_path):
+    (tmp_path / "bscan_best.png").write_bytes(b"x")
+    with pytest.raises(SystemExit):
+        ILL.parse_args(["--unlock-reason", REASON, "--approved-by", "a",
+                        "--output-dir", str(tmp_path)])  # fmt: skip
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    ILL.parse_args(["--unlock-reason", REASON, "--approved-by", "a", "--output-dir", str(empty)])
+
+
+def test_TC_146_the_default_output_is_a_new_directory():
+    assert Path("artifacts") / "illustrations_corrected" == ILL.OUT
+
+
+def test_TC_146_selection_and_gate_read_only_the_corrected_held_out_records():
+    figures = importlib.util.module_from_spec(
+        spec := importlib.util.spec_from_file_location(
+            "figs_tc146", REPO / "scripts" / "07_make_figures.py"
+        )
+    )
+    spec.loader.exec_module(figures)
+    paths = ILL.held_out_records(figures.report.record_paths(figures.RUNS)["wrong_axes"])
+    assert set(paths) == set(ILL.FOLDS)
+    assert all(p.parent.name == "corrected" and p.name == "evaluation_test.json"
+               for p in paths.values())  # fmt: skip
+    # The source main() passes is the section 17.11 set, not the figures' current one.
+    source = (REPO / "scripts" / "09_illustrative_bscans.py").read_text(encoding="utf-8")
+    assert 'which = "wrong_axes" if folder == "corrected" else "audited"' in source
+
+    superseded = {f: {"test": REPO / "artifacts" / "runs" / f / "evaluation_test.json"}
+                  for f in ILL.FOLDS}  # fmt: skip
+    current = figures.RECORDS  # section 17.12's corrected_hd95, which section 21.9 never read
+    for wrong in (superseded, current):
+        with pytest.raises(SystemExit, match="not a corrected held-out record"):
+            ILL.held_out_records(wrong)
+
+
+AUDITED_REASON = "illustrations under docs/07 section 17.13 and section 21 (21.10)"
+
+
+def test_TC_146_the_audited_set_needs_17_13_and_21_and_writes_to_its_own_directory(tmp_path):
+    with pytest.raises(SystemExit):  # a section 17.11 reason does not open the audited set
+        ILL.parse_args(["--unlock-reason", REASON, "--approved-by", "a", "--record-set",
+                        "audited", "--output-dir", str(tmp_path / "new")])  # fmt: skip
+    args = ILL.parse_args(["--unlock-reason", AUDITED_REASON, "--approved-by", "a",
+                           "--record-set", "audited"])  # fmt: skip
+    assert args.output_dir == Path("artifacts") / "illustrations_audited"
+    assert ILL.RECORD_SETS["corrected"][2] == ILL.OUT  # the default set keeps section 21.9's
+
+
+def test_TC_146_the_audited_set_reads_only_audited_held_out_records():
+    figures = importlib.util.module_from_spec(
+        spec := importlib.util.spec_from_file_location(
+            "figs_tc146b", REPO / "scripts" / "07_make_figures.py"
+        )
+    )
+    spec.loader.exec_module(figures)
+    sets = figures.report.record_paths(figures.RUNS)
+    paths = ILL.held_out_records(sets["audited"], "audited")
+    assert all(p.parent.name == "audited" and p.name == "evaluation_test.json"
+               for p in paths.values())  # fmt: skip
+    for wrong in (sets["through_d1"], sets["wrong_axes"]):
+        with pytest.raises(SystemExit, match="not a audited held-out record"):
+            ILL.held_out_records(wrong, "audited")

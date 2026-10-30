@@ -344,18 +344,34 @@ INVERSION_CASES = [
 BAND_POSITIONS = [(0.05, 0.12), (0.30, 0.37), (0.47, 0.54), (0.63, 0.70), (0.85, 0.92)]
 
 
+def expected_inversion(label: np.ndarray, native_rows: int, prepared: int) -> np.ndarray:
+    """The native map a perfect prediction must invert to, by integer arithmetic alone.
+
+    Prepared row i holds the label of native row floor(i * rows / prepared), as the chain's
+    nearest-neighbour resampling takes it; each native row then takes the prepared row whose
+    sampled row is nearest, ties to the even prepared row (SRS-074 as amended 2026-10-29).
+    """
+    src = (np.arange(prepared) * native_rows) // prepared
+    distance = np.abs(np.arange(native_rows)[:, None] - src[None, :])
+    nearest = distance == distance.min(axis=1, keepdims=True)
+    tied_even = nearest & (np.arange(prepared)[None, :] % 2 == 0)
+    cell = np.where(nearest.sum(axis=1) > 1, tied_even.argmax(axis=1), nearest.argmax(axis=1))
+    return label[src][cell]
+
+
 @pytest.mark.parametrize(("vendor", "spacing", "height"), INVERSION_CASES, ids=lambda v: v)
 @pytest.mark.parametrize(("low", "high"), BAND_POSITIONS)
 def test_TC_048_a_perfect_prediction_inverts_onto_its_native_position(
     vendor, spacing, height, low, high
 ):
-    """SRS-074: the padding added to reach roi_size must be removed before resizing.
+    """SRS-074: every predicted voxel returns to its native position, padding and all.
 
     A label put through the real evaluation chain is a perfect prediction on the prepared
-    frame. Inverted, it must land where it came from, at every height and for every vendor.
-    Until 2026-10-16 the inversion resized the padded frame whole, which compressed cirrus
-    and spectralis predictions towards the middle: a band near the top or bottom scored
-    Dice 0 (`docs/13`). The shape-only test above could not see that.
+    frame. Inverted, it must equal voxel for voxel the map computed above without the code
+    under test. Until 2026-10-16 the padded frame was resized whole (a band near the top or
+    bottom scored Dice 0); until 2026-10-29 the resize used torch's legacy nearest mode and
+    moved every band about one native row deeper (D1), which this test's former Dice > 0.95
+    tolerance absorbed (D7, `docs/13`).
     """
     width = 512
     label = np.zeros((height, width), dtype=np.uint8)
@@ -373,21 +389,11 @@ def test_TC_048_a_perfect_prediction_inverts_onto_its_native_position(
     back = invert_axial_resample(prepared[None], spacing, (height, width), target_axial_mm=TARGET)
     back = back[0]
 
-    # The padding must contribute nothing: the padded path must give exactly the map a
-    # resample-only round trip gives. What remains is nearest-neighbour resampling loss,
-    # which is the cost of the declared axial target, not a placement error.
-    resampled = ResampleAxiald(keys=("label",), target_axial_mm=TARGET)(
-        {"label": label[None], "spacing_mm": spacing}
-    )["label"]
-    unpadded = invert_axial_resample(
-        np.asarray(resampled), spacing, (height, width), target_axial_mm=TARGET
-    )[0]
+    rows = max(1, int(round(height * spacing[0] / TARGET)))
+    want = expected_inversion(label, height, rows)
     band = f"{vendor}, band {low:.0%}-{high:.0%}"
-    assert np.array_equal(back, unpadded), f"{band}: the padding changed the inverted map"
-
-    overlap = int(((back == 1) & (label == 1)).sum())
-    dice = 2 * overlap / (int((back == 1).sum()) + int((label == 1).sum()))
-    assert dice > 0.95, f"{band}: Dice {dice:.3f} after inversion"
+    misplaced = int((back != want).sum())
+    assert misplaced == 0, f"{band}: {misplaced} voxels away from their native position"
 
 
 def test_TC_048_native_spacing_is_preserved_bit_identically():

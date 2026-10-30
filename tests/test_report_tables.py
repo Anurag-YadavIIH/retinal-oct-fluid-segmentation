@@ -62,8 +62,11 @@ def test_TC_138_the_class_present_view_drops_exactly_the_absent_rows():
 
 
 def test_TC_138_the_difference_is_seeded_held_out_first_and_reproducible():
+    """With no shared patient, the joint draw is the independent one, held-out first."""
     held, ref = np.array([0.2, 0.4, 0.9, 0.1]), np.array([0.5, 0.7])
-    first, second = report.difference(held, ref, B), report.difference(held, ref, B)
+    hp, ip = ["a", "b", "c", "d"], ["e", "f"]
+    first = report.difference(hp, held, ip, ref, B)
+    second = report.difference(hp, held, ip, ref, B)
     assert first == second
     assert first[0] == pytest.approx(held.mean() - ref.mean())
     rng = np.random.default_rng(B.seed)  # the documented order: held-out draws, then in-domain
@@ -71,8 +74,50 @@ def test_TC_138_the_difference_is_seeded_held_out_first_and_reproducible():
     di = rng.integers(0, 2, size=(B.n_resamples, 2))
     d = held[dh].mean(axis=1) - ref[di].mean(axis=1)
     assert first[1:] == pytest.approx(tuple(np.percentile(d, [2.5, 97.5])))
-    constant = report.difference(np.full(3, 0.5), np.full(3, 0.2), B)
+    constant = report.difference(
+        ["a", "b", "c"], np.full(3, 0.5), ["d", "e", "f"], np.full(3, 0.2), B
+    )
     assert constant == pytest.approx((0.3, 0.3, 0.3))
+
+
+def test_TC_138_shared_patients_are_drawn_once_for_both_arms():
+    """D2: the pooled arms share patients, and one draw must keep each patient's pair together.
+
+    Every held-out value sits 0.1 above the same patient's in-domain value, so every joint
+    replicate differs by exactly 0.1. The independent resample breaks the pairs and spreads.
+    """
+    patients = [f"p{k}" for k in range(10)]
+    ref = np.linspace(0.0, 0.9, 10)
+    point, low, high = report.difference(patients, ref + 0.1, patients, ref, B)
+    assert (point, low, high) == pytest.approx((0.1, 0.1, 0.1))
+    some = patients[:6] + ["q1", "q2"]  # two held-out-only patients as well
+    held = np.concatenate([ref[:6] + 0.1, [0.5, 0.6]])
+    p2, l2, h2 = report.difference(some, held, patients[:6], ref[:6], B)
+    assert p2 == pytest.approx(held.mean() - ref[:6].mean()) and l2 <= p2 <= h2
+
+
+def test_TC_138_the_superseded_figures_keep_the_estimator_they_were_published_with():
+    """The author's decision of 2026-10-30: docs/10 section 10 stays as published."""
+    held, ref = np.array([0.2, 0.4, 0.9, 0.1]), np.array([0.5, 0.7, 0.3])
+    rng = np.random.default_rng(B.seed)  # as published: held-out draws, then in-domain
+    d = (held[rng.integers(0, 4, size=(B.n_resamples, 4))].mean(axis=1)
+         - ref[rng.integers(0, 3, size=(B.n_resamples, 3))].mean(axis=1))  # fmt: skip
+    expected = (held.mean() - ref.mean(), *np.percentile(d, [2.5, 97.5]))
+    assert report.difference_as_published(held, ref, B) == pytest.approx(expected)
+    # Disjoint arms: the two estimators agree. Shared patients: they do not.
+    assert report.difference(list("abcd"), held, list("efg"), ref, B) == pytest.approx(expected)
+    patients = [f"p{k}" for k in range(10)]
+    paired = np.linspace(0.0, 0.9, 10)
+    joint = report.difference(patients, paired + 0.1, patients, paired, B)
+    assert joint[1:] != pytest.approx(report.difference_as_published(paired + 0.1, paired, B)[1:])
+
+
+def test_TC_138_generate_uses_the_published_estimator_for_section_10_only():
+    import inspect
+
+    source = inspect.getsource(report.generate)
+    assert "comparisons(old, as_published=True)" in source
+    assert "comparisons(cur)" in source
 
 
 def test_TC_138_overlap_is_closed_and_a_single_patient_is_its_point():
@@ -128,8 +173,29 @@ def test_TC_139_half_widths_are_half_the_difference_interval_rounded():
                 width = 0.4 if comp == "cirrus" else 0.3
                 comps[(view, comp, cls)] = {"diff": (0.0, -width / 2, width / 2)}
     hw = report.half_widths(comps)
-    assert hw["all-volume, per fold"] == (0.15, 0.2)
-    assert hw["all-volume, pooled"] == (0.15, 0.15)
+    assert hw["all-volume, per fold"] == pytest.approx((0.15, 0.2))
+    assert hw["all-volume, pooled"] == pytest.approx((0.15, 0.15))
+
+
+def test_TC_139_a_stated_figure_is_rounded_once_and_percentages_round_half_up():
+    """D9: rounding to two places and then to one printed 0.2 for 0.251."""
+    comps = {}
+    for view in ("all-volume", "class-present"):
+        for comp in (*report.FOLDS, "pooled"):
+            for cls in report.CLASSES:
+                half = 0.251 if comp == "cirrus" else 0.1
+                comps[(view, comp, cls)] = {"diff": (0.0, -half, half)}
+    hw = report.half_widths(comps)
+    assert hw["all-volume, per fold"][1] == pytest.approx(0.251)
+    assert report.unreliable_below(hw) == "0.3"
+    comps[("all-volume", "cirrus", "IRF")]["diff"] = (0.0, -0.351, 0.351)
+    assert report.unreliable_below(report.half_widths(comps)) == "0.4"
+    assert [report.pct(1, 8), report.pct(5, 8), report.pct(1, 3), report.pct(2, 3)] == [
+        13,
+        63,
+        33,
+        67,
+    ]
 
 
 # --- TC-140: the section 19.2 threshold ----------------------------------------------------
@@ -256,6 +322,25 @@ def test_TC_142_a_per_fold_row_matches_docs_10_character_for_character():
     assert old[0].startswith("| through the defect | cirrus (spectralis + topcon) | IRF | 0.6057 ")
 
 
+def test_TC_153_the_secondary_hd95_prints_in_the_per_fold_format_and_only_when_recorded():
+    held, ref = est(0.6517, 0.5, 0.8, 14), est(0.4, 0.3, 0.5, 6)
+    recs = per_fold_records(held, ref)
+    assert report.secondary_hd95_rows(recs) is None, "no record carries the block: no table"
+    for f in report.FOLDS:
+        for arm, e in (("test", held), ("in_domain_ref", ref)):
+            block = {c: {report.SECONDARY_HD95: e} for c in ("IRF", "PED")}
+            recs[f][arm]["segmentation_secondary"] = {"all_vendors": block}
+    rows = report.secondary_hd95_rows(recs)
+    assert rows[0] == (
+        "| secondary | cirrus (spectralis + topcon) | IRF | 0.6517 [0.5000, 0.8000] n=14 | "
+        "0.4000 [0.3000, 0.5000] n=6 | -0.2517 | yes |"
+    )
+    assert rows[1] == (
+        "| secondary | cirrus (spectralis + topcon) | SRF | not defined: every volume both empty "
+        "| not defined: every volume both empty | — | — |"
+    )
+
+
 def test_TC_142_prose_negatives_use_the_minus_sign():
     assert report.minus("IRF -0.1232 [-0.2100, -0.0347]") == "IRF −0.1232 [−0.2100, −0.0347]"
     assert report.signed(0.0881) == "+0.0881" and report.signed(-0.0339) == "-0.0339"
@@ -311,10 +396,98 @@ def test_TC_143_a_superseded_row_is_compared_only_with_the_superseded_table():
     assert differences[0].where == f"line {lines.index('| through the defect | x | 0.1000 |') + 1}"
 
 
+def test_TC_143_each_record_set_comes_from_its_own_records():
+    # docs/07 section 17.13 (2026-10-30): the current figures are the final re-evaluation's; the
+    # section 17.12 records are read only for docs/10 section 10.3, labelled through D1, and the
+    # 24 October records only for the HD95 kept as measured on the wrong spacing axes.
+    paths = report.record_paths(Path("runs"))
+    for fold in report.FOLDS:
+        for arm in report.ARMS:
+            assert paths["corrected"][fold][arm].parent.name == "audited"
+            assert paths["through_d1"][fold][arm].parent.name == "corrected_hd95"
+            assert paths["wrong_axes"][fold][arm].parent.name == "corrected"
+            assert paths["corrected"][fold][arm].name == paths["through_d1"][fold][arm].name
+        assert paths["val"][fold].parent.name == "audited"
+    # The page and figures read what the documents are checked against, not their own copy.
+    figs = load_script("make_figures_tc143", "07_make_figures.py")
+    current = report.record_paths(figs.RUNS)["corrected"]
+    assert {f: {a: figs.RECORDS[f][a] for a in report.ARMS} for f in report.FOLDS} == current
+
+
 def test_TC_143_findings_from_the_records_are_reported_too():
     g = generated()
     g.findings.append("AUROC differs from the record")
     assert [d.doc for d in report.check(g, {"docs/10": DOC})] == ["records"]
+
+
+def test_TC_143_a_statement_is_not_found_inside_a_longer_number_or_word():
+    """D10: substring matching found "5% against 30%" inside "15% against 30%"."""
+    g = report.Generated()
+    g.say("docs/10", "5% against 30% for SRF", "smaller than about 0.14 Dice")
+    found = report.check(g, {"docs/10": "It is 15% against 30% for SRF; about 0.145 Dice."})
+    assert len(found) == 2, [str(d) for d in found]
+    fine = report.check(
+        g, {"docs/10": "It is 5% against 30% for SRF, smaller than about 0.14 Dice."}
+    )
+    assert fine == []
+
+
+def _synthetic_sets(tmp_path):
+    """Complete record sets from `pipeline.evaluate`: arms identical, every AUROC 1.
+
+    Each fold's held-out and in-domain arms carry the same Dice, so no difference excludes zero
+    and no per-fold comparison is apart; every class-present volume outscores every absent one.
+    """
+    from ocuval.eval.pipeline import EvaluationPlan, detection_rows, evaluate
+
+    def volume(patient, vendor, k):
+        seg, pv, rv, scores = [], {}, {}, {}
+        for c, cls in enumerate(report.CLASSES):
+            present = (k + c) % 3 != 0
+            voxels = 50 if present else 0
+            seg += [
+                {"fluid_class": cls, "metric": "dice", "value": 0.6 if present else 1.0},
+                {"fluid_class": cls, "metric": "hd95", "value": 0.3 if present else 0.0},
+                {
+                    "fluid_class": cls,
+                    "metric": "volume_mm3_predicted",
+                    "value": 1e-3,
+                    "voxels": voxels,
+                },
+                {
+                    "fluid_class": cls,
+                    "metric": "volume_mm3_reference",
+                    "value": 1e-3,
+                    "voxels": voxels,
+                },
+            ]
+            pv[cls], rv[cls], scores[cls] = voxels, voxels, 0.9 if present else 0.1
+        detection = detection_rows(pv, rv, scores, threshold=10)
+        return {"sample_id": f"s{patient}", "patient_id": patient, "vendor": vendor,
+                "segmentation": seg, "detection": detection}  # fmt: skip
+
+    def rec(prefix, vendor):
+        vols = [volume(f"{prefix}{k}", vendor, k) for k in range(6)]
+        plan = EvaluationPlan(fold_id="f", bucket="val", seed=20260916, n_resamples=50)
+        return evaluate(plan, vols, artifacts_root=tmp_path)
+
+    fold_sets = {
+        f: {"test": rec(f"{f}H", f), "in_domain_ref": rec(f"{f}R", "other")} for f in report.FOLDS
+    }
+    return report.RecordSets(
+        corrected=fold_sets,
+        superseded=fold_sets,
+        unseeded_cirrus=fold_sets["cirrus"],
+        val={f: fold_sets[f]["test"] for f in report.FOLDS},
+    )
+
+
+def test_TC_143_the_generator_states_zero_and_empty_without_failing(tmp_path):
+    """D10: `word(0)` raised KeyError and empty lists raised IndexError or ValueError."""
+    g = report.generate(_synthetic_sets(tmp_path))
+    said = " ".join(s for texts in g.statements.values() for s in texts)
+    assert "Per fold, zero comparisons do not overlap: none" in said
+    assert "zero of the 24 difference intervals excluding zero" in said
 
 
 def test_TC_143_neither_the_module_nor_the_script_can_write_a_document():

@@ -22,6 +22,7 @@ from ocuval.report import seg_object as seg
 from ocuval.report import sr_object as sr
 
 UID_ROOT = "1.2.826.0.1.3680043.10.9999"
+REPO = __import__("pathlib").Path(__file__).resolve().parents[1]
 SPACING_MM = (0.0039, 0.0117, 0.047)
 FRAMES, ROWS, COLUMNS = 4, 16, 12
 
@@ -89,6 +90,34 @@ def test_TC_070_one_segment_per_fluid_class(source_images, segments):
     )
     assert len(obj.SegmentSequence) == 3
     assert [s.SegmentLabel for s in obj.SegmentSequence] == ["IRF", "SRF", "PED"]
+
+
+def test_TC_070_segment_numbers_are_the_configured_label_indices_in_any_order(
+    source_images, segments
+):
+    """D11: segments were numbered by their position in the caller's list."""
+    import yaml
+
+    labels = yaml.safe_load((REPO / "configs" / "data.yaml").read_text(encoding="utf-8"))["labels"]
+    shuffled = [segments[2], segments[0], segments[1]]  # PED, IRF, SRF
+    obj = seg.build_segmentation(
+        source_images, shuffled, series_instance_uid=f"{UID_ROOT}.71",
+        sop_instance_uid=f"{UID_ROOT}.72",
+    )  # fmt: skip
+    numbered = {str(d.SegmentLabel): int(d.SegmentNumber) for d in obj.SegmentSequence}
+    assert numbered == {name: labels[name] for name in ("IRF", "SRF", "PED")}
+    by_label = {s.label: int(np.asarray(s.mask).sum()) for s in segments}
+    pixels = np.asarray(obj.pixel_array).reshape(len(obj.PerFrameFunctionalGroupsSequence), -1)
+    per_number: dict[int, int] = {}
+    for frame, group in zip(pixels, obj.PerFrameFunctionalGroupsSequence, strict=True):
+        number = int(group.SegmentIdentificationSequence[0].ReferencedSegmentNumber)
+        per_number[number] = per_number.get(number, 0) + int(frame.sum())
+    for name, number in numbered.items():
+        assert per_number.get(number, 0) == by_label[name], f"{name}'s mask is not segment {number}"
+    for bad in ([segments[1]], [segments[0], segments[0], segments[1]]):
+        with pytest.raises(ValueError, match="configured fluid class"):
+            seg.build_segmentation(source_images, bad, series_instance_uid=f"{UID_ROOT}.73",
+                                   sop_instance_uid=f"{UID_ROOT}.74")  # fmt: skip
 
 
 def test_TC_070_segments_carry_coded_descriptions_not_free_text(source_images, segments):
@@ -212,6 +241,44 @@ def report(source_images, names) -> Dataset:
         series_instance_uid=dw.generate_uid(UID_ROOT),
         sop_instance_uid=dw.generate_uid(UID_ROOT),
     )
+
+
+def _uidrefs(dataset) -> list[str]:
+    found = []
+    for item in getattr(dataset, "ContentSequence", None) or []:
+        if getattr(item, "ValueType", None) == "UIDREF":
+            found.append(str(item.UID))
+        found += _uidrefs(item)
+    return found
+
+
+def test_TC_076_every_tracking_uid_is_a_valid_ui_value(report, source_images, names):
+    """D6: the confidence group's tracking UID was `{device_uid}.confidence`."""
+    from pydicom.uid import UID
+
+    uids = _uidrefs(report)
+    assert len(uids) >= 4, "a tracking UID per fluid class and one for the confidence group"
+    assert all(UID(u).is_valid for u in uids), [u for u in uids if not UID(u).is_valid]
+    assert len(set(uids)) == len(uids)
+    # SRS-007 as amended 2026-10-30: the device observer UID is under the configured root;
+    # every Tracking UID is in the PS3.5 B.2 UUID form instead.
+    under_root = [u for u in uids if u.startswith(UID_ROOT + ".")]
+    tracking = [u for u in uids if u not in under_root]
+    assert len(under_root) == 1, under_root  # the device
+    assert tracking and all(u.startswith("2.25.") and u[5:].isdigit() for u in tracking)
+    long_device = "1.2." + "3" * 59  # 63 characters, itself valid
+
+    def build(device):
+        return sr.build_measurement_report(
+            source_images, [], names, confidence=0.5,
+            procedure_reported=local_code("OCTSEG", "OCT fluid segmentation (local)"),
+            device_uid=device, series_instance_uid=dw.generate_uid(UID_ROOT),
+            sop_instance_uid=dw.generate_uid(UID_ROOT),
+        )  # fmt: skip
+
+    long_uids = _uidrefs(build(long_device))
+    assert long_uids and all(UID(u).is_valid for u in long_uids)
+    assert _uidrefs(build(long_device)) == long_uids, "derived, so repeatable"
 
 
 def test_TC_074_every_quantity_carries_a_coded_unit(report):
@@ -341,8 +408,9 @@ def test_TC_076_declared_scheme_used_when_no_code_supplied(source_images):
 
 
 def test_TC_076_scheme_is_identified_in_the_object(source_images):
-    segments = [
-        seg.FluidSegment(label="IRF", mask=np.zeros((FRAMES, ROWS, COLUMNS), dtype=np.uint8))
+    segments = [  # every configured class, as SRS-038 requires since 2026-10-29
+        seg.FluidSegment(label=name, mask=np.zeros((FRAMES, ROWS, COLUMNS), dtype=np.uint8))
+        for name in ("IRF", "SRF", "PED")
     ]
     obj = seg.build_segmentation(
         source_images,
@@ -367,12 +435,13 @@ def test_TC_076_unknown_label_still_refuses():
 
 def test_TC_076_caller_supplied_code_takes_precedence(source_images):
     supplied = CodedConcept(value="12345", scheme_designator="SCT", meaning="Something verified")
-    segments = [
+    segments = [  # every configured class, each with a supplied code (SRS-038 since 2026-10-29)
         seg.FluidSegment(
-            label="IRF",
+            label=name,
             mask=np.zeros((FRAMES, ROWS, COLUMNS), dtype=np.uint8),
             coded_type=supplied,
         )
+        for name in ("IRF", "SRF", "PED")
     ]
     obj = seg.build_segmentation(
         source_images,

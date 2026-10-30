@@ -27,7 +27,9 @@ dictionary, so those names are caller-supplied on the same rule as the fluid cla
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass
+from typing import Any, cast
 
 from highdicom.sr import (
     CodedConcept,
@@ -42,16 +44,32 @@ from highdicom.sr import (
 )
 from pydicom import Dataset
 from pydicom.sr.codedict import codes
+from pydicom.sr.coding import Code
 
 from ocuval.report.coding import OCUVAL_SCHEME_DESIGNATOR, declare_scheme
 
+# pydicom's stubs type each `codes.<scheme>` group as a union that includes `Code`, so an
+# attribute lookup on it does not type-check; the dictionary is the same object either way.
+CONCEPTS: Any = codes
+
 # Verified UCUM concepts. RC-025 is satisfied by these being coded, not by their values.
-UNIT_CUBIC_MM = codes.UCUM.CubicMillimeter
-UNIT_COUNTS = codes.UCUM.Counts
-UNIT_NO_UNITS = codes.UCUM.NoUnits
+UNIT_CUBIC_MM = cast(Code, CONCEPTS.UCUM.CubicMillimeter)
+UNIT_COUNTS = cast(Code, CONCEPTS.UCUM.Counts)
+UNIT_NO_UNITS = cast(Code, CONCEPTS.UCUM.NoUnits)
 
 # Verified measurement name.
-VOLUME = codes.SCT.Volume
+VOLUME = cast(Code, CONCEPTS.SCT.Volume)
+
+
+def tracking_uid(device_uid: str, position: int) -> str:
+    """A Tracking Unique Identifier derived from the device UID and the group's position.
+
+    A name-based UUID (uuid5) in the `2.25.<integer>` form of PS3.5 section B.2, so it is a
+    valid UI value whatever the device UID's length, and the same inputs give the same value
+    (SRS-041, clarified 2026-10-29, finding D6). Appending to the device UID cannot work: a
+    device UID of full length leaves no room, and `.confidence` was never a UI value.
+    """
+    return f"2.25.{uuid.uuid5(uuid.NAMESPACE_OID, f'{device_uid}.{position}').int}"
 
 
 class MeasurementCodingError(ValueError):
@@ -67,10 +85,10 @@ class MeasurementNames:
     or an explicitly declared local one.
     """
 
-    voxel_count: CodedConcept | Dataset
-    voxel_volume: CodedConcept | Dataset
-    confidence: CodedConcept | Dataset
-    volume: CodedConcept | Dataset = VOLUME
+    voxel_count: CodedConcept | Code
+    voxel_volume: CodedConcept | Code
+    confidence: CodedConcept | Code
+    volume: CodedConcept | Code = VOLUME
 
     def __post_init__(self) -> None:
         for field_name in ("voxel_count", "voxel_volume", "confidence"):
@@ -92,7 +110,7 @@ class FluidMeasurement:
     """
 
     label: str
-    coded_type: CodedConcept | Dataset
+    coded_type: CodedConcept | Code
     volume_mm3: float
     voxel_count: int
     voxel_volume_mm3: float
@@ -104,7 +122,7 @@ def build_measurement_report(
     names: MeasurementNames,
     *,
     confidence: float,
-    procedure_reported: CodedConcept | Dataset,
+    procedure_reported: CodedConcept | Code,
     device_uid: str,
     series_instance_uid: str,
     sop_instance_uid: str,
@@ -127,7 +145,7 @@ def build_measurement_report(
         raise ValueError(f"confidence must be in [0, 1], got {confidence}")
 
     observer = ObserverContext(
-        observer_type=codes.DCM.Device,
+        observer_type=cast(CodedConcept, CONCEPTS.DCM.Device),
         observer_identifying_attributes=DeviceObserverIdentifyingAttributes(
             uid=device_uid,
             name="OcuVal",
@@ -152,7 +170,7 @@ def build_measurement_report(
         groups.append(
             MeasurementsAndQualitativeEvaluations(
                 tracking_identifier=TrackingIdentifier(
-                    uid=f"{device_uid}.{index + 1}", identifier=item.label
+                    uid=tracking_uid(device_uid, index + 1), identifier=item.label
                 ),
                 finding_type=item.coded_type,
                 measurements=items,
@@ -164,7 +182,8 @@ def build_measurement_report(
     groups.append(
         MeasurementsAndQualitativeEvaluations(
             tracking_identifier=TrackingIdentifier(
-                uid=f"{device_uid}.confidence", identifier="scan-level confidence"
+                uid=tracking_uid(device_uid, len(measurements) + 1),
+                identifier="scan-level confidence",
             ),
             measurements=[
                 Measurement(name=names.confidence, value=float(confidence), unit=UNIT_NO_UNITS)
@@ -189,7 +208,9 @@ def build_measurement_report(
         software_versions=software_version or __version__,
     )
 
-    coded = [names.volume, names.voxel_count, names.voxel_volume, names.confidence]
+    coded: list[CodedConcept | Code] = [
+        names.volume, names.voxel_count, names.voxel_volume, names.confidence
+    ]  # fmt: skip
     coded += [m.coded_type for m in measurements]
     if any(
         getattr(c, "scheme_designator", None) == OCUVAL_SCHEME_DESIGNATOR

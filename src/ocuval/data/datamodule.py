@@ -272,7 +272,7 @@ def flat_chain(*parts):
     """
     from monai.transforms import Compose
 
-    flattened = []
+    flattened: list[Any] = []
     for part in parts:
         if isinstance(part, Compose):
             flattened.extend(part.transforms)
@@ -468,7 +468,7 @@ def seed_epoch(loader, seed: int | None, epoch: int) -> None:
     generator = getattr(loader, "generator", None)
     if generator is not None:
         generator.manual_seed(epoch_seed(int(seed), int(epoch), "sampler"))
-    chain = getattr(getattr(loader, "dataset", None), "transform", None)
+    chain: Any = getattr(getattr(loader, "dataset", None), "transform", None)
     if hasattr(chain, "set_random_state"):
         chain.set_random_state(seed=epoch_seed(int(seed), int(epoch), "augment"))
 

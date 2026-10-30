@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 
@@ -123,8 +124,9 @@ def parse_header(path: Path) -> MetaImageHeader:
         raise MetaImageError(f"{path}: DimSize must be positive, got {dims}")
 
     return MetaImageHeader(
-        dim_size=dims,  # type: ignore[arg-type]
-        element_spacing=spacing,  # type: ignore[arg-type]
+        # Three components each, checked above; the cast states it to the type checker.
+        dim_size=cast(tuple[int, int, int], dims),
+        element_spacing=cast(tuple[float, float, float], spacing),
         element_type=element_type,
         data_file=require("ElementDataFile"),
         msb_first=fields.get("BinaryDataByteOrderMSB", "False").strip().lower() == "true",

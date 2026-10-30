@@ -7,9 +7,9 @@ the per-fold arms equal their records, the pooled arms equal `docs/10` §5.2 and
 differences equal `docs/10` §5.4. Every count the page states is computed here and asserted
 against the document that states it.
 
-The records are the corrected ones of the `docs/07` §17.11 re-evaluation, through
-`07_make_figures.RECORDS`. The one exception is the fragility shift of `docs/10` §7.2, which is
-between two draws measured through the inversion defect and is read from those records.
+The records are those of the `docs/07` §17.12 re-evaluation (§17.11's, with HD95 corrected),
+through `07_make_figures.RECORDS`. The one exception is the fragility shift of `docs/10` §7.2,
+which is between two draws measured through the inversion defect and is read from those records.
 
 Two stages, so the page can be rebuilt and tested where the records are absent:
 
@@ -49,7 +49,10 @@ import math
 import re
 import sys
 from datetime import datetime
+from importlib.abc import Loader
+from importlib.machinery import ModuleSpec
 from pathlib import Path
+from typing import Any, cast
 
 from ocuval.eval import report
 
@@ -91,10 +94,10 @@ ILLUSTRATIONS = (
     "bscan_fp_ped.png",
 )
 ILLUSTRATION_CAPTIONS = FIGURES / "illustrations.md"
-# True from 2026-10-22: the B-scans show predictions misplaced by the inversion defect
-# (docs/13, 2026-10-16), so they are neither shown on the page nor deployed until
-# regenerated. TC-133 checks both directions of this flag.
-ILLUSTRATIONS_WITHDRAWN = True
+# True from 2026-10-22 to 2026-10-24, while the B-scans showed predictions misplaced by the
+# inversion defect (docs/13, 2026-10-16). False since their regeneration from the corrected
+# records (docs/07 section 21.9). TC-133 checks both directions of this flag.
+ILLUSTRATIONS_WITHDRAWN = False
 WORDS = {6: "Six", 7: "Seven", 9: "nine"}
 # The cirrus in-domain record of the seeded evaluation of 2026-10-05, measured through the
 # inversion defect. Section 7.2's fragility is the shift between two draws that were both
@@ -107,9 +110,9 @@ CURVES = ("epoch", "train_loss", "val_dice")
 
 
 def load_module(name: str, path: Path):
-    spec = importlib.util.spec_from_file_location(name, path)
+    spec = cast(ModuleSpec, importlib.util.spec_from_file_location(name, path))
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    cast(Loader, spec.loader).exec_module(module)
     return module
 
 
@@ -144,7 +147,7 @@ def text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def claim(path: Path, pattern: str) -> tuple[str, ...]:
+def claim(path: str | Path, pattern: str) -> tuple[str, ...]:
     """The groups of one statement in a document; fails if the statement is gone."""
     match = re.search(pattern, text(REPO / path))
     assert match, f"{path} no longer states {pattern!r}"
@@ -212,7 +215,7 @@ def docs_counts() -> dict:
     page two commits behind until TC-129, run locally, caught it (`docs/13`).
     """
     matrix = "docs/09_traceability_matrix.md"
-    counts = {
+    counts: dict[str, Any] = {
         "srs": int(claim(matrix, r"\*\*(\d+) of \d+\*\*\s+SRS")[0]),
         "registered": int(claim(matrix, r"registered\*\* in `docs/07` §6: \*\*(\d+)\*\*")[0]),
         "written": int(claim(matrix, r"\*\*written\*\*: \*\*(\d+)\*\*")[0]),
@@ -238,9 +241,9 @@ def extract() -> dict[str, bytes]:
     # SRS-098: the page is built only from documents that agree with the records, checked by
     # the same generator the documents are checked by, so the two cannot diverge.
     generated = report.generate(report.load_records(RUNS))
-    differences = report.check(generated, report.read_documents(REPO))
-    assert not differences, "documents disagree with the records:\n" + "\n".join(
-        map(str, differences)
+    disagreements = report.check(generated, report.read_documents(REPO))
+    assert not disagreements, "documents disagree with the records:\n" + "\n".join(
+        map(str, disagreements)
     )
     records = {f: {a: figs.load(figs.RECORDS[f][a]) for a, _ in ARMS} for f in FOLDS}
     out: dict[str, bytes] = {}
@@ -489,6 +492,7 @@ def extract() -> dict[str, bytes]:
             if d["view"] == view and (d["comparison"] == "pooled") == pooled_rows
         ]
 
+    unrounded = {}
     for key, view, pooled_rows, label in (
         ("halfwidth_fold", "all-volume", False, "all-volume, per fold"),
         ("halfwidth_pooled", "all-volume", True, "all-volume, pooled"),
@@ -497,10 +501,12 @@ def extract() -> dict[str, bytes]:
         hw = half_widths(view, pooled_rows)
         lo, hi = round(min(hw), 2), round(max(hw), 2)
         facts[key] = [lo, hi]
+        unrounded[key] = max(hw)
         claim("docs/10_analytical_validation_report.md",
               rf"\| {label} \| {lo:.2f}–{hi:.2f} \|")  # fmt: skip
     facts["detection_limit"] = min(facts["halfwidth_fold"][0], facts["halfwidth_pooled"][0])
-    facts["unreliable_below"] = round(facts["halfwidth_fold"][1], 1)
+    # Rounded once, from the unrounded value (D9); rounding the two-place figure gave 0.2 for 0.251.
+    facts["unreliable_below"] = round(unrounded["halfwidth_fold"], 1)
     claim("docs/10_analytical_validation_report.md",
           rf"ifferences\s+smaller than about {facts['detection_limit']:.2f} Dice cannot be\s+"
           r"detected")  # fmt: skip
@@ -534,8 +540,8 @@ def extract() -> dict[str, bytes]:
     for cls in ("SRF", "PED"):
         row = next(r for r in case_mix if r[0] == cls)
         facts[f"absent_{cls.lower()}"] = [
-            int(re.search(r"\((\d+)%\)", row[2]).group(1)),
-            int(re.search(r"\((\d+)%\)", row[4]).group(1)),
+            int(cast(re.Match[str], re.search(r"\((\d+)%\)", row[2])).group(1)),
+            int(cast(re.Match[str], re.search(r"\((\d+)%\)", row[4])).group(1)),
         ]
 
     # Fragility (§7.2): the cirrus in-domain SRF draws, unseeded and seeded, both measured
@@ -572,11 +578,13 @@ def extract() -> dict[str, bytes]:
     claim("docs/08_vv_report.md",
           rf"\*\*IDENTICAL\*\* on {leaves} of {leaves} compared leaves; also all "
           rf"{facts['step0']['rows']} per-volume rows")  # fmt: skip
-    _, a = epochs(RUNS / "cirrus_holdout_stage1b")
-    _, b = epochs(RUNS / "cirrus_holdout_stage2")
+    _, stage1b = epochs(RUNS / "cirrus_holdout_stage1b")
+    _, stage2 = epochs(RUNS / "cirrus_holdout_stage2")
     keys = ("train_loss", "val_dice", "per_class_dice")
     agree = 0
-    while agree < min(len(a), len(b)) and all(a[agree][k] == b[agree][k] for k in keys):
+    while agree < min(len(stage1b), len(stage2)) and all(
+        stage1b[agree][k] == stage2[agree][k] for k in keys
+    ):
         agree += 1
     facts["training_agreement"] = {"through": agree - 1, "first_difference": agree}
     determinism = [json.loads(text(figs.RECORDS[f]["dir"] / "determinism.json")) for f in FOLDS]
@@ -888,10 +896,10 @@ def build(do_extract: bool) -> list[str]:
                 changed.append(rel)
     if write_if_changed(SITE / "index.html", render(load_data())):
         changed.append("site/index.html")
-    # The illustrative B-scans are withdrawn from the page until regenerated: they show
-    # predictions misplaced by the inversion defect (docs/13, 2026-10-16). Not copied here,
-    # and not deployed by the Pages workflow; the files stay in docs/figures.
-    for name in FALLBACKS:
+    # The illustrative B-scans are copied only while not withdrawn (ILLUSTRATIONS_WITHDRAWN);
+    # since docs/07 section 21.9 they are the images regenerated from the corrected records.
+    shown = () if ILLUSTRATIONS_WITHDRAWN else ILLUSTRATIONS
+    for name in (*FALLBACKS, *shown):
         if write_if_changed(SITE / "figures" / name, (FIGURES / name).read_bytes()):
             changed.append(f"site/figures/{name}")
     return changed

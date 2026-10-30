@@ -10,11 +10,12 @@ records disagrees with them:
 - every interval must lie inside its axis, so none is clipped, and every count a caption states
   is computed and asserted, not typed.
 
-**Inputs**, read only: the corrected seeded evaluation records of the three folds (`test` and
-`in_domain_ref`, under each run's `corrected/`, written by the `docs/07` §17.11 re-evaluation),
-their per-volume rows (SRS-089), and each fold's `epochs.jsonl`. No sealed bucket is opened --
-these are the records the sealed runs already wrote. The earlier records, measured through the
-inversion defect, are no longer drawn; their figures are kept in `docs/10` §10. **No image, B-scan,
+**Inputs**, read only: the current seeded evaluation records of the three folds (`test` and
+`in_domain_ref`, under each run's `corrected_hd95/`, written by the `docs/07` §17.12
+re-evaluation, whose gate held every value but HD95 equal to §17.11's), their per-volume rows
+(SRS-089), and each fold's `epochs.jsonl`. No sealed bucket is opened -- these are the records
+the sealed runs already wrote. The earlier records, measured through the inversion defect, are
+no longer drawn; their figures are kept in `docs/10` §10. **No image, B-scan,
 reference mask or patient identifier appears in any figure.**
 
 **Deterministic.** Point jitter is a fixed function of position, not random; PNG metadata
@@ -41,6 +42,8 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
+from typing import Any
+
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
@@ -66,25 +69,13 @@ LARGE = {  # Figures 2 and 4, sized to stay legible at README width
     "legend.fontsize": 13,
     "figure.titlesize": 15,
 }
-OPAQUE = {"facecolor": "white", "transparent": False}
+OPAQUE: dict[str, Any] = {"facecolor": "white", "transparent": False}
+# The generator's own record paths, so the figures cannot read different files from the check.
 RECORDS = {
-    "cirrus": {
-        "dir": RUNS / "cirrus_holdout_stage2",
-        "test": RUNS / "cirrus_holdout_stage2/corrected/evaluation_test.json",
-        "in_domain_ref": RUNS / "cirrus_holdout_stage2/corrected/evaluation_in_domain_ref.json",
-    },
-    "spectralis": {
-        "dir": RUNS / "spectralis_holdout_stage3",
-        "test": RUNS / "spectralis_holdout_stage3/corrected/evaluation_test.json",
-        "in_domain_ref": RUNS / "spectralis_holdout_stage3/corrected/evaluation_in_domain_ref.json",
-    },
-    "topcon": {
-        "dir": RUNS / "topcon_holdout_stage3",
-        "test": RUNS / "topcon_holdout_stage3/corrected/evaluation_test.json",
-        "in_domain_ref": RUNS / "topcon_holdout_stage3/corrected/evaluation_in_domain_ref.json",
-    },
+    f: {"dir": RUNS / report.RUN_DIRS[f], **report.record_paths(RUNS)["corrected"][f]}
+    for f in FOLDS
 }
-PNG = {"dpi": 150, "metadata": {"Software": None}}
+PNG: dict[str, Any] = {"dpi": 150, "metadata": {"Software": None}}
 
 
 def load(path: Path) -> dict:
@@ -130,7 +121,7 @@ def gather() -> dict:
     # The arithmetic is report.py's (SRS-098), the one implementation the documents are
     # checked against; this script keeps its own assertions against the printed tables.
     comps = report.comparisons(records)
-    data = {"arms": {}, "diff": {}}
+    data: dict[str, dict] = {"arms": {}, "diff": {}}
     for view in ("all-volume", "class-present"):
         for comp in (*FOLDS, "pooled"):
             for cls in CLASSES:

@@ -1,6 +1,6 @@
 """Generate the derived figures of `docs/10` from the evaluation records, and check documents.
 
-Traces to: SRS-097 (generation), SRS-098 (the check), SRS-037.
+Traces to: SRS-097 (generation), SRS-098 (the check), SRS-104 (secondary HD95), SRS-037.
 
 A *derived* figure is computed from records rather than copied from one: the pooled and
 class-present comparisons, the directly bootstrapped differences, the counts the prose states,
@@ -29,6 +29,7 @@ import re
 from dataclasses import dataclass, field
 from fractions import Fraction
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 
@@ -51,14 +52,25 @@ RUN_DIRS = {
 # docs/07 section 19.2, declared before any Stage 3 result. TC-140 compares it with the text.
 THRESHOLD_GRID = (1, 2, 5, 10, 20, 50, 100, 200, 500, 1000)
 DEFECT = "through the defect"
+# HD95 of the 24 October records, measured with the spacing on the wrong axes (docs/13,
+# finding of 2026-10-25). Its own first column, so its header differs from section 10's.
+WRONG_AXES = "wrong spacing axes"
+# docs/07 section 17.12's records, the record until section 17.13: measured through D1 (and,
+# for AUROC, D4). Kept in docs/10 section 10.3 under their own first column.
+THROUGH_D1 = "through D1"
+RECORD_COLUMN = "| Record "
+# SRS-104: HD95 without both-empty volumes, beside the primary and labelled secondary.
+SECONDARY = "secondary"
+SECONDARY_HD95 = "hd95_excluding_both_empty"
+NOT_DEFINED = "not defined: every volume both empty"
 DOCS = {
     "docs/10": "docs/10_analytical_validation_report.md",
     "docs/12": "docs/12_model_card.md",
     "README": "README.md",
 }
 WORDS = {
-    1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight",
-    9: "nine", 10: "ten", 11: "eleven", 12: "twelve", 13: "thirteen", 14: "fourteen",
+    0: "zero", 1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven",
+    8: "eight", 9: "nine", 10: "ten", 11: "eleven", 12: "twelve", 13: "thirteen", 14: "fourteen",
     15: "fifteen", 16: "sixteen", 17: "seventeen", 18: "eighteen",
 }  # fmt: skip
 
@@ -74,13 +86,28 @@ class RecordSets:
     superseded: dict
     unseeded_cirrus: dict
     val: dict
+    # The 24 October corrected records, kept for their HD95 measured on the wrong spacing axes.
+    wrong_axes: dict | None = None
+    # docs/07 section 17.12's records, measured through D1: docs/10 section 10.3.
+    through_d1: dict | None = None
 
 
 def record_paths(runs: Path) -> dict:
     """Where each record set lives under `artifacts/runs`."""
     d = {f: runs / RUN_DIRS[f] for f in FOLDS}
     return {
+        # The record of record since 2026-10-30: the final re-evaluation of docs/07 section
+        # 17.13, after the audit (D1 and D4 fixed), gated on an unchanged population.
         "corrected": {
+            f: {a: d[f] / "audited" / f"evaluation_{a}.json" for a in ARMS} for f in FOLDS
+        },
+        # The record until then, section 17.12's: measured through D1 (docs/10 section 10.3).
+        "through_d1": {
+            f: {a: d[f] / "corrected_hd95" / f"evaluation_{a}.json" for a in ARMS} for f in FOLDS
+        },
+        # The 24 October records of section 17.11: HD95 measured with the spacing on the wrong
+        # axes (docs/13, finding of 2026-10-25); every other value equals `corrected`.
+        "wrong_axes": {
             f: {a: d[f] / "corrected" / f"evaluation_{a}.json" for a in ARMS} for f in FOLDS
         },
         # The seeded records of 2026-10-05, measured through the inversion defect.
@@ -93,19 +120,21 @@ def record_paths(runs: Path) -> dict:
             }
             for f in FOLDS
         },
+        # The same final records with the open `val` buckets, as the B-scan scripts read them.
+        "audited": {
+            f: {a: d[f] / "audited" / f"evaluation_{a}.json" for a in (*ARMS, "val")} for f in FOLDS
+        },
         # Cirrus's single unseeded draw of 2026-10-01, also through the defect (docs/10 3.1).
         "unseeded_cirrus": {a: d["cirrus"] / f"evaluation_{a}.json" for a in ARMS},
-        "val": {
-            "cirrus": d["cirrus"] / "corrected" / "evaluation_val_seeded_a.json",
-            "spectralis": d["spectralis"] / "corrected" / "evaluation_val.json",
-            "topcon": d["topcon"] / "corrected" / "evaluation_val.json",
-        },
+        # Section 19.2 selects its threshold on `val`: the final run's open records.
+        "val": {f: d[f] / "audited" / "evaluation_val.json" for f in FOLDS},
     }
 
 
 def records_present(runs: Path) -> bool:
     paths = record_paths(runs)
-    files = [p for s in ("corrected", "superseded") for f in FOLDS for p in paths[s][f].values()]
+    sets = ("corrected", "through_d1", "wrong_axes", "superseded")
+    files = [p for s in sets for f in FOLDS for p in paths[s][f].values()]
     files += list(paths["unseeded_cirrus"].values()) + list(paths["val"].values())
     return all(p.is_file() for p in files)
 
@@ -120,6 +149,8 @@ def load_records(runs: Path) -> RecordSets:
         superseded={f: {a: load(p) for a, p in paths["superseded"][f].items()} for f in FOLDS},
         unseeded_cirrus={a: load(p) for a, p in paths["unseeded_cirrus"].items()},
         val={f: load(p) for f, p in paths["val"].items()},
+        wrong_axes={f: {a: load(p) for a, p in paths["wrong_axes"][f].items()} for f in FOLDS},
+        through_d1={f: {a: load(p) for a, p in paths["through_d1"][f].items()} for f in FOLDS},
     )
 
 
@@ -166,8 +197,50 @@ def estimate(values, patients, b: Boot) -> dict:
     )
 
 
-def difference(held: np.ndarray, ref: np.ndarray, b: Boot) -> tuple[float, float, float]:
-    """docs/10 section 5.4: arms resampled independently, held-out draws first."""
+def difference(
+    held_patients, held: np.ndarray, ref_patients, ref: np.ndarray, b: Boot
+) -> tuple[float, float, float]:
+    """Held-out minus in-domain mean, with its interval under one patient draw (SRS-097, D2).
+
+    Patients are grouped by the arms they belong to: held-out only, in-domain only, both.
+    Each group is resampled with its size fixed, in that order, and a patient drawn counts in
+    every arm it belongs to with that arm's value. The pooled arms share patients: every
+    in-domain patient is a held-out patient in its own vendor's fold. Until 2026-10-29 the arms
+    were resampled independently, which ignores that pairing (`docs/13`). With no shared
+    patient, as in every per-fold comparison, the draws are exactly the earlier ones.
+    """
+    held_at = {p: k for k, p in enumerate(held_patients)}
+    ref_at = {p: k for k, p in enumerate(ref_patients)}
+    held_only = [held_at[p] for p in held_patients if p not in ref_at]
+    ref_only = [ref_at[p] for p in ref_patients if p not in held_at]
+    both = [(held_at[p], ref_at[p]) for p in held_patients if p in ref_at]
+    rng = np.random.default_rng(b.seed)
+
+    def draw(size: int) -> np.ndarray | None:
+        return rng.integers(0, size, size=(b.n_resamples, size)) if size else None
+
+    dh, di, db = draw(len(held_only)), draw(len(ref_only)), draw(len(both))
+    held_sum = np.zeros(b.n_resamples)
+    ref_sum = np.zeros(b.n_resamples)
+    if dh is not None:
+        held_sum += held[np.asarray(held_only)][dh].sum(axis=1)
+    if di is not None:
+        ref_sum += ref[np.asarray(ref_only)][di].sum(axis=1)
+    if db is not None:
+        pairs = np.asarray(both)
+        held_sum += held[pairs[:, 0]][db].sum(axis=1)
+        ref_sum += ref[pairs[:, 1]][db].sum(axis=1)
+    d = held_sum / len(held) - ref_sum / len(ref)
+    low, high = np.percentile(d, [100 * b.alpha / 2, 100 * (1 - b.alpha / 2)])
+    return float(held.mean() - ref.mean()), float(low), float(high)
+
+
+def difference_as_published(
+    held: np.ndarray, ref: np.ndarray, b: Boot
+) -> tuple[float, float, float]:
+    """The estimator `docs/10` section 10 was published with: arms resampled independently,
+    held-out draws first. Kept for those superseded figures alone, by the author's decision of
+    2026-10-30 (SRS-097); every current figure uses `difference`, the joint draw (D2)."""
     rng = np.random.default_rng(b.seed)
     dh = rng.integers(0, len(held), size=(b.n_resamples, len(held)))
     di = rng.integers(0, len(ref), size=(b.n_resamples, len(ref)))
@@ -189,15 +262,23 @@ def arms(records: dict, comp: str, cls: str, present_only: bool, b: Boot):
     return (hp, h, estimate(h, hp, b)), (ip, i, estimate(i, ip, b))
 
 
-def comparisons(records: dict) -> dict:
-    """Every arm estimate and direct difference, keyed (view, comparison, class)."""
+def comparisons(records: dict, as_published: bool = False) -> dict:
+    """Every arm estimate and direct difference, keyed (view, comparison, class).
+
+    `as_published` uses the independent resample the superseded figures were published with.
+    """
     b = boot_of(records)
     out = {}
     for view, present in (("all-volume", False), ("class-present", True)):
         for comp in (*FOLDS, "pooled"):
             for cls in CLASSES:
-                (_, h, he), (_, i, ie) = arms(records, comp, cls, present, b)
-                out[(view, comp, cls)] = {"held": he, "ref": ie, "diff": difference(h, i, b)}
+                (hp, h, he), (ip, i, ie) = arms(records, comp, cls, present, b)
+                diff = (
+                    difference_as_published(h, i, b)
+                    if as_published
+                    else difference(hp, h, ip, i, b)
+                )
+                out[(view, comp, cls)] = {"held": he, "ref": ie, "diff": diff}
     return out
 
 
@@ -304,12 +385,20 @@ def interval_text(d: tuple[float, float, float]) -> str:
 
 
 def word(n: int, capital: bool = False) -> str:
-    w = WORDS[n]
+    w = WORDS.get(n, str(n))  # beyond eighteen the document writes digits
     return w.capitalize() if capital else w
 
 
+def listing(items: list[str]) -> str:
+    """`a`, `a and b`, `a, b and c`; "none" for an empty list (D10: `names[-1]` raised)."""
+    if not items:
+        return "none"
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
+
+
 def pct(k: int, n: int) -> int:
-    return round(100 * k / n)
+    """A percentage rounded half up, as a reader rounds (D9): 1 of 8 is 13%, not 12%."""
+    return (200 * k + n) // (2 * n)
 
 
 def span(values, digits: int = 2) -> str:
@@ -380,6 +469,29 @@ def per_fold_rows(records: dict, metric: str, prefix: str | None = None) -> list
                 f"{lead(prefix)}| {fold} ({TRAINED_ON[fold]}) | {cls} | {iv(h, bold)} | "
                 f"{iv(r, bold)} | {signed(r['value'] - h['value'])} | {verdict} |"
             )
+    return out
+
+
+def secondary_hd95_rows(records: dict) -> list[str] | None:
+    """SRS-104: the per-fold HD95 without both-empty volumes, or None if a record lacks it."""
+    if any("segmentation_secondary" not in records[f][a] for f in FOLDS for a in ARMS):
+        return None
+    out = []
+    for fold in FOLDS:
+        for cls in CLASSES:
+            h, r = (
+                records[fold][arm]["segmentation_secondary"]["all_vendors"]
+                .get(cls, {})
+                .get(SECONDARY_HD95)
+                for arm in ARMS
+            )
+            cells = [iv(h) if h else NOT_DEFINED, iv(r) if r else NOT_DEFINED]
+            if h and r:
+                cells += [signed(r["value"] - h["value"]), "yes" if overlaps(h, r) else "**no**"]
+            else:
+                cells += ["—", "—"]
+            out.append(f"| {SECONDARY} | {fold} ({TRAINED_ON[fold]}) | {cls} | " + " | ".join(cells)
+                       + " |")  # fmt: skip
     return out
 
 
@@ -466,8 +578,13 @@ def half_widths(comps: dict) -> dict[str, tuple[float, float]]:
             for (v, comp, _), c in comps.items()
             if v == view and (comp == "pooled") == pooled
         ]
-        out[key] = (round(min(w), 2), round(max(w), 2))
+        out[key] = (min(w), max(w))  # unrounded: each stated figure is rounded once (D9)
     return out
+
+
+def unreliable_below(hw: dict[str, tuple[float, float]]) -> str:
+    """The per-fold maximum half-width to one place, rounded once from the unrounded value."""
+    return f"{hw['all-volume, per fold'][1]:.1f}"
 
 
 def half_rows(comps: dict, prefix: str | None = None) -> list[str]:
@@ -541,7 +658,8 @@ def present_beats_all(records: dict) -> int:
             for cls in CLASSES:
                 rows = rows_of(records[fold][arm], cls)
                 present = [r["dice"] for r in rows if r["reference_present"]]
-                count += sum(present) / len(present) > sum(r["dice"] for r in rows) / len(rows)
+                if present:  # a cell with no class-present volume has no class-present Dice
+                    count += sum(present) / len(present) > sum(r["dice"] for r in rows) / len(rows)
     return count
 
 
@@ -557,11 +675,11 @@ def selection_rows(corrected: dict, val: dict) -> tuple[list[str], list[str]]:
                 chosen = f"**{sel.threshold}** (degenerate: {sel.degenerate}; fixed threshold used)"
             elif sel.ties > 1:
                 chosen = (
-                    f"**{sel.threshold}** ({f4(float(sel.j))}; tie across {sel.ties} grid "
-                    "points, smallest wins)"
+                    f"**{sel.threshold}** ({f4(float(cast(Fraction, sel.j)))}; "
+                    f"tie across {sel.ties} grid points, smallest wins)"
                 )
             else:
-                chosen = f"**{sel.threshold}** ({f4(float(sel.j))})"
+                chosen = f"**{sel.threshold}** ({f4(float(cast(Fraction, sel.j)))})"
             cells = []
             for arm in ARMS:
                 vol = rows_of(corrected[fold][arm], cls)
@@ -583,7 +701,8 @@ def generate(sets: RecordSets) -> Generated:
     """Every table and statement the documents must carry, from the records alone."""
     g = Generated()
     cur, old = sets.corrected, sets.superseded
-    comps, comps_old = comparisons(cur), comparisons(old)
+    # Section 10 stays as published, with the estimator it was published with (SRS-097).
+    comps, comps_old = comparisons(cur), comparisons(old, as_published=True)
     keys9 = [(f, c) for f in FOLDS for c in CLASSES]
 
     # --- section 3: per-fold Dice and HD95, overlap and directions --------------------------
@@ -591,6 +710,26 @@ def generate(sets: RecordSets) -> Generated:
     for doc in ("docs/10", "docs/12"):
         g.table(doc, H_DICE, dice_rows)
         g.table(doc, H_HD95, hd95_rows)
+    # HD95's overlap verdicts, stated in the prose and so checked like every other count.
+    hd95_apart = [
+        f"{f} {c}"
+        for f, c in keys9
+        if not overlaps(
+            cur[f]["test"]["segmentation"]["all_vendors"][c]["hd95"],
+            cur[f]["in_domain_ref"]["segmentation"]["all_vendors"][c]["hd95"],
+        )
+    ]
+    if hd95_apart:
+        listed = listing(hd95_apart)
+        for doc in ("docs/10", "docs/12"):
+            g.say(doc, f"**HD95: {word(len(hd95_apart))} do not overlap**, {listed}")
+    secondary = secondary_hd95_rows(cur)
+    if secondary is not None:
+        g.table("docs/10", f"| HD95 {H_HD95}", secondary)
+    if sets.wrong_axes is not None:
+        rows = per_fold_rows(sets.wrong_axes, "hd95", WRONG_AXES)
+        for doc in ("docs/10", "docs/12"):
+            g.table(doc, f"| Spacing {H_HD95}", rows)
     fold_cmp = [comps[("all-volume", f, c)] for f, c in keys9]
     n_overlap = sum(overlaps(c["held"], c["ref"]) for c in fold_cmp)
     worse = sum(c["diff"][0] < 0 for c in fold_cmp)
@@ -674,14 +813,18 @@ def generate(sets: RecordSets) -> Generated:
                      f"negative")  # fmt: skip
     g.say("docs/10", f"**{word(len(informative), True)} cells have AUROC below 1**, "
                      f"{word(len(held_inf))} of them held-out")  # fmt: skip
-    g.say("docs/10", f"lower bounds {span(lows, 4)} in the held-out arms")
-    g.say("docs/12", f"lower bounds {span(lows, 4)}", f"{word(len(none), True)} of the eighteen "
-                     "cells have AUROC")  # fmt: skip
+    if lows:
+        g.say("docs/10", f"lower bounds {span(lows, 4)} in the held-out arms")
+        g.say("docs/12", f"lower bounds {span(lows, 4)}")
+    g.say("docs/12", f"{word(len(none), True)} of the eighteen cells have AUROC")
     g.say("README", f"For {word(len(none))} of the eighteen the interval is not estimable")
     gap = max(
-        abs(a - b)
-        for x in held_inf.values()
-        for a, b in zip(x["stratified"], x["unstratified"][:2], strict=True)
+        (
+            abs(a - b)
+            for x in held_inf.values()
+            for a, b in zip(x["stratified"], x["unstratified"][:2], strict=True)
+        ),
+        default=0.0,
     )
     if gap >= 0.005:
         g.findings.append(f"unstratified AUROC bounds differ by {gap:.4f} in a held-out cell, "
@@ -711,9 +854,9 @@ def generate(sets: RecordSets) -> Generated:
         cells = []
         for fold in FOLDS:
             for arm in ARMS:
-                rows = rows_of(cur[fold][arm], cls)
-                k = sum(not r["reference_present"] for r in rows)
-                cells.append(f"{k}/{len(rows)} ({pct(k, len(rows))}%)")
+                arm_rows = rows_of(cur[fold][arm], cls)
+                k = sum(not r["reference_present"] for r in arm_rows)
+                cells.append(f"{k}/{len(arm_rows)} ({pct(k, len(arm_rows))}%)")
         shares.append(f"| {cls} | " + " | ".join(cells) + " |")
     g.table("docs/10", H_SHARES, shares)
     s_h, s_i = absent_counts(cur, "SRF", "test"), absent_counts(cur, "SRF", "in_domain_ref")
@@ -741,9 +884,8 @@ def generate(sets: RecordSets) -> Generated:
     strata = [comps[("class-present", f, c)]["ref"]["n"] for f, c in fold_apart]
     g.say(
         "docs/10",
-        f"Per fold, {word(len(fold_apart))} comparisons do not overlap: "
-        f"{', '.join(names[:-1])} and {names[-1]}",
-        f"with {', '.join(map(str, strata[:-1]))} and {strata[-1]} in-domain patients",
+        f"Per fold, {word(len(fold_apart))} comparisons do not overlap: {listing(names)}",
+        f"with {listing([str(n) for n in strata])} in-domain patients",
     )
 
     # --- section 5.4: differences, exclusions, detection limit ------------------------------
@@ -763,7 +905,7 @@ def generate(sets: RecordSets) -> Generated:
         f"**pooled across folds:** {span(hw['all-volume, pooled'])} Dice",
         f"smaller than about {limit:.2f} Dice cannot be detected",
         f"cross-vendor Dice differences below about {limit:.2f}",
-        f"per-fold differences below about {round(hw['all-volume, per fold'][1], 1):.1f}",
+        f"per-fold differences below about {unreliable_below(hw)}",
         f"half-widths of about {hw['class-present, pooled'][0]:.2f}",
     )
     g.say(
@@ -773,16 +915,17 @@ def generate(sets: RecordSets) -> Generated:
         f"smaller than about {limit:.2f} Dice cannot be detected",
     )
     g.say("README", f"larger than about {limit:.2f} Dice", f"smaller than about {limit:.2f} on")
-    for (_, _, cls), c in pooled_excl.items():
-        p, lo, hi = c["diff"]
-        text = minus(f"{cls} {signed(p)} [{signed(lo)}, {signed(hi)}]")
+    for (_, _, cls), excluded in pooled_excl.items():
+        point, lo, hi = excluded["diff"]
+        text = minus(f"{cls} {signed(point)} [{signed(lo)}, {signed(hi)}]")
         g.say("docs/10", text)
         g.say("docs/12", text)
     present_pooled_lower = [k for k, c in pooled_excl.items()
                             if k[0] == "class-present" and c["diff"][0] < 0]  # fmt: skip
     g.say("README", f"lower for {word(len(present_pooled_lower))} of the three fluid types")
-    smallest = min(pooled_excl.values(), key=lambda c: c["ref"]["n"])
-    g.say("README", f"rests on {smallest['ref']['n']} familiar-brand patients")
+    if pooled_excl:
+        smallest = min(pooled_excl.values(), key=lambda c: c["ref"]["n"])
+        g.say("README", f"rests on {smallest['ref']['n']} familiar-brand patients")
 
     # --- section 7.1 and 8.3 ----------------------------------------------------------------
     split = absent_split(cur)
@@ -816,7 +959,7 @@ def generate(sets: RecordSets) -> Generated:
     # --- section 7.2: fragility -------------------------------------------------------------
     u = sets.unseeded_cirrus["in_domain_ref"]["segmentation"]["all_vendors"]["SRF"]["dice"]
     s = old["cirrus"]["in_domain_ref"]["segmentation"]["all_vendors"]["SRF"]["dice"]
-    c = cur["cirrus"]["in_domain_ref"]["segmentation"]["all_vendors"]["SRF"]["dice"]
+    corrected_srf = cur["cirrus"]["in_domain_ref"]["segmentation"]["all_vendors"]["SRF"]["dice"]
     n_ref = cur["cirrus"]["in_domain_ref"]["n_patients"]
     srf_absent = sum(1 for r in rows_of(old["cirrus"]["in_domain_ref"], "SRF")
                      if not r["reference_present"])  # fmt: skip
@@ -829,7 +972,7 @@ def generate(sets: RecordSets) -> Generated:
         minus(draws_text),
         f"1/{n_ref} = {1 / n_ref:.4f}",
         f"The arm has {srf_absent} SRF-absent volumes",
-        f"The corrected seeded figure is {f4(c['value'])}",
+        f"The corrected seeded figure is {f4(corrected_srf['value'])}",
     )
     g.say("README", f"({abs(s['value'] - u['value']):.4f})")
 
@@ -839,9 +982,12 @@ def generate(sets: RecordSets) -> Generated:
     g.findings += sel_findings
 
     # --- section 8.8: lowest fold per class -------------------------------------------------
-    lowest = {c: min(FOLDS, key=lambda f, c=c:
-                     cur[f]["test"]["segmentation"]["all_vendors"][c]["dice"]["value"])
-              for c in CLASSES}  # fmt: skip
+    def held_out_dice(fold: str, cls: str) -> float:
+        return cur[fold]["test"]["segmentation"]["all_vendors"][cls]["dice"]["value"]
+
+    lowest: dict[str, str] = {}
+    for cls in CLASSES:
+        lowest[cls] = min(FOLDS, key=lambda fold: held_out_dice(fold, cls))
     if lowest["SRF"] == lowest["PED"] != lowest["IRF"]:
         g.say("docs/10", f"{lowest['SRF']} is lowest for SRF and PED, and {lowest['IRF']} for IRF")
 
@@ -876,6 +1022,17 @@ def generate(sets: RecordSets) -> Generated:
     )
     g.say("docs/12", f"detection limit was about {limit_old:.2f} Dice")
     g.say("README", f"larger than about {limit_old:.2f} Dice. Every earlier figure")
+
+    # --- section 10.3: the section 17.12 records, measured through D1, as published ----------
+    if sets.through_d1 is not None:
+        d1 = sets.through_d1
+        comps_d1 = comparisons(d1, as_published=True)
+        labelled = RECORD_COLUMN.rstrip() + " "
+        for doc in ("docs/10", "docs/12"):
+            g.table(doc, labelled + H_DICE, per_fold_rows(d1, "dice", THROUGH_D1))
+            g.table(doc, labelled + H_HD95, per_fold_rows(d1, "hd95", THROUGH_D1))
+        g.table("docs/10", labelled + H_POOLED, pooled_rows(d1, comps_d1, THROUGH_D1))
+        g.table("docs/10", labelled + H_DIFF, diff_rows(comps_d1, THROUGH_D1))
     return g
 
 
@@ -910,6 +1067,21 @@ def table_body(lines: list[str], header: str) -> tuple[int, list[str]] | None:
     return start + 3, body
 
 
+def whole(statement: str, text: str) -> bool:
+    """`statement` occurs in `text` and not as part of a longer number or word (D10).
+
+    A statement that starts with a word character must not follow one, nor a digit-led one a
+    decimal point; one that ends with a word character must not be followed by one, nor by a
+    decimal point and a digit. "5% against" is then not found in "15% against", nor "about
+    0.14" in "about 0.145"; a statement followed by a comma or full stop still is.
+    """
+    before = (
+        r"(?<![\w.])" if statement[:1].isdigit() else r"(?<!\w)" if statement[:1].isalnum() else ""
+    )
+    after = r"(?!\w|\.\d)" if statement[-1:].isalnum() else ""
+    return re.search(before + re.escape(statement) + after, text) is not None
+
+
 def check(generated: Generated, texts: dict[str, str]) -> list[Difference]:
     """Every difference between what the records give and what the documents say.
 
@@ -939,7 +1111,7 @@ def check(generated: Generated, texts: dict[str, str]) -> list[Difference]:
     for doc, statements in generated.statements.items():
         flat = normalise(texts[doc])
         for s in statements:
-            if normalise(s) not in flat:
+            if not whole(normalise(s), flat):
                 out.append(Difference(doc, "statement", f"not found: {s}"))
     for f in generated.findings:
         out.append(Difference("records", "consistency", f))

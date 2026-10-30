@@ -248,7 +248,7 @@ def parse_store_response(status_code: int, payload: dict) -> StoreResult:
 
     def uids(key: str) -> list[str]:
         sequence = (payload or {}).get(key, {}).get("Value", []) or []
-        found = []
+        found: list[str] = []
         for item in sequence:
             value = item.get(_SOP_INSTANCE_UID, {}).get("Value", []) or []
             found.extend(str(v) for v in value)

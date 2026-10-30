@@ -66,6 +66,11 @@ jobs:
           ruff check src tests scripts
           ruff format --check src tests scripts
 
+      # SRS-109: zero type findings over everything the pipeline and the chains execute.
+      - name: Type check
+        run: |
+          mypy src scripts
+
       # Data- and PACS-dependent tests are excluded: CI has neither RETOUCH
       # nor a running Orthanc instance. The leakage gate (TC-004) is NOT in
       # those groups and must always run here. See CLAUDE.md rule 2.

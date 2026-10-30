@@ -178,6 +178,32 @@ def test_TC_024_pixel_data_round_trips_unchanged(volume, context, tmp_path):
     assert np.array_equal(restored, volume.pixel_array)
 
 
+def test_TC_024_spacing_between_slices_is_the_separation_and_the_frame_step(
+    volume, context, tmp_path
+):
+    """D12: Spacing Between Slices was absent; only SliceThickness carried the separation."""
+    result = dw.write_volume(volume, tmp_path / "out", UID_ROOT, context=context)
+    ds = dw.read_back(result.paths[0])
+    measures = ds.SharedFunctionalGroupsSequence[0].PixelMeasuresSequence[0]
+    separation = SPACING_MM[2]
+    assert float(measures.SpacingBetweenSlices) == pytest.approx(separation)
+    z = [float(f.PlanePositionSequence[0].ImagePositionPatient[2])
+         for f in ds.PerFrameFunctionalGroupsSequence]  # fmt: skip
+    assert np.diff(z) == pytest.approx(float(measures.SpacingBetweenSlices))
+
+
+def test_TC_024_a_big_endian_source_is_written_as_the_same_values(volume, context, tmp_path):
+    """D12: a 16-bit source stored most-significant byte first was refused as '>u2'."""
+    import dataclasses
+
+    swapped = dataclasses.replace(volume, pixel_array=volume.pixel_array.astype(">u2"))
+    result = dw.write_volume(swapped, tmp_path / "out", UID_ROOT, context=context)
+    ds = dw.read_back(result.paths[0])
+    assert int(ds.BitsAllocated) == 16
+    restored = np.frombuffer(ds.PixelData, dtype="<u2").reshape(volume.pixel_array.shape)
+    assert np.array_equal(restored, volume.pixel_array)
+
+
 def test_TC_024_implausible_spacing_is_rejected_before_writing(volume, context, tmp_path):
     bad = OCTVolume(
         pixel_array=volume.pixel_array,

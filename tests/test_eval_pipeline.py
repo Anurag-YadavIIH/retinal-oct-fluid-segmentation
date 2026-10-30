@@ -122,6 +122,14 @@ def test_TC_124_every_estimate_carries_its_unit():
 # --- TC-125: the seal ------------------------------------------------------------------
 
 
+@pytest.fixture(autouse=True)
+def synthetic_log(request):
+    """TC-125 tests the log and the count, on a synthetic log: marked as a sandbox, so the
+    SRS-107 dry-run requirement, which TC-156 tests, does not stand in the way."""
+    if "tmp_path" in request.fixturenames:
+        sealed.mark_sandbox(request.getfixturevalue("tmp_path"))
+
+
 @pytest.mark.parametrize("bucket", sorted(sealed.SEALED_BUCKETS))
 def test_TC_125_a_sealed_bucket_is_refused_without_an_unlock(bucket):
     with pytest.raises(sealed.SealedSplitError, match="sealed"):
@@ -288,6 +296,59 @@ def test_TC_073_a_difference_in_the_last_digit_aborts():
         assert_spacing_unchanged(used, recorded, "TRAIN001")
 
 
+EVALUATION_PATHS = (
+    "scripts/05_evaluate.py",
+    "scripts/09_illustrative_bscans.py",
+    "scripts/13_crosscheck_val.py",
+    "tests/test_oracle_round_trip.py",
+)
+
+
+@pytest.mark.parametrize("path", EVALUATION_PATHS)
+def test_TC_073_every_evaluation_path_checks_the_spacing_read_against_the_manifest(path):
+    """D5: the check is only a check if its two arguments can differ.
+
+    `05_evaluate.py` called `assert_spacing_unchanged(row["spacing_mm"], row["spacing_mm"], ...)`,
+    which cannot fail. Inspected in the source: the first argument is the reader's
+    `.spacing_mm`, the second is not the same expression, and every `measure_volume` call
+    measures with the name the assertion's result was bound to.
+    """
+    import ast
+
+    tree = ast.parse((Path(__file__).resolve().parents[1] / path).read_text(encoding="utf-8"))
+    checks, checked_names, measured_with = [], set(), []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Call):
+            func = node.value.func
+            name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", "")
+            if name == "assert_spacing_unchanged":
+                checked_names |= {t.id for t in node.targets if isinstance(t, ast.Name)}
+        if isinstance(node, ast.Call):
+            func = node.func
+            name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", "")
+            if name == "assert_spacing_unchanged":
+                checks.append(node)
+            elif name == "measure_volume":
+                measured_with.append(node.args[2] if len(node.args) > 2 else None)
+            elif name == "measured_volume":  # SRS-106: measures through measure_volume
+                keywords = {k.arg: k.value for k in node.keywords}
+                measured_with.append(keywords.get("spacing_mm"))
+            elif name == "measured_pick":  # the B-scan script's helper: its fourth argument
+                measured_with.append(node.args[3] if len(node.args) > 3 else None)
+    assert checks, f"{path} never checks the spacing (SRS-057)"
+    assert measured_with, f"{path} measures nothing this test can see, so it checks nothing"
+    for call in checks:
+        first, second = call.args[0], call.args[1]
+        assert (
+            isinstance(first, ast.Attribute) and first.attr == "spacing_mm"
+        ), f"{path}:{call.lineno}: the first argument is not the spacing the reader returned"
+        assert ast.dump(first) != ast.dump(second), f"{path}:{call.lineno}: compares with itself"
+    for spacing in measured_with:
+        assert (
+            isinstance(spacing, ast.Name) and spacing.id in checked_names
+        ), f"{path}: measure_volume is given a spacing the assertion did not return"
+
+
 # --- TC-065 / TC-066 / TC-067: detection derived from the segmentation -----------------
 
 
@@ -355,6 +416,49 @@ def test_TC_067_auroc_uses_the_score_and_not_the_thresholded_decision():
     assert entry["sensitivity"]["value"] == 1.0
     assert entry["specificity"]["value"] == 0.0
     assert entry["auroc"]["n_unit"] == "patients"
+
+
+def _evaluate_script():
+    import importlib.util
+
+    path = Path(__file__).resolve().parents[1] / "scripts" / "05_evaluate.py"
+    spec = importlib.util.spec_from_file_location("evaluate_for_tc067", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_TC_067_the_score_ignores_the_padding_and_reads_the_native_content():
+    """D4: the maximum runs over the rows and columns the inversion keeps, never the padding.
+
+    A stand-in network outputs, for each class, a logit equal to 12 times the input in that
+    class's channel position. Frames hold 1.0 in a padded row (probability near 1 for IRF)
+    and 0.25 inside the content (a known, lower probability): the score must be the latter.
+    """
+    import torch
+
+    from ocuval.data.transforms import content_box
+
+    class StandIn(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.dropout = torch.nn.Dropout(p=0.0)  # MC-dropout requires one; p=0 keeps it exact
+
+        def forward(self, x):
+            x = self.dropout(x)
+            zeros = torch.zeros_like(x)
+            return torch.cat([zeros, 12 * x, zeros, zeros], dim=1)
+
+    native_shape, spacing = (496, 512), (0.003872, 0.011, 0.12)
+    frames = np.zeros((2, 576, 512), dtype=np.float32)
+    rows, cols = content_box(frames.shape[-2:], native_shape, spacing[0], 0.004)
+    assert rows.start > 0, "the fixture needs padding above the content"
+    frames[1, rows.start - 1, 10] = 1.0  # padding
+    frames[0, rows.start + 5, 20] = 0.25  # content
+    module = _evaluate_script()
+    _labels, scores = module.predict_volume(StandIn(), frames, "cpu", 2, 1, (rows, cols))
+    inside = float(torch.softmax(torch.tensor([0.0, 3.0, 0.0, 0.0]), dim=0)[1])
+    assert scores["IRF"] == pytest.approx(inside, rel=1e-6)
 
 
 def test_TC_067_auroc_is_nan_for_a_single_class_subgroup():
@@ -448,6 +552,22 @@ def varied_volumes(n_patients=10, seed=11):
             }
         )
     return volumes
+
+
+def test_TC_124_segmentation_intervals_use_the_plans_resample_count_and_alpha(tmp_path):
+    """D8: the record states the plan's settings, so the intervals must have used them."""
+    plan = EvaluationPlan(fold_id="f", bucket="val", seed=SEED, n_resamples=150, alpha=0.1)
+    volumes = varied_volumes()
+    result = evaluate(plan, volumes, artifacts_root=tmp_path)
+    reported = result["segmentation"]["all_vendors"]["IRF"]["dice"]
+    assert reported["bootstrap"]["n_resamples"] == 150
+    assert reported["bootstrap"]["alpha"] == 0.1
+    rows = [r for r in result["per_volume"] if r["fluid_class"] == "IRF"]
+    expected = subgroup.estimate(
+        [r["dice"] for r in rows], [r["patient_id"] for r in rows],
+        seed=SEED, n_resamples=150, alpha=0.1,
+    )  # fmt: skip
+    assert (reported["ci_low"], reported["ci_high"]) == (expected["ci_low"], expected["ci_high"])
 
 
 def test_TC_126_one_row_per_volume_per_class_with_every_required_field(tmp_path):
@@ -615,7 +735,7 @@ def test_TC_126_adding_the_rows_changes_no_aggregate(tmp_path):
         for v in volumes
         for r in v["detection"]
     ]
-    expected_seg = subgroup.by_vendor(seg)
+    expected_seg = subgroup.by_vendor(seg, n_resamples=plan.n_resamples, alpha=plan.alpha)
     expected_det = aggregate_detection(det, seed=SEED, n_resamples=200, alpha=0.05)
     assert json.dumps(result["segmentation"], sort_keys=True, default=str) == json.dumps(
         expected_seg, sort_keys=True, default=str
@@ -623,6 +743,74 @@ def test_TC_126_adding_the_rows_changes_no_aggregate(tmp_path):
     assert json.dumps(result["detection"], sort_keys=True, default=str) == json.dumps(
         expected_det, sort_keys=True, default=str
     )
+
+
+# --- TC-153: the secondary HD95 without both-empty volumes ---------------------------------
+
+
+def _hd95_volume(patient, vendor, cases):
+    """`cases` maps class -> (hd95, predicted voxels, reference voxels)."""
+    seg = []
+    for cls, (hd, pv, rv) in cases.items():
+        seg += [
+            {"fluid_class": cls, "metric": "dice", "value": 1.0 if pv == rv == 0 else 0.5},
+            {"fluid_class": cls, "metric": "hd95", "value": hd},
+            {
+                "fluid_class": cls,
+                "metric": "volume_mm3_predicted",
+                "value": pv * 1e-6,
+                "voxels": pv,
+            },
+            {
+                "fluid_class": cls,
+                "metric": "volume_mm3_reference",
+                "value": rv * 1e-6,
+                "voxels": rv,
+            },
+        ]
+    return {"sample_id": f"s-{patient}", "patient_id": patient, "vendor": vendor,
+            "segmentation": seg, "detection": []}  # fmt: skip
+
+
+def hd95_volumes():
+    nan = float("nan")
+    return [
+        _hd95_volume("P1", "cirrus", {"IRF": (0.0, 0, 0), "SRF": (0.0, 0, 0), "PED": (0.3, 9, 9)}),
+        _hd95_volume("P2", "cirrus", {"IRF": (0.4, 9, 9), "SRF": (0.0, 0, 0), "PED": (0.5, 9, 9)}),
+        _hd95_volume("P3", "topcon", {"IRF": (nan, 5, 0), "SRF": (0.0, 0, 0), "PED": (0.7, 9, 9)}),
+        _hd95_volume("P4", "topcon", {"IRF": (0.8, 9, 9), "SRF": (0.0, 0, 0), "PED": (0.9, 9, 9)}),
+    ]
+
+
+def test_TC_153_the_secondary_hd95_excludes_both_empty_volumes_and_says_it_is_secondary(tmp_path):
+    plan = EvaluationPlan(fold_id="f", bucket="val", seed=SEED, n_resamples=150, alpha=0.1)
+    result = evaluate(plan, hd95_volumes(), artifacts_root=tmp_path)
+    secondary = result["segmentation_secondary"]
+    assert "secondary" in secondary["label"]
+    irf = secondary["all_vendors"]["IRF"]["hd95_excluding_both_empty"]
+    assert irf["value"] == pytest.approx(0.6)  # P2 and P4; P1 both empty, P3 undefined
+    assert irf["n"] == 2 and irf["n_unit"] == "patients"
+    assert irf["bootstrap"]["n_resamples"] == 150 and irf["bootstrap"]["alpha"] == 0.1
+    assert "SRF" not in secondary["all_vendors"], "every SRF volume is both empty: no figure"
+    assert result["segmentation"]["all_vendors"]["IRF"]["hd95"]["value"] == pytest.approx(0.4)
+
+
+def test_TC_153_the_primary_block_is_unchanged_and_the_secondary_is_recomputable(tmp_path):
+    plan = EvaluationPlan(fold_id="f", bucket="val", seed=SEED, n_resamples=200)
+    volumes = hd95_volumes()
+    result = evaluate(plan, volumes, artifacts_root=tmp_path)
+    primary = [
+        {**r, "patient_id": v["patient_id"], "vendor": v["vendor"], "sample_id": v["sample_id"],
+         "seed": SEED}
+        for v in volumes for r in v["segmentation"] if r["metric"] in ("dice", "hd95")
+    ]  # fmt: skip
+    assert result["segmentation"] == subgroup.by_vendor(primary, n_resamples=200, alpha=0.05)
+    for cls in ("IRF", "PED"):
+        kept = [r["hd95"] for r in result["per_volume"] if r["fluid_class"] == cls
+                and not (r["predicted_voxels"] == 0 and r["reference_voxels"] == 0)]  # fmt: skip
+        finite = [v for v in kept if not np.isnan(v)]
+        reported = result["segmentation_secondary"]["all_vendors"][cls]
+        assert float(np.mean(finite)) == reported["hd95_excluding_both_empty"]["value"]
 
 
 def test_the_record_carries_everything_section_17_5_requires(tmp_path):

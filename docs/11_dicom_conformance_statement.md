@@ -76,6 +76,11 @@ reader to discover.
 1. **Unregistered UID root.** UIDs are structurally valid but globally unclaimed
    (§7, `docs/06` §7.2). Objects must not leave the local Orthanc instance, other than
    synthetic test objects sent to the ephemeral CI instance of `docs/06` §7.2.1.
+   **The Structured Report's Tracking Unique Identifiers are the one exception (SRS-007 as
+   amended 2026-10-30, the author's decision).** Each is a name-based UUID over the device
+   UID and the group's position, in the `2.25.<integer>` form of PS3.5 §B.2: valid, at most
+   64 characters, and repeatable. A value under the root could not be all three, because the
+   device UID already takes the 64 characters.
 2. **Research-use designation mechanism unresolved.** URS-011 and SRS-042 require an
    in-object designation that a result is research-use-only, not clinically validated,
    and automated. The conformant means of expressing this in a SEG and an SR is not yet
@@ -163,7 +168,14 @@ reader to discover.
    positions are exact by definition rather than estimates. Frame positions step by the
    recorded B-scan separation, so the spacing governing the volume computation appears
    twice in the object — once in Pixel Measures as `SliceThickness`, once as the step
-   between consecutive `ImagePositionPatient` values. **That redundancy is the point.** A
+   between consecutive `ImagePositionPatient` values. **Since 2026-10-29 it is also written as
+   `SpacingBetweenSlices` (0018,0088) in Pixel Measures** (SRS-010 as amended), the attribute
+   that names the distance between slices. Its usage there is Type 3 by our reading of the
+   Pixel Measures macro in PS3.3; the shipped highdicom tables do not cover functional group
+   macros, so that reading is not machine-checked. Whether `SliceThickness`, which RETOUCH does
+   not record, should go on carrying the separation is **open**, and is left to this document. **Left open by the author's decision of 2026-10-30**: the object keeps writing the
+   separation as `SliceThickness` beside `SpacingBetweenSlices`, and the question is not
+   resolved by picking an answer here. **That redundancy is the point.** A
    declared geometry can be cross-checked against itself; a fabricated value can be
    cross-checked against nothing. TC-024 asserts the two agree, so a defect in either is
    detectable rather than silent (HAZ-012).
