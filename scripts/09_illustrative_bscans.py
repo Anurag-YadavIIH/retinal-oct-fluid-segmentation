@@ -1,6 +1,7 @@
 """Render the illustrative B-scans selected by the rule pre-registered in `docs/07` §21.
 
-Traces to: SRS-093, SRS-108, SRS-110. Verifies: TC-132, TC-133, TC-134, TC-146, TC-157, TC-159.
+Traces to: SRS-093, SRS-108, SRS-110, SRS-111. Verifies: TC-132, TC-133, TC-134, TC-146, TC-157,
+TC-159, TC-160.
 
 Authority: the organiser's written permission of 2026-10-08, capped by the author at six
 B-scans (`docs/06` §2.2.2, DMP-C2). The rule was committed before this script existed.
@@ -35,7 +36,11 @@ count must equal the record exactly, or nothing is saved.
 **`--record-set presentation` (`docs/07` §21.12, SRS-110) re-renders the same picks for
 presentation**, from the same saved maps, under the rule fixed before rendering: each image
 cropped vertically to the retinal band (`crop_rows`), at twice the resolution, with 2.5-pixel
-outlines and larger labels. Nothing measured changes.
+outlines and larger labels. Nothing measured changes. **Rejected on review**: the crop filled each
+panel, stretching every short crop vertically (`docs/07` §21.13).
+
+**`--record-set sharper` (`docs/07` §21.13, SRS-111)** draws the whole B-scan at its §21.5 shape,
+with no crop, at twice the resolution, with 2.5-pixel outlines and larger labels.
 
 Usage (from the author's own terminal; the GPU run is a long run, `docs/07` §17.8):
     python scripts/09_illustrative_bscans.py --unlock-reason "..." --approved-by "..."
@@ -84,6 +89,8 @@ OUT_AUDITED = Path("artifacts") / "illustrations_audited"
 OUT_FINAL = Path("artifacts") / "illustrations_final"
 # docs/07 section 21.12: the same picks and maps, re-rendered for presentation, into a fourth.
 OUT_PRESENTATION = Path("artifacts") / "illustrations_presentation"
+# docs/07 section 21.13: the same picks and maps, the whole B-scan, sharper, into a fifth.
+OUT_SHARPER = Path("artifacts") / "illustrations_sharper"
 SECTION_21 = re.compile(r"(?<![\d.])21(?![\d])")
 CITED = (re.compile(r"17\.11"), SECTION_21)
 RECORD_SETS = {
@@ -94,15 +101,18 @@ RECORD_SETS = {
     "final": ("audited", (re.compile(r"21\.11"),), OUT_FINAL),
     # Section 21.12: the same picks and saved maps, re-rendered for presentation (SRS-110).
     "presentation": ("audited", (re.compile(r"21\.12"),), OUT_PRESENTATION),
+    # Section 21.13: the same picks and saved maps, no crop, sharper (SRS-111).
+    "sharper": ("audited", (re.compile(r"21\.13"),), OUT_SHARPER),
 }
 CITATIONS = {
     "corrected": "17.11 and section 21 (21.9)",
     "audited": "17.13 and 21 (21.10)",
     "final": "21 (21.11)",
     "presentation": "21 (21.12)",
+    "sharper": "21 (21.13)",
 }
 # The record sets drawn from the saved maps, with no model (SRS-108, SRS-110).
-FROM_SAVED = frozenset({"final", "presentation"})
+FROM_SAVED = frozenset({"final", "presentation", "sharper"})
 
 
 class Rendering(NamedTuple):
@@ -124,6 +134,9 @@ class Rendering(NamedTuple):
 STANDARD = Rendering(dpi=150, outline_px=1.4 * 150 / 72, title_pt=12, key_pt=11, crop=False)
 # Section 21.12, fixed before rendering: twice the resolution, 2.5-pixel outlines, larger labels.
 PRESENTATION = Rendering(dpi=300, outline_px=2.5, title_pt=16, key_pt=15, crop=True)
+# Section 21.13, after the crop was rejected: the same, with the whole B-scan at its 21.5 shape.
+SHARPER = Rendering(dpi=300, outline_px=2.5, title_pt=16, key_pt=15, crop=False)
+RENDERINGS = {"presentation": PRESENTATION, "sharper": SHARPER}
 CROP_MARGIN_ROWS = 40
 
 
@@ -544,7 +557,7 @@ def main_saved(args, cfg: dict, data_cfg: dict) -> int:
             )  # fmt: skip
             print(f"  {p['role']}: drawn from its saved map", flush=True)
 
-    rendering = PRESENTATION if args.record_set == "presentation" else STANDARD
+    rendering = RENDERINGS.get(args.record_set, STANDARD)
     failed = finish(picks, slices, regenerated, recorded, args.output_dir, rendering)
     if failed:
         print(f"GATE FAILED for {', '.join(failed)}: no image saved (docs/07 section 21.4)")

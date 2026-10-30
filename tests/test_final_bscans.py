@@ -197,7 +197,7 @@ def test_TC_157_a_failed_dry_run_writes_no_certificate_and_runs_no_real_step(tmp
 # --- step 3: every script a chain calls has an end-to-end test of its real main --------------
 
 CHAINS = ("10_reevaluate.py", "12_reevaluate_hd95.py", "14_final_reevaluation.py",
-          "15_final_bscans.py", "16_presentation_bscans.py")  # fmt: skip
+          "15_final_bscans.py", "16_presentation_bscans.py", "17_sharper_bscans.py")  # fmt: skip
 END_TO_END = {
     "05_evaluate.py": ("test_saved_predictions.py",
                        "test_TC_155_the_evaluation_script_saves_and_its_written_record_is_reproduced"),

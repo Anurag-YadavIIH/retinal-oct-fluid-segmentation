@@ -538,6 +538,7 @@ passes every fixture written by the same person who wrote the code, and is wrong
 | TC-157 | **The §21.11 B-scans come from the saved maps, checked by checksum, with no model** | SRS-108 | U | `09_illustrative_bscans.py`'s real `main` with `--record-set final`, on synthetic records, saved maps and MetaImage archives built by the sandbox: it selects by §21.2, opens each pick's bucket once, gates, renders and saves, and imports no torch. A saved file whose SHA-256 differs is refused before any bucket opens. A map whose bytes differ from the manifest, or whose saved spacing differs from the checked one, saves no image. The chain `15_final_bscans.py` lists its steps in order (refusals, counts, dry run, B-scans, counts after), runs its dry run in a sandbox with the same arguments, and every script any chain calls has an end-to-end test of its real `main` | yes |
 | TC-158 | **The type check passes over `src/` and `scripts/`, and can fail** | SRS-109 | U | mypy, run with the project's configuration over `src/` and `scripts/`, exits 0 with no finding. The configuration checks unannotated function bodies, and no source line carries an inline `type: ignore`. The CI workflow runs the same check. The pinned version is the same in `pyproject.toml`, `requirements.lock` and `docs/04`. **It can fail:** a file reproducing the §21.10 defect, a dict rebound to a tuple and then indexed as a dict, is reported by the same configuration | yes |
 | TC-159 | **The §21.12 B-scans follow the presentation rule fixed before rendering, from the saved maps** | SRS-110 | U | The crop rule on synthetic B-scans: an outline at the top, an outline at the bottom, the brightest row outside every outline, ties to the lowest index, and clipping at both edges each give the rows the rule states, the same for both panels, and no column is cut. The rendering constants are 300 dots per inch, 2.5-pixel outlines, titles 16 points and key 15, and the colours of §21.5. `09_illustrative_bscans.py --record-set presentation` runs as a subprocess with torch unimportable, on a sandbox, and saves six images at twice the §21.5 pixel size with no metadata; a saved file off its checksum is refused before any bucket opens. `16_presentation_bscans.py` lists its steps in order, states the counts of §21.12, and runs its dry run in a sandbox | yes |
+| TC-160 | **The §21.13 B-scans are the whole B-scan, sharper, from the saved maps** | SRS-111 | U | The §21.13 rendering profile is 300 dots per inch, 2.5-pixel outlines, titles 16 points and key 15, and **no crop**: both panels show every row and column of the chosen B-scan. `09_illustrative_bscans.py --record-set sharper` runs as a subprocess with torch unimportable, on a sandbox, and saves six images of 3000 × 1320 pixels with no metadata. `17_sharper_bscans.py` lists its steps in order, states the counts of §21.13, and runs its dry run in a sandbox | yes |
 | TC-129 | **The report page's data equals the records, and two builds are byte-identical** | SRS-092, RC-006 | U | The extraction stage of `scripts/08_build_site.py`, run twice into separate directories, produces byte-identical files, equal byte for byte to the committed `site/data` and chart input (`site_src/chart_scans.json`). Independently of the builder, every per-run Dice, HD95, sensitivity, specificity and AUROC in the results file equals its sealed evaluation record, and every downloadable per-scan row and every chart-input row equals a record row reduced to its permitted fields, with exactly as many rows as the records. Needs the records under `artifacts/` (`requires_data`) | yes |
 | TC-130 | **Every number on the report page comes from the generated data** | SRS-092 | U | Rendering the committed `site/data` reproduces the committed `site/index.html` byte for byte, with no records present. The template's visible text holds no digit outside the allowlist stated in the test (the interval level 95%, the metric name HD95, standard and document names, requirement, test and deviation identifiers, section references, and the definition of Dice's 0-to-1 scale; the citation is marked verbatim), no unresolved placeholder, and no em or en dash. A template with a typed number fails | yes |
 | TC-132 | **The illustrative selection follows `docs/07` §21 and is deterministic** | SRS-093 | U | On synthetic held-out rows with known values: the worst, lower-median and best scans by mean Dice over the fluid types each reference contains, with scans containing none ineligible; one false-positive case per type, the most predicted voxels above the threshold, skipping a scan already chosen; at most six, all distinct; ties broken by run, then identifier. Shuffled rows give the same picks. The B-scan rule picks the most reference fluid, or for a false-positive case the most predicted voxels of its type, and the lowest index on ties | yes |
@@ -2103,3 +2104,48 @@ before this section was committed.
 Each `test` bucket rises by one exactly when a pick comes from that fold, and §21.11's picks came
 from all three; the `in_domain_ref` buckets are not opened. Any other count after stops the chain,
 with the record intact.
+
+### 21.13 Re-rendering without the crop — written 2026-10-30, before any run
+
+**What §21.12 produced, recorded as it happened.** The author ran `16_presentation_bscans.py` on
+2026-10-30 at 10:42:03. The dry run completed, all six saved maps matched their checksums, the gate
+passed for all six picks, and the access counts after were 11, 6, 9, 4, 9 and 4, as §21.12 stated.
+**The images are rejected**: the author found every image but `bscan_fp_ped.png` badly stretched in
+the vertical direction. The cause is in the rule, not the run: §21.12 had the cropped rows fill
+each panel "as the whole B-scan did", so a crop shorter than the B-scan was drawn taller per row
+than §21.5 drew it, in proportion to how much was cut. The defect is Claude Code's, in writing the
+rule. No §21.12 image is published.
+
+**This rendering drops the crop, by the author's decision.** Everything else in §21.12 stands:
+the same six picks and the same saved maps, each checked by checksum before any bucket is opened,
+re-measured against the reference, no model and no GPU; the selection, the §21.4 gate and the
+captions unchanged (SRS-111).
+
+- **No crop.** Both panels show the whole chosen B-scan, every row and column, at the §21.5
+  figure size (10 × 4.4 inches), layout and shape, so nothing is stretched beyond the published
+  images.
+- **Sharper.** 300 dots per inch instead of 150; outlines 2.5 pixels wide; panel titles at 16
+  points and the key at 15, from 12 and 11; the §21.5 colours.
+- **The mandatory dry run (SRS-107)** precedes any unlock.
+- **Unlocks.** Each `test` bucket holding a pick is opened once, with an `Unlock` whose reason
+  cites **§21.13**.
+- **Output.** A new directory, `artifacts/illustrations_sharper/`; a directory already holding
+  files is refused.
+- **Review.** As §21.12.
+- **Launch.** `scripts/17_sharper_bscans.py`, by the author, from an interactive terminal (§17.8).
+
+**Access counts.** Read from `artifacts/sealed_access.jsonl` on 2026-10-30, after §21.12 and
+before this section was committed.
+
+| Fold | Bucket | Recorded count now → after |
+|---|---|---|
+| cirrus | `test` | **11 → 11 or 12** |
+| cirrus | `in_domain_ref` | **6 → 6** |
+| spectralis | `test` | **9 → 9 or 10** |
+| spectralis | `in_domain_ref` | **4 → 4** |
+| topcon | `test` | **9 → 9 or 10** |
+| topcon | `in_domain_ref` | **4 → 4** |
+
+Each `test` bucket rises by one exactly when a pick comes from that fold, and the picks come from
+all three; the `in_domain_ref` buckets are not opened. Any other count after stops the chain, with
+the record intact.

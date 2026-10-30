@@ -173,7 +173,7 @@ def test_TC_159_the_chain_steps_are_in_order_and_cite_21_12():
 
 def test_TC_159_the_expected_counts_are_the_ones_section_21_12_states():
     protocol = (REPO / "docs" / "07_vv_protocol.md").read_text(encoding="utf-8")
-    section = protocol.split("### 21.12", 1)[1]
+    section = protocol.split("### 21.12", 1)[1].split("### 21.13", 1)[0]
     stated = {
         (f"{fold}_holdout", bucket): int(now)
         for fold, bucket, now in re.findall(
