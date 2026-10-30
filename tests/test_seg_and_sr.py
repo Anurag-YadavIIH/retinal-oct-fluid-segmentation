@@ -260,6 +260,12 @@ def test_TC_076_every_tracking_uid_is_a_valid_ui_value(report, source_images, na
     assert len(uids) >= 4, "a tracking UID per fluid class and one for the confidence group"
     assert all(UID(u).is_valid for u in uids), [u for u in uids if not UID(u).is_valid]
     assert len(set(uids)) == len(uids)
+    # SRS-007 as amended 2026-10-30: the device observer UID is under the configured root;
+    # every Tracking UID is in the PS3.5 B.2 UUID form instead.
+    under_root = [u for u in uids if u.startswith(UID_ROOT + ".")]
+    tracking = [u for u in uids if u not in under_root]
+    assert len(under_root) == 1, under_root  # the device
+    assert tracking and all(u.startswith("2.25.") and u[5:].isdigit() for u in tracking)
     long_device = "1.2." + "3" * 59  # 63 characters, itself valid
 
     def build(device):
