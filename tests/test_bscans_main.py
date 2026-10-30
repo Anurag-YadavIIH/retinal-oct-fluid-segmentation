@@ -40,6 +40,7 @@ def stand_in(monkeypatch, tmp_path, by_fold, mismatch=False):
 
     from ocuval import runs
     from ocuval.data import transforms
+    from ocuval.eval import sealed
     from ocuval.io import retouch_reader
     from ocuval.models import seg_unet
     from ocuval.training import checkpoint
@@ -47,6 +48,7 @@ def stand_in(monkeypatch, tmp_path, by_fold, mismatch=False):
     volumes = {v["patient_id"]: v for vs in by_fold.values() for v in vs}
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("OCUVAL_ARTIFACTS", str(tmp_path / "artifacts"))
+    sealed.mark_sandbox(tmp_path / "artifacts")  # a synthetic log (SRS-107)
     monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
     monkeypatch.setattr(checkpoint, "request_determinism", lambda seed: {})
     monkeypatch.setattr(runs, "manifest_path", lambda cfg: None)

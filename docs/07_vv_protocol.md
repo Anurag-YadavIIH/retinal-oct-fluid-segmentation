@@ -534,6 +534,8 @@ passes every fixture written by the same person who wrote the code, and is wrong
 | TC-152 | **The audit's independent metrics agree with the pipeline's, and can disagree** | SRS-103 | U | Over six random pairs of anisotropic masks, each with a stray voxel, the independent Dice equals `metrics.dice` exactly and the KD-tree HD95 equals `metrics.hd95` to 1e-9 mm, both with the spacing on the array axes. A one-B-scan shift scores exactly the separation, and the same masks given the spacing in project order score something else, so the check can see a wrong axis order. Both-empty scores Dice 1 and HD95 0; exactly one empty scores HD95 NaN. The comparison passes identical values and names a 1e-6 mm HD95 difference | yes |
 | TC-154 | **The final re-evaluation chain follows §17.13; its gate stops on any change to the population or the reference** | SRS-105 | U | **Arguments, the step plan, the gate and the pre-flight checks only; the chain is never executed by a test.** `--approved-by` is required and non-empty; unknown arguments are refused. The plan lists, in order: the access-count check against exactly §17.13's six counts; two seeded `cirrus_holdout` `val` evaluations, their seeded check, their comparison and the first one's gate; the `spectralis_holdout` and `topcon_holdout` `val` evaluations, each gated; the six sealed evaluations, `test` before `in_domain_ref` per fold, each followed by its gate; the B-scan regeneration; the final count check. Every evaluation output is under `audited/` and distinct, and every gate compares it with that bucket's previous record (`corrected_hd95/` for the sealed buckets and cirrus `val`, `corrected/` for spectralis and topcon `val`). Every sealed step carries `--unlock-bucket` with a reason naming §17.13 and §17.7(b), and no open step carries one; the B-scan step cites §17.13 and §21 and reads the `audited` records. **The gate, on synthetic records:** a change to any Dice, HD95, predicted voxel count, score, sensitivity, specificity, AUROC value or interval passes. A change to a patient or volume count, a vendor, the bootstrap block, the threshold, a row's reference presence or reference voxel count, an AUROC's positives or negatives, or a row added or removed, stops it. **The saved-map check (SRS-106):** a record with no manifest, a file missing, an extra or absent volume, or a checksum mismatch is named, and the refusals name a non-empty `artifacts/predictions_final/` and too little free space; every evaluation step passes `--save-predictions` to a distinct folder under it. **The fix checks pass on this code and fail when each fix is undone.** The after-count rule adds one to every sealed bucket and one more to each `test` bucket holding a chosen scan | yes |
 | TC-155 | **A saved prediction reloads identically, and re-measuring it reproduces the record exactly** | SRS-106 | U | On synthetic volumes of three vendors' anisotropic spacings, each with a both-empty, a one-empty and a both-present class: every saved map reloads equal in values, shape and type, with spacing and scores bit-identical; the record evaluated from the re-measured volumes equals the record evaluated from the originals in every leaf; the record's manifest names one file per volume and every checksum matches. Saving the same map twice gives byte-identical files. **It can fail:** one voxel changed in a saved map changes its checksum, is named by the manifest check, and changes the re-measured record; a folder already holding a file is refused before anything is read; a missing or extra file is named. A saved file is ignored by git. `05_evaluate.py` passes the volume, the spacing and the scores it measures to the same function the re-measurement uses. Shown failing before the module existed | yes |
+| TC-156 | **No sealed bucket opens without a completed dry run at this commit** | SRS-107 | U | With no certificate, the gate refuses `test` and `in_domain_ref` before logging anything, and `val` still opens. A certificate passes only when it is complete, names the current commit and a clean tree, and lists the fold and bucket; each of an incomplete certificate, another commit, a dirty tree, an unlisted bucket and an unreadable file is refused, and logs nothing. A sandbox-marked log opens with no certificate; the repository's own `artifacts/` carrying the marker is still refused. The chain of SRS-108 writes no certificate when a dry-run step fails, and runs no real step | yes |
+| TC-157 | **The §21.11 B-scans come from the saved maps, checked by checksum, with no model** | SRS-108 | U | `09_illustrative_bscans.py`'s real `main` with `--record-set final`, on synthetic records, saved maps and MetaImage archives built by the sandbox: it selects by §21.2, opens each pick's bucket once, gates, renders and saves, and imports no torch. A saved file whose SHA-256 differs is refused before any bucket opens. A map whose bytes differ from the manifest, or whose saved spacing differs from the checked one, saves no image. The chain `15_final_bscans.py` lists its steps in order (refusals, counts, dry run, B-scans, counts after), runs its dry run in a sandbox with the same arguments, and every script any chain calls has an end-to-end test of its real `main` | yes |
 | TC-129 | **The report page's data equals the records, and two builds are byte-identical** | SRS-092, RC-006 | U | The extraction stage of `scripts/08_build_site.py`, run twice into separate directories, produces byte-identical files, equal byte for byte to the committed `site/data` and chart input (`site_src/chart_scans.json`). Independently of the builder, every per-run Dice, HD95, sensitivity, specificity and AUROC in the results file equals its sealed evaluation record, and every downloadable per-scan row and every chart-input row equals a record row reduced to its permitted fields, with exactly as many rows as the records. Needs the records under `artifacts/` (`requires_data`) | yes |
 | TC-130 | **Every number on the report page comes from the generated data** | SRS-092 | U | Rendering the committed `site/data` reproduces the committed `site/index.html` byte for byte, with no records present. The template's visible text holds no digit outside the allowlist stated in the test (the interval level 95%, the metric name HD95, standard and document names, requirement, test and deviation identifiers, section references, and the definition of Dice's 0-to-1 scale; the citation is marked verbatim), no unresolved placeholder, and no em or en dash. A template with a typed number fails | yes |
 | TC-132 | **The illustrative selection follows `docs/07` §21 and is deterministic** | SRS-093 | U | On synthetic held-out rows with known values: the worst, lower-median and best scans by mean Dice over the fluid types each reference contains, with scans containing none ineligible; one false-positive case per type, the most predicted voxels above the threshold, skipping a scan already chosen; at most six, all distinct; ties broken by run, then identifier. Shuffled rows give the same picks. The B-scan rule picks the most reference fluid, or for a false-positive case the most predicted voxels of its type, and the lowest index on ties | yes |
@@ -2001,3 +2003,54 @@ measured in it is reported, and it is not an evaluation.
   qualitative observation of `docs/10` is reassessed against the new images, labelled
   qualitative.
 - **Launch.** In the §17.13 chain, by the author, from an interactive terminal (§17.8).
+
+### 21.11 Regeneration from the saved maps — written 2026-10-30, before any run
+
+**What happened to §21.10.** The §17.13 chain completed every evaluation and gate, and its
+B-scan step opened and logged the three `test` buckets and regenerated all six picks. It then
+failed inside its own gate, before comparing them, on a defect in `09_illustrative_bscans.py`
+introduced by the D5 fix (`docs/13`, 2026-10-30). No image was saved, and whether the
+regenerated predictions matched their records is unknown. The three accesses are counted.
+
+**This run draws the picks from the maps §17.13 saved (SRS-106, SRS-108), with no model and no
+GPU.** Those maps are the ones the evaluation measured, so the image shows the very prediction
+the record describes, checked by checksum instead of by re-running the model. **For illustration
+only**: nothing measured in it is reported, and it is not an evaluation.
+
+- **Population and rule unchanged.** §21.1–§21.3 and §21.5 apply as written, to the held-out
+  records of §17.13 (`audited/evaluation_test.json` of each run) and no other. The rule is
+  deterministic in those numbers, so the picks are the ones §21.10 would have drawn.
+- **Checksums, before and after the bucket is opened.** Before any unlock, each pick's saved
+  file must match the SHA-256 its record's manifest names; a mismatch refuses the run with no
+  bucket opened. After loading, the map's own bytes must match the manifest's SHA-256 of the map.
+- **The gate, unchanged in substance.** The saved spacing must equal the spacing checked from
+  the archive against the manifest (SRS-057), and the map's shape the reference's. Every pick's
+  Dice and predicted voxel count, for all three fluid types, re-measured against the reference,
+  must equal its record exactly, or nothing is saved (§21.4).
+- **Unlocks.** Each `test` bucket holding a pick is opened once, with an `Unlock` whose reason
+  cites **§21.11**; the script refuses a reason that does not. Reading the reference and the
+  image is an access, whether or not a model runs.
+- **The mandatory dry run (SRS-107).** Before any unlock, the chain runs every one of its steps
+  on synthetic records, maps and archives in a sandbox, through the same script and arguments,
+  and writes a certificate only if every step completes. Without that certificate, at this
+  commit, on a clean tree, the SRS-088 gate opens no sealed bucket.
+- **Output.** A new directory, `artifacts/illustrations_final/`; a directory already holding
+  files is refused.
+- **Review and what may not change.** As §21.10.
+- **Launch.** `scripts/15_final_bscans.py`, by the author, from an interactive terminal (§17.8).
+  Duration not measured; it reads six volumes and renders six images, with no model.
+
+**Access counts.** Read from `artifacts/sealed_access.jsonl` on 2026-10-30, after §17.13 and
+before this section was committed.
+
+| Fold | Bucket | Recorded count now → after |
+|---|---|---|
+| cirrus | `test` | **9 → 9 or 10** |
+| cirrus | `in_domain_ref` | **6 → 6** |
+| spectralis | `test` | **7 → 7 or 8** |
+| spectralis | `in_domain_ref` | **4 → 4** |
+| topcon | `test` | **7 → 7 or 8** |
+| topcon | `in_domain_ref` | **4 → 4** |
+
+Each `test` bucket rises by one exactly when a pick comes from that fold; the `in_domain_ref`
+buckets are not opened. Any other count after stops the chain, with the record intact.

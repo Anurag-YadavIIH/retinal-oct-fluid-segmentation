@@ -1,7 +1,7 @@
 """The seal over the test and in-domain reference splits.
 
-Traces to: SRS-088
-Verifies: TC-125
+Traces to: SRS-088, SRS-107
+Verifies: TC-125, TC-156
 
 `docs/07` §17.1 permits the held-out vendor's test set to be evaluated **exactly once**,
 after training has ended and after the evaluation code is committed. §17.5 requires the
@@ -24,12 +24,22 @@ the JSON directly, walks straight past it — and that is fine, because the risk
 controlled is *absent-minded* access during development, not an adversary. The control
 that matters is the access log: if the test split is ever read twice, the log says so, and
 `docs/08` has to explain it.
+
+**No sealed bucket opens without a completed dry run (SRS-107, 2026-10-30).** On 2026-10-30
+the §21.10 B-scan step opened three sealed buckets and then failed on a defect that one run of
+its `main` on synthetic data would have shown. So the gate also requires the process to name a
+dry-run certificate (`OCUVAL_DRY_RUN_CERTIFICATE`): every step of the chain completed on
+synthetic data, at the repository's current commit, on a clean tree, with this fold and bucket
+listed. It lives here, not in the chains, because every sealed access passes through here: no
+script can open a bucket by forgetting its dry run. A dry run opens its own synthetic buckets in
+a sandbox, whose access log is marked as such; the repository's own `artifacts/` is never one.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import subprocess
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -46,6 +56,10 @@ RUN_ID = uuid.uuid4().hex
 SEALED_BUCKETS = frozenset({"test", "in_domain_ref"})
 
 ACCESS_LOG = Path("artifacts") / "sealed_access.jsonl"
+
+REPO = Path(__file__).resolve().parents[3]
+CERTIFICATE_ENV = "OCUVAL_DRY_RUN_CERTIFICATE"
+SANDBOX_MARKER = "sandbox.json"
 
 
 class SealedSplitError(RuntimeError):
@@ -140,6 +154,55 @@ def access_count(bucket: str, *, fold_id: str | None = None, root: Path | None =
     return len(runs) + legacy
 
 
+def repository_state() -> tuple[str, bool]:
+    """The repository's current commit, and whether its working tree is clean."""
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args], cwd=REPO, capture_output=True, text=True, check=True
+        ).stdout.strip()
+
+    return git("rev-parse", "HEAD"), not git("status", "--porcelain")
+
+
+def is_sandbox(root: Path) -> bool:
+    """A synthetic sandbox's access log. The repository's own `artifacts/` never is one."""
+    root = Path(root)
+    if root.resolve() == (REPO / "artifacts").resolve():
+        return False
+    return (root / SANDBOX_MARKER).is_file()
+
+
+def mark_sandbox(root: Path) -> None:
+    root = Path(root)
+    if root.resolve() == (REPO / "artifacts").resolve():
+        raise ValueError(f"{root} is the repository's own artifacts/, never a sandbox (SRS-107)")
+    root.mkdir(parents=True, exist_ok=True)
+    (root / SANDBOX_MARKER).write_text(json.dumps({"synthetic": True}) + "\n", encoding="utf-8")
+
+
+def certificate_problem(fold_id: str | None, bucket: str) -> str | None:
+    """Why the named dry-run certificate does not open this bucket, or None if it does."""
+    named = os.environ.get(CERTIFICATE_ENV)
+    if not named:
+        return f"no dry-run certificate is named in {CERTIFICATE_ENV}"
+    try:
+        cert = json.loads(Path(named).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        return f"the dry-run certificate {named} cannot be read: {error}"
+    commit, clean = repository_state()
+    steps = cert.get("steps") or []
+    if not (cert.get("complete") is True and steps and all(s.get("exit") == 0 for s in steps)):
+        return f"the dry run of {cert.get('chain')!r} did not complete every step"
+    if cert.get("commit") != commit or not cert.get("clean"):
+        return f"the dry run was of {cert.get('commit')} (clean {cert.get('clean')}), not {commit}"
+    if not clean:
+        return "the working tree is not clean, so it is not the code the dry run ran"
+    if [fold_id, bucket] not in cert.get("sealed", []):
+        return f"the dry run does not list {fold_id} {bucket} among the buckets it may open"
+    return None
+
+
 def require_unsealed(
     bucket: str,
     unlock: Unlock | None = None,
@@ -169,8 +232,15 @@ def require_unsealed(
             f"opens one bucket, not any bucket"
         )
 
-    previous = access_count(bucket, fold_id=fold_id, root=root)
     path = access_log_path(root)
+    if not is_sandbox(path.parent):
+        problem = certificate_problem(fold_id, bucket)
+        if problem:
+            raise SealedSplitError(
+                f"{bucket!r} of {fold_id} stays sealed: {problem}. Every sealed access needs a "
+                f"completed dry run of its chain at this commit (SRS-107)."
+            )
+    previous = access_count(bucket, fold_id=fold_id, root=root)
     path.parent.mkdir(parents=True, exist_ok=True)
     entry = {
         "utc": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -209,6 +279,8 @@ def assert_only_unsealed(buckets: list[str]) -> None:
 
 __all__ = [
     "ACCESS_LOG",
+    "CERTIFICATE_ENV",
+    "SANDBOX_MARKER",
     "SEALED_BUCKETS",
     "SealedSplitError",
     "Unlock",
@@ -216,6 +288,10 @@ __all__ = [
     "gate_calls",
     "access_log_path",
     "assert_only_unsealed",
+    "certificate_problem",
+    "is_sandbox",
+    "mark_sandbox",
+    "repository_state",
     "read_access_log",
     "require_unsealed",
 ]

@@ -122,6 +122,14 @@ def test_TC_124_every_estimate_carries_its_unit():
 # --- TC-125: the seal ------------------------------------------------------------------
 
 
+@pytest.fixture(autouse=True)
+def synthetic_log(request):
+    """TC-125 tests the log and the count, on a synthetic log: marked as a sandbox, so the
+    SRS-107 dry-run requirement, which TC-156 tests, does not stand in the way."""
+    if "tmp_path" in request.fixturenames:
+        sealed.mark_sandbox(request.getfixturevalue("tmp_path"))
+
+
 @pytest.mark.parametrize("bucket", sorted(sealed.SEALED_BUCKETS))
 def test_TC_125_a_sealed_bucket_is_refused_without_an_unlock(bucket):
     with pytest.raises(sealed.SealedSplitError, match="sealed"):
@@ -325,6 +333,8 @@ def test_TC_073_every_evaluation_path_checks_the_spacing_read_against_the_manife
             elif name == "measured_volume":  # SRS-106: measures through measure_volume
                 keywords = {k.arg: k.value for k in node.keywords}
                 measured_with.append(keywords.get("spacing_mm"))
+            elif name == "measured_pick":  # the B-scan script's helper: its fourth argument
+                measured_with.append(node.args[3] if len(node.args) > 3 else None)
     assert checks, f"{path} never checks the spacing (SRS-057)"
     assert measured_with, f"{path} measures nothing this test can see, so it checks nothing"
     for call in checks:

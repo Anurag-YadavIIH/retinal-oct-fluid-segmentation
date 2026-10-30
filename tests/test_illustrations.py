@@ -327,7 +327,7 @@ def test_TC_146_selection_and_gate_read_only_the_corrected_held_out_records():
                for p in paths.values())  # fmt: skip
     # The source main() passes is the section 17.11 set, not the figures' current one.
     source = (REPO / "scripts" / "09_illustrative_bscans.py").read_text(encoding="utf-8")
-    assert 'record_paths(RUNS)["wrong_axes"]' in source
+    assert 'which = "wrong_axes" if folder == "corrected" else "audited"' in source
 
     superseded = {f: {"test": REPO / "artifacts" / "runs" / f / "evaluation_test.json"}
                   for f in ILL.FOLDS}  # fmt: skip
