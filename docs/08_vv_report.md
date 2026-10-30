@@ -1488,6 +1488,30 @@ Five picks are the same scans, on the same B-scans, as §21.9's; the median is a
 The author reviewed the six images outside any session (DMP-C12) and approved all six. The two
 caption sentences of §21.8 and §21.9 are kept, and one sentence is added to the median's.
 
+### 5l.3 §21.12, re-rendered for presentation: run, images rejected
+
+| Field | Value | Source |
+|---|---|---|
+| Chain | `scripts/16_presentation_bscans.py` (SRS-110), launched by the author on 2026-10-30 at 10:42:03; ended 10:46:02, **3 min 59 s**, every step exit 0 | `artifacts/chain/presentation_bscans_status.txt` |
+| Dry run (SRS-107) | all three steps completed on synthetic data in 5 s | status log |
+| **Gate** | **passed for all six picks**, the same picks and B-scans as §21.11 | `selection.json` |
+| Access counts after | cirrus `test` **11**, spectralis `test` **9**, topcon `test` **9**; the `in_domain_ref` buckets unchanged at **6**, **4**, **4** | status log |
+| **Outcome** | **rejected by the author**: every image but `bscan_fp_ped.png` stretched vertically | the author's review |
+
+The defect was in the rendering rule, not the run: §21.12 had each crop fill the whole panel, so a
+crop shorter than the B-scan was drawn taller per row than §21.5 drew it. No §21.12 image is
+published. §21.13 drops the crop (`docs/07` §21.13).
+
+### 5l.4 §21.13, the whole B-scan, sharper: passed, published
+
+| Field | Value | Source |
+|---|---|---|
+| Chain | `scripts/17_sharper_bscans.py` (SRS-111), launched by the author on 2026-10-30 at 10:57:01; ended 11:01:05, **4 min 04 s**, every step exit 0 | `artifacts/chain/sharper_bscans_status.txt` |
+| Dry run (SRS-107) | all three steps completed on synthetic data in 6 s | status log |
+| **Gate** | **passed for all six picks**, the same picks and B-scans as §21.11 | `selection.json` |
+| Access counts after | cirrus `test` **12**, spectralis `test` **10**, topcon `test` **10**; the `in_domain_ref` buckets unchanged at **6**, **4**, **4** | status log |
+| Outcome | **approved by the author, all six**; published in `docs/figures/`, replacing the §21.11 renderings of the same scans. The generated captions are byte-identical to §21.11's | the author's review; file comparison |
+
 ## 6. Conclusion
 
 **Not drafted.** The validation conclusion requires the cross-vendor result, which is

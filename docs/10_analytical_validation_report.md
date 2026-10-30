@@ -596,7 +596,10 @@ Every non-degenerate selection rests on a 7-patient `val` split with 1–4 negat
 > These are drawn from the label maps the final run saved: each map was checked against its
 > record's checksum, and re-measured against its reference, before any image was saved. The rule
 > chose the same scans and B-scans as §21.9 for five of the six; the median is a different
-> scan. The §21.10 attempt in the final chain saved no image (`docs/08` §5l.1).
+> scan. The §21.10 attempt in the final chain saved no image (`docs/08` §5l.1). **Re-rendered
+> sharper, 2026-10-30** (`docs/07` §21.13): the same scans, B-scans and saved maps, the whole
+> B-scan at twice the resolution with thicker outlines and larger labels; nothing measured
+> changed, and the author approved all six (`docs/08` §5l.4).
 
 Six B-scans from the held-out scans, shown under the organiser's written permission for a very
 small number of illustrative images (`docs/06` §2.2.2). **They were chosen by a rule committed

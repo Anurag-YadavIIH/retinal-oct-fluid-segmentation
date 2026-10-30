@@ -14,13 +14,10 @@
 
 <header class="masthead">
   <div class="wrap">
-    <p class="eyebrow">Project report</p>
     <h1>OcuVal</h1>
     <p class="lede">A study of whether software that finds fluid in eye scans still works on a scanner brand it was never trained on, built and documented the way medical device software is.</p>
-    <p class="banner" role="note"><strong>The results on this page are final, after an audit of the whole pipeline; earlier figures were measured through defects and are kept.</strong> The figures first published here returned each prediction to the scanner's own geometry without first removing the preprocessing padding, which misplaced the Cirrus and Spectralis predictions; that was fixed and every sealed test set evaluated again. A later audit found twelve defects, two of which changed what was measured: each prediction still sat about one pixel row too deep, and the detection score also read the padding. All twelve were fixed, each with a test shown failing first, and every test set was evaluated a last time under a check that the patients and the expert outlines were unchanged. The figures moved very little, no detection figure changed, and the conclusions are unchanged; the size of every change is in the validation report. The earlier figures are kept, labelled, in the <a href="{{github}}/blob/main/docs/10_analytical_validation_report.md">validation report</a> (docs/10 §10), the audit is summarised there (§11), and each finding is in the <a href="{{github}}/blob/main/docs/13_change_control_log.md">change-control log</a> (docs/13).</p>
-    <p class="banner" role="note"><strong>HD95 was also once computed with the voxel spacing on the wrong axes of each scan.</strong> That was fixed and every test set evaluated again before the audit; the earlier HD95 figures are kept, labelled, in the <a href="{{github}}/blob/main/docs/10_analytical_validation_report.md">validation report</a> (docs/10 §10.2).</p>
-    <p class="banner" role="note"><strong>Not for clinical use.</strong> This is a research and portfolio project built on public challenge data. It has never been used on patients, has not been validated for patient care, and makes no clinical claim of any kind.</p>
-    <p class="links"><a href="{{github}}">Source code on GitHub</a> <span aria-hidden="true">·</span> <a href="{{github}}/blob/main/docs/10_analytical_validation_report.md">Full validation report (docs/10)</a> <span aria-hidden="true">·</span> <a href="#downloads">Download the data</a></p>
+    <p class="note"><strong>Not for clinical use.</strong></p>
+    <p class="note">The results were corrected and audited; see <a href="#corrections">Corrections and independent audit</a>.</p>
   </div>
 </header>
 
@@ -40,6 +37,7 @@
       <li><a href="#reproducibility">Reproducibility</a></li>
       <li><a href="#engineering">Engineering and documentation</a></li>
       <li><a href="#limitations">Limitations</a></li>
+      <li><a href="#corrections">Corrections and independent audit</a></li>
       <li><a href="#about">About, data and downloads</a></li>
     </ol>
   </details>
@@ -53,7 +51,7 @@
     <div class="card"><span class="big">{{facts.n_scans}}</span><span class="label">OCT scans, one per patient</span></div>
     <div class="card"><span class="big">{{facts.n_brands}}</span><span class="label">scanner brands</span></div>
     <div class="card"><span class="big">{{facts.n_runs}}</span><span class="label">training runs, each leaving one brand out</span></div>
-    <div class="card"><span class="big">{{facts.n_sealed}}</span><span class="label">sealed test sets, each evaluated under the seeded procedure and once more after the correction</span></div>
+    <div class="card"><span class="big">{{facts.n_sealed}}</span><span class="label">sealed test sets, opened only under rules written down before each run</span></div>
     <div class="card"><span class="big">about {{facts.detection_limit:.2f}}</span><span class="label">smallest Dice difference this design can detect</span></div>
     <div class="card"><span class="big">{{facts.fallbacks.total}}</span><span class="label">non-deterministic GPU fallbacks recorded, across {{facts.fallbacks.records}} determinism records (<a href="#reproducibility">what this does and does not show</a>)</span></div>
   </div>
@@ -137,13 +135,10 @@
   <p>Sensitivity is perfect in all {{facts.sens_one_cells}} groups and specificity is zero in {{facts.spec_zero_cells}} of {{facts.n_cells}}: at the fixed threshold the model calls almost every fluid type present in almost every scan. Its confidence still ranks scans well, with AUROC from {{facts.auroc_held_range.0:.2f}} to {{facts.auroc_held_range.1:.2f}} on every unseen brand. The fixed operating point is the weak part, not the ranking.</p>
 
   <h3>With few patients, the score is fragile</h3>
-  <p>If one scan without a fluid type flips between "nothing marked" and "a few voxels marked", its Dice jumps from 1 to 0, and a {{facts.in_domain_n}}-patient average moves by {{facts.fragility.one_flip:.4f}}. I saw a shift of about that size between two equally valid evaluations of the same model, before I made evaluation reproducible: Cirrus familiar-brand SRF moved from {{facts.fragility.unseeded:.4f}} to {{facts.fragility.seeded:.4f}}, a change of {{facts.fragility.shift:.4f}}, in a group with {{facts.fragility.absent}} SRF-free scans. The older run did not keep per-scan scores, so I cannot confirm that a single scan caused it. Both evaluations were measured through the defect described at the top; the corrected figure for that group is {{facts.fragility.corrected:.4f}}, and the arithmetic of a single flip does not depend on the defect (docs/10 §7.2).</p>
-
-  <h3 id="earlier-figures">Earlier figures, measured through the defect</h3>
-  <p>Before the first correction, this page showed results measured through the first defect described at the top. Read that way, every per-run comparison overlapped and no pooled difference excluded zero. Until the audit, it showed figures that still carried the one-row placement defect the audit found; read that way, they showed what this page shows now. None of those figures are results. They are kept, each row labelled, in the <a href="{{github}}/blob/main/docs/10_analytical_validation_report.md">validation report</a> (docs/10 §10) and the verification report (<a href="{{github}}/blob/main/docs/08_vv_report.md">docs/08</a> §5g, §5i, §5j, with the final figures in §5k).</p>
+  <p>If one scan without a fluid type flips between "nothing marked" and "a few voxels marked", its Dice jumps from 1 to 0, and a {{facts.in_domain_n}}-patient average moves by {{facts.fragility.one_flip:.4f}}. I saw a shift of about that size between two equally valid evaluations of the same model, before I made evaluation reproducible: Cirrus familiar-brand SRF moved from {{facts.fragility.unseeded:.4f}} to {{facts.fragility.seeded:.4f}}, a change of {{facts.fragility.shift:.4f}}, in a group with {{facts.fragility.absent}} SRF-free scans. The older run did not keep per-scan scores, so I cannot confirm that a single scan caused it. Both evaluations were measured through the first defect described in <a href="#corrections">Corrections and independent audit</a>; the corrected figure for that group is {{facts.fragility.corrected:.4f}}, and the arithmetic of a single flip does not depend on the defect (docs/10 §7.2).</p>
 
   <h3 id="what-the-outlines-look-like">What the outlines look like</h3>
-  <p>These B-scans were chosen by a rule I committed before rendering any image (<a href="{{github}}/blob/main/docs/07_vv_protocol.md">docs/07</a> §21), from the numbers in the final records alone: the worst, median and best unseen-brand scans by Dice, and the largest false-positive case for each fluid type. Each shows the prediction that was evaluated: the one the final evaluation saved, checked against its recorded checksum and re-measured to match its record exactly before it was saved. They replace earlier images drawn through the defects described at the top. They are illustrations, not results, and they are not typical. The challenge organiser gave written permission for a very small number of illustrative images (docs/06 §2.2.2); no case identifier, brand or date appears in them.</p>
+  <p>These B-scans were chosen by a rule I committed before rendering any image (<a href="{{github}}/blob/main/docs/07_vv_protocol.md">docs/07</a> §21), from the numbers in the final records alone: the worst, median and best unseen-brand scans by Dice, and the largest false-positive case for each fluid type. Each shows the prediction that was evaluated: the one the final evaluation saved, checked against its recorded checksum and re-measured to match its record exactly before it was saved. They replace earlier images drawn through the defects described in <a href="#corrections">Corrections and independent audit</a>. They are illustrations, not results, and they are not typical. The challenge organiser gave written permission for a very small number of illustrative images (docs/06 §2.2.2); no case identifier, brand or date appears in them.</p>
   {{!illustrations}}
 </section>
 
@@ -212,8 +207,21 @@
   </ul>
 </section>
 
+<section id="corrections">
+  <h2>Corrections and independent audit</h2>
+  <p><strong>What was found.</strong> After the first results were published, three problems with how predictions were measured came to light. The step that returned each prediction to the scanner's own geometry did not first remove the padding added in preprocessing, which misplaced the predictions for two of the three brands. The boundary-distance score was computed with the pixel spacing on the wrong axes of each scan. And an audit of the whole pipeline found twelve defects. Two of them changed what was measured: each prediction still sat about one pixel row too deep, and the detection score also read the padding. The other ten were in the reporting code, the tests and the DICOM output.</p>
+  <p><strong>What was fixed.</strong> Each defect was fixed with a test that failed before the fix and passes after it. The trained models were not changed, so no result depends on retraining.</p>
+  <p><strong>How the evaluation was re-run.</strong> Each re-run followed an amendment to the <a href="{{github}}/blob/main/docs/07_vv_protocol.md">protocol</a> written before any sealed test data was opened, with the same models, checkpoints, threshold, passes and bootstrap. The last re-run would have stopped if the patients or the expert outlines in any test group had differed from the run before; none did. Every prediction it made was saved with a checksum, and no sealed test group can now be opened until a dry run of the whole procedure has passed on synthetic data.</p>
+  <p><strong>How it was checked.</strong> The audit recomputed every metric on the open validation scans with separately written code that shares nothing with the pipeline, and found no difference. It pushed label maps of known shape through the real preprocessing and back, and required them to return exactly. It read the evaluation, reporting and DICOM code line by line against its requirements.</p>
+  <p><strong>The headline held.</strong> The figures moved very little, no detection figure changed, and every conclusion on this page is the same as before the audit. The size of every change is in the <a href="{{github}}/blob/main/docs/10_analytical_validation_report.md">validation report</a> (docs/10 §11), and each finding has its own entry in the <a href="{{github}}/blob/main/docs/13_change_control_log.md">change-control log</a> (docs/13).</p>
+  <h3 id="earlier-figures">Earlier figures, measured through the defects</h3>
+  <p>Before the first correction, this page showed results measured through the first defect described above. Read that way, every per-run comparison overlapped and no pooled difference excluded zero. Until the audit, it showed figures that still carried the one-row placement defect the audit found; read that way, they showed what this page shows now. None of those figures are results. They are kept, each row labelled, in the <a href="{{github}}/blob/main/docs/10_analytical_validation_report.md">validation report</a> (docs/10 §10) and the verification report (<a href="{{github}}/blob/main/docs/08_vv_report.md">docs/08</a> §5g, §5i, §5j, with the final figures in §5k).</p>
+</section>
+
 <section id="about">
   <h2>About, data and downloads</h2>
+  <p><strong>Not for clinical use.</strong> This is a research and portfolio project built on public challenge data. It has never been used on patients, has not been validated for patient care, and makes no clinical claim of any kind.</p>
+  <p class="links"><a href="{{github}}">Source code on GitHub</a> <span aria-hidden="true">·</span> <a href="{{github}}/blob/main/docs/10_analytical_validation_report.md">Full validation report (docs/10)</a> <span aria-hidden="true">·</span> <a href="#downloads">Download the data</a></p>
   <h3>How this was built</h3>
   <p>I designed this project and made its decisions: the research question and cross-vendor design, the choice of dataset and how its data agreement was handled, the safety classification, the evaluation protocol written before any results existed, and the calls on what to report and how. I used Claude Code (Anthropic) as a coding assistant.</p>
   <p>This page is generated by <a href="{{github}}/blob/main/scripts/08_build_site.py">scripts/08_build_site.py</a> from the evaluation records. No number on it is typed by hand, and tests check that each one matches its source.</p>

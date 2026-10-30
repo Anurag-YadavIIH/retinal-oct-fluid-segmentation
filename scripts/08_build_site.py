@@ -594,18 +594,29 @@ def extract() -> dict[str, bytes]:
         "records": len(determinism),
     }
 
-    # Numbers the README states for the "worth a closer look" items, read from it.
-    readme = "README.md"
+    # The "worth a closer look" numbers, read from the documents that record them. Until
+    # 2026-10-30 they were read from the README, which is a summary, not a source.
+    log13 = "docs/13_change_control_log.md"
+    words = {"six": 6.0}
     facts["closer"] = {
-        "hd95": [int(x) for x in claim(readme, r"disagreed on (\d+) of (\d+) random cases")],
-        "spacing_factor": float(claim(readme, r"wrong by a factor of (\d+\.\d+)")[0]),
-        "spacing_checks": [
-            int(x)
-            for x in claim(readme, r"catches (\d+) of (\d+) swapped cases; .*? catches all (\d+)")
+        "hd95": [int(x) for x in
+                 claim(log13, r"disagreed on HD95 for (\d+) of (\d+) random mask pairs")],
+        "spacing_factor": words[
+            claim("docs/07_vv_protocol.md", r"wrong by a factor of (\w+) from a segmentation")[0]
         ],
-        "stage1_fallbacks": int(claim(readme, r"non-repeatable method (\d+) times")[0]),
-        "eval_differ": int(claim(readme, r"differed in (\d+) figures")[0]),
-    }
+        "spacing_checks": [
+            int(x) for x in claim(
+                log13,
+                r"\*\*(\d+) of (\d+)\*\* axis-order cases.*?The per-vendor ranges caught all (\d+)",
+            )
+        ],
+        "stage1_fallbacks": int(
+            claim("docs/08_vv_report.md", r"recorded (\d+) non-deterministic fallbacks")[0]
+        ),
+        "eval_differ": int(
+            claim("docs/05_risk_management_file.md", r"differed in (\d+) aggregate figures")[0]
+        ),
+    }  # fmt: skip
 
     facts["docs"] = docs_counts()
     out["site/data/facts.json"] = dumps(facts)

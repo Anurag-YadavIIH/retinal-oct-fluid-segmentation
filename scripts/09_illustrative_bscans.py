@@ -1,6 +1,7 @@
 """Render the illustrative B-scans selected by the rule pre-registered in `docs/07` §21.
 
-Traces to: SRS-093, SRS-108. Verifies: TC-132, TC-133, TC-134, TC-146, TC-157.
+Traces to: SRS-093, SRS-108, SRS-110, SRS-111. Verifies: TC-132, TC-133, TC-134, TC-146, TC-157,
+TC-159, TC-160.
 
 Authority: the organiser's written permission of 2026-10-08, capped by the author at six
 B-scans (`docs/06` §2.2.2, DMP-C2). The rule was committed before this script existed.
@@ -32,6 +33,15 @@ after loading, with its saved spacing equal to the spacing checked from the arch
 no GPU, no torch. The gate of step 4 is unchanged: the re-measured Dice and predicted voxel
 count must equal the record exactly, or nothing is saved.
 
+**`--record-set presentation` (`docs/07` §21.12, SRS-110) re-renders the same picks for
+presentation**, from the same saved maps, under the rule fixed before rendering: each image
+cropped vertically to the retinal band (`crop_rows`), at twice the resolution, with 2.5-pixel
+outlines and larger labels. Nothing measured changes. **Rejected on review**: the crop filled each
+panel, stretching every short crop vertically (`docs/07` §21.13).
+
+**`--record-set sharper` (`docs/07` §21.13, SRS-111)** draws the whole B-scan at its §21.5 shape,
+with no crop, at twice the resolution, with 2.5-pixel outlines and larger labels.
+
 Usage (from the author's own terminal; the GPU run is a long run, `docs/07` §17.8):
     python scripts/09_illustrative_bscans.py --unlock-reason "..." --approved-by "..."
 """
@@ -46,6 +56,7 @@ import re
 import struct
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 import matplotlib
 
@@ -76,6 +87,10 @@ OUT = Path("artifacts") / "illustrations_corrected"
 OUT_AUDITED = Path("artifacts") / "illustrations_audited"
 # docs/07 section 21.11: the same records, drawn from the saved maps, into a third.
 OUT_FINAL = Path("artifacts") / "illustrations_final"
+# docs/07 section 21.12: the same picks and maps, re-rendered for presentation, into a fourth.
+OUT_PRESENTATION = Path("artifacts") / "illustrations_presentation"
+# docs/07 section 21.13: the same picks and maps, the whole B-scan, sharper, into a fifth.
+OUT_SHARPER = Path("artifacts") / "illustrations_sharper"
 SECTION_21 = re.compile(r"(?<![\d.])21(?![\d])")
 CITED = (re.compile(r"17\.11"), SECTION_21)
 RECORD_SETS = {
@@ -84,12 +99,61 @@ RECORD_SETS = {
     "audited": ("audited", (re.compile(r"17\.13"), SECTION_21), OUT_AUDITED),
     # Section 21.11: section 17.13's records, drawn from the maps that run saved (SRS-108).
     "final": ("audited", (re.compile(r"21\.11"),), OUT_FINAL),
+    # Section 21.12: the same picks and saved maps, re-rendered for presentation (SRS-110).
+    "presentation": ("audited", (re.compile(r"21\.12"),), OUT_PRESENTATION),
+    # Section 21.13: the same picks and saved maps, no crop, sharper (SRS-111).
+    "sharper": ("audited", (re.compile(r"21\.13"),), OUT_SHARPER),
 }
 CITATIONS = {
     "corrected": "17.11 and section 21 (21.9)",
     "audited": "17.13 and 21 (21.10)",
     "final": "21 (21.11)",
+    "presentation": "21 (21.12)",
+    "sharper": "21 (21.13)",
 }
+# The record sets drawn from the saved maps, with no model (SRS-108, SRS-110).
+FROM_SAVED = frozenset({"final", "presentation", "sharper"})
+
+
+class Rendering(NamedTuple):
+    """How an image is drawn: `docs/07` §21.5, or §21.12 for presentation."""
+
+    dpi: int
+    outline_px: float
+    title_pt: float
+    key_pt: float
+    crop: bool
+
+    @property
+    def outline_pt(self) -> float:
+        """Matplotlib draws line widths in points: 72 to the inch."""
+        return self.outline_px * 72 / self.dpi
+
+
+# Section 21.5 as run: 1.4-point outlines at 150 dpi, about 2.9 pixels.
+STANDARD = Rendering(dpi=150, outline_px=1.4 * 150 / 72, title_pt=12, key_pt=11, crop=False)
+# Section 21.12, fixed before rendering: twice the resolution, 2.5-pixel outlines, larger labels.
+PRESENTATION = Rendering(dpi=300, outline_px=2.5, title_pt=16, key_pt=15, crop=True)
+# Section 21.13, after the crop was rejected: the same, with the whole B-scan at its 21.5 shape.
+SHARPER = Rendering(dpi=300, outline_px=2.5, title_pt=16, key_pt=15, crop=False)
+RENDERINGS = {"presentation": PRESENTATION, "sharper": SHARPER}
+CROP_MARGIN_ROWS = 40
+
+
+def crop_rows(display: np.ndarray, reference: np.ndarray, prediction: np.ndarray,
+              margin: int = CROP_MARGIN_ROWS) -> slice:  # fmt: skip
+    """`docs/07` §21.12: the rows kept, the same for both panels.
+
+    From `margin` rows above the topmost to `margin` rows below the bottommost of every row
+    holding an expert or a model outline, and the brightest row (the highest mean intensity
+    after the window, lowest index on ties), clipped to the B-scan. Columns are never cut.
+    """
+    outlined = np.flatnonzero((reference > 0).any(axis=1) | (prediction > 0).any(axis=1))
+    brightest = int(np.argmax(display.mean(axis=1)))
+    rows = np.append(outlined, brightest)
+    top = max(0, int(rows.min()) - margin)
+    bottom = min(display.shape[0], int(rows.max()) + margin + 1)
+    return slice(top, bottom)
 
 
 def load_module(name: str, path: Path):
@@ -195,8 +259,16 @@ def gate(picks: list[dict], regenerated: dict, recorded: dict) -> list[str]:
 # --- rendering and captions: docs/07 §21.5 -------------------------------------------------
 
 
-def figure(display: np.ndarray, reference: np.ndarray, prediction: np.ndarray):
+def figure(
+    display: np.ndarray,
+    reference: np.ndarray,
+    prediction: np.ndarray,
+    rendering: Rendering = STANDARD,
+):
     """One B-scan twice: the expert's outline left, the model's right. No other text."""
+    if rendering.crop:
+        rows = crop_rows(display, reference, prediction)
+        display, reference, prediction = display[rows], reference[rows], prediction[rows]
     fig, axes = plt.subplots(1, 2, figsize=(10, 4.4))
     for ax, mask, title in zip(axes, (reference, prediction), TITLES, strict=True):
         ax.imshow(display, cmap="gray", vmin=0.0, vmax=1.0, aspect="auto",
@@ -205,11 +277,11 @@ def figure(display: np.ndarray, reference: np.ndarray, prediction: np.ndarray):
             region = mask == index
             if region.any():
                 ax.contour(region.astype(float), levels=[0.5], colors=[COLOURS[fluid]],
-                           linewidths=1.4)  # fmt: skip
-        ax.set_title(title, fontsize=12)
+                           linewidths=rendering.outline_pt)  # fmt: skip
+        ax.set_title(title, fontsize=rendering.title_pt)
         ax.set_axis_off()
     key = [Line2D([], [], color=COLOURS[f], lw=2.5, label=f) for f in CLASSES]
-    fig.legend(handles=key, loc="lower center", ncol=3, frameon=False, fontsize=11)
+    fig.legend(handles=key, loc="lower center", ncol=3, frameon=False, fontsize=rendering.key_pt)
     fig.tight_layout(rect=(0, 0.08, 1, 1))
     return fig
 
@@ -254,13 +326,13 @@ def forbidden_chunks(path: Path) -> set[str]:
     return found
 
 
-def save(fig, path: Path) -> None:
+def save(fig, path: Path, dpi: int = STANDARD.dpi) -> None:
     """Save as PNG with no metadata, and refuse the file if any metadata chunk got in."""
     extra = unexpected_text(fig)
     if extra:
         plt.close(fig)
         raise ValueError(f"figure carries text beyond titles and key: {sorted(extra)}")
-    fig.savefig(path, format="png", dpi=150, metadata={"Software": None}, facecolor="white")
+    fig.savefig(path, format="png", dpi=dpi, metadata={"Software": None}, facecolor="white")
     plt.close(fig)
     leaked = forbidden_chunks(path)
     if leaked:
@@ -295,7 +367,9 @@ def caption(pick: dict) -> str:
     )
 
 
-def finish(picks, slices, regenerated, recorded, out_dir: Path) -> list[str]:
+def finish(
+    picks, slices, regenerated, recorded, out_dir: Path, rendering: Rendering = STANDARD
+) -> list[str]:
     """Gate first; save every image only if every pick passes. Returns the failed roles.
 
     `slices` maps `(run, subject)` to `(bscan_index, display, reference, prediction)` for the
@@ -318,7 +392,7 @@ def finish(picks, slices, regenerated, recorded, out_dir: Path) -> list[str]:
     for p in picks:
         _, display, reference, prediction = slices[(p["run"], p["subject"])]
         name = f"bscan_{p['role']}.png"
-        save(figure(display, reference, prediction), out_dir / name)
+        save(figure(display, reference, prediction, rendering), out_dir / name, rendering.dpi)
         captions.append(f"**{name}**: {caption(p)}")
     (out_dir / "captions.md").write_text("\n\n".join(captions) + "\n", encoding="utf-8")
     (out_dir / "selection.json").write_text(json.dumps(record, indent=1) + "\n")
@@ -354,7 +428,7 @@ def parse_args(argv):
         parser.error(f"the unlock reason must cite docs/07 section {CITATIONS[args.record_set]}")
     if args.output_dir.exists() and any(args.output_dir.iterdir()):
         parser.error(f"{args.output_dir} already holds files; an earlier run is never overwritten")
-    if args.record_set != "final" and args.device != "cuda":
+    if args.record_set not in FROM_SAVED and args.device != "cuda":
         parser.error(
             "the sealed records were produced on the GPU, and the exact-match gate compares "
             "with ==; a CPU run cannot reproduce them, so it is refused before anything runs"
@@ -483,7 +557,8 @@ def main_saved(args, cfg: dict, data_cfg: dict) -> int:
             )  # fmt: skip
             print(f"  {p['role']}: drawn from its saved map", flush=True)
 
-    failed = finish(picks, slices, regenerated, recorded, args.output_dir)
+    rendering = RENDERINGS.get(args.record_set, STANDARD)
+    failed = finish(picks, slices, regenerated, recorded, args.output_dir, rendering)
     if failed:
         print(f"GATE FAILED for {', '.join(failed)}: no image saved (docs/07 section 21.4)")
         return 1
@@ -497,7 +572,7 @@ def main(argv: list[str] | None = None) -> int:
 
     cfg = yaml.safe_load(args.config.read_text(encoding="utf-8"))
     data_cfg = yaml.safe_load(args.data_config.read_text(encoding="utf-8"))
-    if args.record_set == "final":
+    if args.record_set in FROM_SAVED:
         return main_saved(args, cfg, data_cfg)
 
     import torch
