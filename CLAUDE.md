@@ -170,24 +170,36 @@ Accuracy alone is never reported. The classes are imbalanced and it is misleadin
 
 ## 7. Current status
 
-**STATUS 2026-10-24: results corrected after the inversion defect; the documents are updated on
-branch `corrected-results`, not yet pushed.** `invert_axial_resample` resized padded frames
-whole, misplacing every cirrus and spectralis prediction in the evaluation (`docs/13`,
-2026-10-16). Fixed in `3c085a1` (SRS-074 amended, TC-048 extended). The author re-ran the six
-sealed evaluations under `docs/07` §17.11 on 2026-10-24: 6 h 30 min 20 s measured, every step
-exit 0, reproducibility check IDENTICAL on 466 of 466 leaves (`docs/08` §5i). `docs/10` v0.5,
-`docs/12` v0.2, the README and the report page carry the corrected figures, with the earlier
-ones kept and labelled as measured through the defect (`docs/10` §10). The earlier notices are
-replaced by statements that link the `docs/13` finding. **Corrected headline:** by the
-pre-registered criterion, 1 of 9 Dice comparisons establishes a difference, spectralis SRF,
-with the unseen vendor higher and consistent with case mix; no degradation is established.
-Post-hoc and class-present, the pooled IRF and PED difference intervals exclude zero with the
-held-out vendor lower: suggestive, not established. Detection limit about 0.16 Dice (derived,
-`docs/10` §5.4). Detection, AUROC and the §19.1 and §19.2 results were unchanged by the
-correction. **Still open from the defect:** the illustrative B-scans stay withdrawn until the
-author's `docs/07` §21 re-run on the corrected records. Task 5 (wiring model output to DICOM,
-branch `wire-dicom`, nothing committed) waits for this branch to merge and is rebuilt from
-`main`.
+**STATUS 2026-10-30: final figures after the audit; everything is on branch `audit-fixes`,
+not yet pushed.** The audit of 2026-10-28 found twelve defects, D1–D12 (`docs/13`, 2026-10-29;
+`docs/10` §11). Two changed what an evaluation measures: **D1**, the inversion put every
+prediction about one native row too deep, and **D4**, the detection score's maximum ran over
+the padding. Each defect was fixed with a test shown failing first. **The training half of D1 is
+not repaired**: training labels sat on average about one native row off their images, the models
+are not retrained, and retraining would be a new pre-registered experiment (SRS-074,
+limitation). The author ran the final re-evaluation under `docs/07` §17.13 on 2026-10-29/30:
+6 h 49 min 00 s measured, all nine gates passed (population and reference unchanged),
+reproducibility IDENTICAL including every saved map's checksum (`docs/08` §5k). Its B-scan step
+failed on a name rebound by the D5 fix and saved nothing (§5l.1). The B-scans were then drawn from
+the saved maps under §21.11 by `scripts/15_final_bscans.py`, behind the mandatory dry run, with no
+model: gate passed for all six, 3 min 12 s (§5l.2). Five picks are the same scans as §21.9; the
+median is a new topcon scan, kept with the author's caption sentence. **Effect of the audit:** no
+Dice moved by more than 0.0072 in any arm, no HD95 by more than 0.0298 mm, no detection figure at
+all. **Final headline, unchanged:** by the pre-registered criterion, 1 of 9 Dice comparisons
+establishes a difference, spectralis SRF, with the unseen vendor higher and consistent with case
+mix; no degradation is established. Post-hoc and class-present, the pooled IRF and PED difference
+intervals exclude zero with the held-out vendor lower: suggestive, not established. Detection
+limit about 0.14 Dice (derived, joint patient draw, `docs/10` §5.4). `docs/10` v0.7, `docs/12`
+v0.4, the README and the report page carry the final figures; §10 keeps every earlier set,
+labelled (§10.1 through the inversion defect, §10.2 wrong spacing axes, §10.3 through D1), with
+its intervals as published (the author's decision). The report check is at 0 differences.
+**Controls added by the audit:** every predicted label map of the final run saved with
+checksums (SRS-106, `artifacts/predictions_final/`, DMP-C13); no sealed bucket opens without a
+completed dry-run certificate at the current commit (SRS-107); every script a chain calls has an
+end-to-end test of its real `main` (TC-157); mypy over `src/` and `scripts/` with zero findings,
+in CI (SRS-109). `hd95-results` and `images` are ancestors of `audit-fixes`. Task 5 (wiring
+model output to DICOM, branch `wire-dicom`, nothing committed) waits for this branch to merge and
+is rebuilt from `main`. Next after the merge: the annotated tag `v1.2`, proposed, not made.
 
 **Phase before 2026-10-16: complete and published, 2026-10-15.** All three folds are trained and evaluated
 once, under one seeded, reproducible procedure (`docs/08` §5g). Tags: `v1.0` on `9195d4c`
@@ -249,13 +261,13 @@ softening.
 | ~~Two GPU runs, open buckets~~ | **Done 2026-10-05:** seeded `val` evaluations of spectralis and topcon; §19.2 applied to all folds (`docs/08` §5g.7) |
 | **Neither** — open, simply not done | `scripts/06_push_to_pacs.py` and `service/api.py` are stubs |
 
-### Numbers, as of 2026-10-24
+### Numbers, as of 2026-10-30
 
-Identifiers: URS-001..011, **SRS-001..096**, NFR-001..008, **HAZ-001..016, RC-001..032**,
-SOUP-001..025, TC-000..TC-137 (**123 registered**).
+Identifiers: URS-001..011, **SRS-001..109**, NFR-001..008, **HAZ-001..016, RC-001..032**,
+SOUP-001..027, TC-000..TC-158 (**142 registered**).
 
-**123 test cases registered, 99 written, 99 executed, 0 written but never run, 24
-registered and unwritten** (read from `docs/09` 2026-10-24; TC-104 passed against them in the
+**142 test cases registered, 118 written, 118 executed, 0 written but never run, 24
+registered and unwritten** (read from `docs/09` 2026-10-30; TC-104 passed against them in the
 local suite run below). Those states are kept separate deliberately. A written test
 nobody has executed is not verification. TC-080..082 were the last written-but-never-run
 cases until CI's `pacs` job first ran them on 2026-10-16.
@@ -271,9 +283,11 @@ the test.
 Suite, measured in CI on `b7a12eb` (run 38622962858, Linux, 2026-10-14): **609 passed, 18
 skipped, 28 deselected** (`requires_data` and `requires_pacs`). Local runs use the same marker
 filter as CI unless a task needs the excluded tests, and every run's full summary line is
-kept. Measured locally on branch `corrected-results` (Windows, 2026-10-24): **676 passed, 28
-deselected** under the same filter; not a CI figure. Risk controls: 32 of 32 allocated a test,
-28 verified by an executed test (`docs/09` as of 2026-10-24; not checked by TC-104).
+kept. Measured locally on branch `audit-fixes` (Windows, 2026-10-30): **885 passed, 31 deselected**
+under the same filter; not a CI figure. With the records present, the `requires_data` tests
+pass too (16 passed, `test_gpu_determinism.py` excluded, as it always is). Risk controls: 32
+of 32 allocated a test, 28 verified by an executed test (`docs/09` as of 2026-10-30; not
+checked by TC-104).
 
 **CI state is not asserted here.** The previous version of this line read "CI is green on
 `main`" and was **false**: the two most recent runs before 2026-10-01 both failed on TC-099,
