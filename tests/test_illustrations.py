@@ -311,7 +311,7 @@ def test_TC_146_an_output_directory_holding_files_is_refused(tmp_path):
 
 
 def test_TC_146_the_default_output_is_a_new_directory():
-    assert ILL.OUT == REPO / "artifacts" / "illustrations_corrected"
+    assert Path("artifacts") / "illustrations_corrected" == ILL.OUT
 
 
 def test_TC_146_selection_and_gate_read_only_the_corrected_held_out_records():
@@ -327,7 +327,7 @@ def test_TC_146_selection_and_gate_read_only_the_corrected_held_out_records():
                for p in paths.values())  # fmt: skip
     # The source main() passes is the section 17.11 set, not the figures' current one.
     source = (REPO / "scripts" / "09_illustrative_bscans.py").read_text(encoding="utf-8")
-    assert 'record_paths(figures.RUNS)["wrong_axes"]' in source
+    assert 'record_paths(RUNS)["wrong_axes"]' in source
 
     superseded = {f: {"test": REPO / "artifacts" / "runs" / f / "evaluation_test.json"}
                   for f in ILL.FOLDS}  # fmt: skip
@@ -346,7 +346,7 @@ def test_TC_146_the_audited_set_needs_17_13_and_21_and_writes_to_its_own_directo
                         "audited", "--output-dir", str(tmp_path / "new")])  # fmt: skip
     args = ILL.parse_args(["--unlock-reason", AUDITED_REASON, "--approved-by", "a",
                            "--record-set", "audited"])  # fmt: skip
-    assert args.output_dir == REPO / "artifacts" / "illustrations_audited"
+    assert args.output_dir == Path("artifacts") / "illustrations_audited"
     assert ILL.RECORD_SETS["corrected"][2] == ILL.OUT  # the default set keeps section 21.9's
 
 

@@ -56,10 +56,13 @@ TITLES = ("Expert outline", "Model outline")
 ALLOWED_TEXT = frozenset(TITLES) | frozenset(CLASSES)
 FORBIDDEN_CHUNKS = frozenset({b"tEXt", b"iTXt", b"zTXt", b"tIME", b"eXIf"})
 FRAMES_PER_CHUNK = 8  # as the sealed evaluations ran; checked against each record's notes
+# Data, records and outputs resolve against the working directory, as in 05_evaluate.py: the
+# chains run every step from the repository root, and a sandboxed dry run from its own root.
+RUNS = Path("artifacts") / "runs"
 # docs/07 section 21.9: a new directory, so the images of section 21.7 are never overwritten.
-OUT = REPO / "artifacts" / "illustrations_corrected"
+OUT = Path("artifacts") / "illustrations_corrected"
 # docs/07 section 21.10: the records of section 17.13, into another new directory.
-OUT_AUDITED = REPO / "artifacts" / "illustrations_audited"
+OUT_AUDITED = Path("artifacts") / "illustrations_audited"
 SECTION_21 = re.compile(r"(?<![\d.])21(?![\d])")
 CITED = (re.compile(r"17\.11"), SECTION_21)
 RECORD_SETS = {
@@ -310,8 +313,8 @@ def parse_args(argv):
     parser.add_argument("--unlock-reason", required=True)
     parser.add_argument("--approved-by", required=True)
     parser.add_argument("--device", default="cuda")
-    parser.add_argument("--config", type=Path, default=REPO / "configs" / "train_seg.yaml")
-    parser.add_argument("--data-config", type=Path, default=REPO / "configs" / "data.yaml")
+    parser.add_argument("--config", type=Path, default=Path("configs") / "train_seg.yaml")
+    parser.add_argument("--data-config", type=Path, default=Path("configs") / "data.yaml")
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument(
         "--record-set",
@@ -375,21 +378,23 @@ def main(argv: list[str] | None = None) -> int:
         eval_transforms,
         invert_axial_resample,
     )
-    from ocuval.eval import sealed
+    from ocuval.eval import report, sealed
     from ocuval.eval.pipeline import assert_spacing_unchanged, measure_volume
     from ocuval.io.retouch_reader import apply_intensity_window, read_volume
     from ocuval.models.seg_unet import build_model, load_verified
     from ocuval.models.uncertainty import reseed_for_volume
     from ocuval.runs import load_manifest, manifest_path
 
-    figures = load_module("make_figures", REPO / "scripts" / "07_make_figures.py")
     evaluation = load_module("evaluate", REPO / "scripts" / "05_evaluate.py")
     folder = RECORD_SETS[args.record_set][0]
     if folder == "corrected":
-        run_records = figures.report.record_paths(figures.RUNS)["wrong_axes"]  # section 17.11's
+        run_records = report.record_paths(RUNS)["wrong_axes"]  # section 17.11's
     else:
-        run_records = figures.report.record_paths(figures.RUNS)["audited"]  # section 17.13's
-    records = {f: figures.load(p) for f, p in held_out_records(run_records, folder).items()}
+        run_records = report.record_paths(RUNS)["audited"]  # section 17.13's
+    records = {
+        f: json.loads(p.read_text(encoding="utf-8"))
+        for f, p in held_out_records(run_records, folder).items()
+    }
     threshold = int(cfg["inference"]["presence_voxel_threshold"])
     passes = int(cfg["inference"]["mc_dropout_passes"])
     for f, rec in records.items():
@@ -418,14 +423,16 @@ def main(argv: list[str] | None = None) -> int:
         sealed.require_unsealed("test", unlock, fold_id=records[fold]["fold_id"])
         print(f"opened and logged: test bucket of {records[fold]['fold_id']}", flush=True)
         model = build_model(cfg).to("cuda")
-        load_verified(figures.RECORDS[fold]["dir"] / "best.pt", model, map_location="cuda",
+        load_verified(RUNS / report.RUN_DIRS[fold] / "best.pt", model, map_location="cuda",
                       restore_rng=False)  # fmt: skip
         for p in mine:
             row = manifest[p["subject"]]
             native = read_volume(Path(row["source_path"]), row["vendor"])
             reference = np.asarray(native.label_array)
             # SRS-057: named by role, never by identifier, if it fails.
-            recorded = assert_spacing_unchanged(native.spacing_mm, row["spacing_mm"], p["role"])
+            # Its own name: `recorded` holds the sealed records the gate compares with, and
+            # rebinding it here broke the section 21.10 run (docs/13, 2026-10-30).
+            spacing = assert_spacing_unchanged(native.spacing_mm, row["spacing_mm"], p["role"])
             frames = [
                 np.asarray(
                     chain({"image": native.pixel_array[i], "label": reference[i],
@@ -435,7 +442,7 @@ def main(argv: list[str] | None = None) -> int:
                 for i in range(native.pixel_array.shape[0])
             ]  # fmt: skip
             frames = np.stack(frames)
-            box = content_box(frames.shape[-2:], reference.shape[1:], recorded[0],
+            box = content_box(frames.shape[-2:], reference.shape[1:], spacing[0],
                               axial_target(cfg))  # fmt: skip
             reseed_for_volume(seed, p["subject"])  # as 05_evaluate.py, nothing in between
             labels, _scores = evaluation.predict_volume(
@@ -448,7 +455,7 @@ def main(argv: list[str] | None = None) -> int:
                 target_axial_mm=axial_target(cfg),
             )
             prediction = np.asarray(prediction).astype(np.uint8).reshape(reference.shape)
-            seg = measure_volume(prediction, reference, recorded)
+            seg = measure_volume(prediction, reference, spacing)
             dice_of = {r["fluid_class"]: r["value"] for r in seg if r["metric"] == "dice"}
             voxels_of = {
                 r["fluid_class"]: int(r["voxels"])
