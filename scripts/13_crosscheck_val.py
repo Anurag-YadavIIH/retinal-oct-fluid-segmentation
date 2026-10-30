@@ -38,7 +38,10 @@ import importlib.util
 import json
 import math
 import sys
+from importlib.abc import Loader
+from importlib.machinery import ModuleSpec
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 from scipy.spatial import cKDTree
@@ -226,10 +229,10 @@ def predict_both_scores(mc_dropout_predict, model, frames, passes, chunk, top, r
 
 
 def load_module(name: str, path: Path):
-    spec = importlib.util.spec_from_file_location(name, path)
+    spec = cast(ModuleSpec, importlib.util.spec_from_file_location(name, path))
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
-    spec.loader.exec_module(module)
+    cast(Loader, spec.loader).exec_module(module)
     return module
 
 

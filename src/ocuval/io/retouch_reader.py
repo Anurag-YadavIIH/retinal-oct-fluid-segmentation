@@ -128,8 +128,8 @@ def apply_intensity_window(pixels: np.ndarray, window: tuple[float, float]) -> n
 class OCTVolume:
     """One OCT volume with the metadata the pipeline must preserve end to end."""
 
-    pixel_array: object  # np.ndarray, shape (n_bscans, height, width)
-    label_array: object | None  # np.ndarray or None when no reference exists
+    pixel_array: np.ndarray  # shape (n_bscans, height, width)
+    label_array: np.ndarray | None  # None when no reference exists
     patient_id: str
     vendor: str
     spacing_mm: tuple[float, float, float]

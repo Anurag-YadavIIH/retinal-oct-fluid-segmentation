@@ -50,6 +50,10 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
+from importlib.abc import Loader
+from importlib.machinery import ModuleSpec
+from typing import cast
+
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
@@ -89,9 +93,9 @@ CITATIONS = {
 
 
 def load_module(name: str, path: Path):
-    spec = importlib.util.spec_from_file_location(name, path)
+    spec = cast(ModuleSpec, importlib.util.spec_from_file_location(name, path))
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    cast(Loader, spec.loader).exec_module(module)
     return module
 
 

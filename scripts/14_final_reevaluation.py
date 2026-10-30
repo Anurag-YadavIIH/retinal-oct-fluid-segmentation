@@ -49,7 +49,10 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime
+from importlib.abc import Loader
+from importlib.machinery import ModuleSpec
 from pathlib import Path
+from typing import cast
 
 REPO = Path(__file__).resolve().parents[1]
 SECTION = "docs/07 section 17.13"
@@ -243,9 +246,11 @@ def saved_prediction_problems(record: dict, root: Path) -> list[str]:
 
 
 def load_script(name: str, filename: str):
-    spec = importlib.util.spec_from_file_location(name, REPO / "scripts" / filename)
+    spec = cast(
+        ModuleSpec, importlib.util.spec_from_file_location(name, REPO / "scripts" / filename)
+    )
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    cast(Loader, spec.loader).exec_module(module)
     return module
 
 
@@ -320,7 +325,8 @@ def bytes_needed(plan: list[Step], root: Path) -> int:
     total = 0
     for step in plan:
         if step.kind in ("open", "sealed"):
-            base = bases.get(step.output) or bases[step.output.with_name("evaluation_val.json")]
+            output = cast(Path, step.output)  # every evaluation step names one
+            base = bases.get(output) or bases[output.with_name("evaluation_val.json")]
             total += json.loads((root / base).read_text(encoding="utf-8"))["n_volumes"]
     return total * MAX_MAP_BYTES
 
@@ -351,7 +357,7 @@ def refusals(plan: list[Step]) -> list[str]:
     for step in plan:
         if step.kind == "gate" and not (REPO / step.inputs[0]).is_file():
             found.append(f"{step.inputs[0]} is missing; the gate has nothing to compare against")
-        if step.kind in ("open", "sealed") and (REPO / step.output).exists():
+        if step.kind in ("open", "sealed") and (REPO / cast(Path, step.output)).exists():
             found.append(f"{step.output} exists; no earlier output is ever overwritten")
     folder = REPO / ILLUSTRATIONS
     if folder.exists() and any(folder.iterdir()):
@@ -381,7 +387,8 @@ def run_step(step: Step) -> int:
     err = REPO / CHAIN_DIR / f"audited_{step.name}.err.log"
     log(f"START {step.name}")
     with out.open("w", encoding="utf-8") as stdout, err.open("w", encoding="utf-8") as stderr:
-        code = subprocess.run(step.argv, cwd=REPO, stdout=stdout, stderr=stderr, check=False)
+        argv = cast(tuple[str, ...], step.argv)  # every run step carries one
+        code = subprocess.run(argv, cwd=REPO, stdout=stdout, stderr=stderr, check=False)
     log(f"END   {step.name} exit {code.returncode}")
     return code.returncode
 

@@ -28,7 +28,7 @@ import warnings
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import torch
 
@@ -379,7 +379,9 @@ def train_fold(
             improved = result.val_dice is not None and result.val_dice > best_metric
             exhausted_patience = False
             if improved:
-                best_metric, best_epoch, since_improvement = result.val_dice, epoch, 0
+                best_metric, best_epoch, since_improvement = (
+                    cast(float, result.val_dice), epoch, 0
+                )  # fmt: skip
             elif result.val_dice is not None:
                 # Counted rather than derived from `epoch - best_epoch`, because that
                 # subtraction is wrong the moment validation does not run every epoch.

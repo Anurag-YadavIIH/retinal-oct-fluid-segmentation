@@ -30,7 +30,8 @@ the sample's own recorded metadata.
 
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Hashable, Mapping
+from typing import Any, cast
 
 import numpy as np
 import torch
@@ -92,12 +93,16 @@ class ApplyStoredIntensityWindowd(MapTransform):
         low, high = (float(v) for v in d[self.window_key])
         if not high > low:
             raise ValueError(f"degenerate intensity window ({low}, {high}) on this sample")
-        for key in self.key_iterator(d):
+        for key in self.key_iterator(cast(Mapping[Hashable, Any], d)):
             array = d[key]
             as_tensor = isinstance(array, torch.Tensor)
             values = array.float() if as_tensor else np.asarray(array, dtype=np.float32)
             scaled = (values - low) / (high - low)
-            d[key] = torch.clamp(scaled, 0.0, 1.0) if as_tensor else np.clip(scaled, 0.0, 1.0)
+            d[key] = (
+                torch.clamp(cast(torch.Tensor, scaled), 0.0, 1.0)
+                if as_tensor
+                else np.clip(scaled, 0.0, 1.0)
+            )
         return d
 
 
@@ -145,7 +150,7 @@ class ResampleAxiald(MapTransform):
         if np.isclose(factor, 1.0):
             return d
 
-        for key in self.key_iterator(d):
+        for key in self.key_iterator(cast(Mapping[Hashable, Any], d)):
             tensor = d[key]
             was_numpy = not isinstance(tensor, torch.Tensor)
             if was_numpy:
@@ -279,8 +284,8 @@ def resampled_height(native_height: int, native_axial_mm: float, target_axial_mm
 
 
 def content_box(
-    prepared_shape: tuple[int, int],
-    native_shape: tuple[int, int],
+    prepared_shape: tuple[int, ...],
+    native_shape: tuple[int, ...],
     native_axial_mm: float,
     target_axial_mm: float,
 ) -> tuple[slice, slice]:
@@ -336,7 +341,7 @@ def nearest_source(native_height: int, source_rows: np.ndarray) -> np.ndarray:
 def invert_axial_resample(
     prediction: np.ndarray | torch.Tensor,
     native_spacing_mm: tuple[float, float, float],
-    native_shape: tuple[int, int],
+    native_shape: tuple[int, ...],
     *,
     target_axial_mm: float,
 ) -> np.ndarray:
@@ -371,10 +376,10 @@ def invert_axial_resample(
         else torch.as_tensor(np.asarray(prediction))
     )
     native_height = int(native_shape[0])
-    rows, cols = content_box(
+    keep_rows, keep_cols = content_box(
         tuple(array.shape[-2:]), native_shape, float(native_spacing_mm[AXIAL]), target_axial_mm
     )
-    array = array[..., rows, cols]
+    array = array[..., keep_rows, keep_cols]
     source = label_source_rows(native_height, float(native_spacing_mm[AXIAL]), target_axial_mm)
-    rows = nearest_source(native_height, source)
-    return array.numpy()[..., rows, :]
+    native_rows = nearest_source(native_height, source)
+    return array.numpy()[..., native_rows, :]

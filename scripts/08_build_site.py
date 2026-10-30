@@ -49,7 +49,10 @@ import math
 import re
 import sys
 from datetime import datetime
+from importlib.abc import Loader
+from importlib.machinery import ModuleSpec
 from pathlib import Path
+from typing import Any, cast
 
 from ocuval.eval import report
 
@@ -107,9 +110,9 @@ CURVES = ("epoch", "train_loss", "val_dice")
 
 
 def load_module(name: str, path: Path):
-    spec = importlib.util.spec_from_file_location(name, path)
+    spec = cast(ModuleSpec, importlib.util.spec_from_file_location(name, path))
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    cast(Loader, spec.loader).exec_module(module)
     return module
 
 
@@ -144,7 +147,7 @@ def text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def claim(path: Path, pattern: str) -> tuple[str, ...]:
+def claim(path: str | Path, pattern: str) -> tuple[str, ...]:
     """The groups of one statement in a document; fails if the statement is gone."""
     match = re.search(pattern, text(REPO / path))
     assert match, f"{path} no longer states {pattern!r}"
@@ -212,7 +215,7 @@ def docs_counts() -> dict:
     page two commits behind until TC-129, run locally, caught it (`docs/13`).
     """
     matrix = "docs/09_traceability_matrix.md"
-    counts = {
+    counts: dict[str, Any] = {
         "srs": int(claim(matrix, r"\*\*(\d+) of \d+\*\*\s+SRS")[0]),
         "registered": int(claim(matrix, r"registered\*\* in `docs/07` §6: \*\*(\d+)\*\*")[0]),
         "written": int(claim(matrix, r"\*\*written\*\*: \*\*(\d+)\*\*")[0]),
@@ -238,9 +241,9 @@ def extract() -> dict[str, bytes]:
     # SRS-098: the page is built only from documents that agree with the records, checked by
     # the same generator the documents are checked by, so the two cannot diverge.
     generated = report.generate(report.load_records(RUNS))
-    differences = report.check(generated, report.read_documents(REPO))
-    assert not differences, "documents disagree with the records:\n" + "\n".join(
-        map(str, differences)
+    disagreements = report.check(generated, report.read_documents(REPO))
+    assert not disagreements, "documents disagree with the records:\n" + "\n".join(
+        map(str, disagreements)
     )
     records = {f: {a: figs.load(figs.RECORDS[f][a]) for a, _ in ARMS} for f in FOLDS}
     out: dict[str, bytes] = {}
@@ -537,8 +540,8 @@ def extract() -> dict[str, bytes]:
     for cls in ("SRF", "PED"):
         row = next(r for r in case_mix if r[0] == cls)
         facts[f"absent_{cls.lower()}"] = [
-            int(re.search(r"\((\d+)%\)", row[2]).group(1)),
-            int(re.search(r"\((\d+)%\)", row[4]).group(1)),
+            int(cast(re.Match[str], re.search(r"\((\d+)%\)", row[2])).group(1)),
+            int(cast(re.Match[str], re.search(r"\((\d+)%\)", row[4])).group(1)),
         ]
 
     # Fragility (§7.2): the cirrus in-domain SRF draws, unseeded and seeded, both measured
@@ -575,11 +578,13 @@ def extract() -> dict[str, bytes]:
     claim("docs/08_vv_report.md",
           rf"\*\*IDENTICAL\*\* on {leaves} of {leaves} compared leaves; also all "
           rf"{facts['step0']['rows']} per-volume rows")  # fmt: skip
-    _, a = epochs(RUNS / "cirrus_holdout_stage1b")
-    _, b = epochs(RUNS / "cirrus_holdout_stage2")
+    _, stage1b = epochs(RUNS / "cirrus_holdout_stage1b")
+    _, stage2 = epochs(RUNS / "cirrus_holdout_stage2")
     keys = ("train_loss", "val_dice", "per_class_dice")
     agree = 0
-    while agree < min(len(a), len(b)) and all(a[agree][k] == b[agree][k] for k in keys):
+    while agree < min(len(stage1b), len(stage2)) and all(
+        stage1b[agree][k] == stage2[agree][k] for k in keys
+    ):
         agree += 1
     facts["training_agreement"] = {"through": agree - 1, "first_difference": agree}
     determinism = [json.loads(text(figs.RECORDS[f]["dir"] / "determinism.json")) for f in FOLDS]

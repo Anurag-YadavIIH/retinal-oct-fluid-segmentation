@@ -42,6 +42,8 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
+from typing import Any
+
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
@@ -67,13 +69,13 @@ LARGE = {  # Figures 2 and 4, sized to stay legible at README width
     "legend.fontsize": 13,
     "figure.titlesize": 15,
 }
-OPAQUE = {"facecolor": "white", "transparent": False}
+OPAQUE: dict[str, Any] = {"facecolor": "white", "transparent": False}
 # The generator's own record paths, so the figures cannot read different files from the check.
 RECORDS = {
     f: {"dir": RUNS / report.RUN_DIRS[f], **report.record_paths(RUNS)["corrected"][f]}
     for f in FOLDS
 }
-PNG = {"dpi": 150, "metadata": {"Software": None}}
+PNG: dict[str, Any] = {"dpi": 150, "metadata": {"Software": None}}
 
 
 def load(path: Path) -> dict:
@@ -119,7 +121,7 @@ def gather() -> dict:
     # The arithmetic is report.py's (SRS-098), the one implementation the documents are
     # checked against; this script keeps its own assertions against the printed tables.
     comps = report.comparisons(records)
-    data = {"arms": {}, "diff": {}}
+    data: dict[str, dict] = {"arms": {}, "diff": {}}
     for view in ("all-volume", "class-present"):
         for comp in (*FOLDS, "pooled"):
             for cls in CLASSES:

@@ -40,6 +40,7 @@ import datetime
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import pydicom
@@ -145,7 +146,7 @@ def required_modules() -> list[str]:
 
 def _top_level_type1(module_key: str) -> list[str]:
     return [
-        a["keyword"]
+        cast(str, a["keyword"])
         for a in _modules.MODULE_ATTRIBUTE_MAP[module_key]
         if not a["path"] and a["type"] == "1"
     ]

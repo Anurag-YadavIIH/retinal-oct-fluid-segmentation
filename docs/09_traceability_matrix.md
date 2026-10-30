@@ -44,6 +44,7 @@ A stale matrix is worse than no matrix (CLAUDE.md rule 5).
 | URS-007, URS-010 | SRS-106 | — | — | TC-155 | `src/ocuval/eval/predictions.py`, `scripts/05_evaluate.py`, `scripts/14_final_reevaluation.py` — every predicted label map saved locally with a checksum manifest in the record, re-measurable without the model |
 | URS-007, URS-010 | SRS-107 | — | — | TC-156 | `src/ocuval/eval/sealed.py` — no sealed bucket opens without a completed dry-run certificate at the current commit; `src/ocuval/sandbox.py` — the synthetic root a dry run runs in |
 | URS-007 | SRS-108 | — | — | TC-157 | `scripts/09_illustrative_bscans.py --record-set final`, `scripts/15_final_bscans.py` — the §21.11 B-scans from the saved maps, checked by checksum, no model, behind the mandatory dry run |
+| URS-007, URS-010 | SRS-109 | — | — | TC-158 | `pyproject.toml` `[tool.mypy]`, `.github/workflows/ci.yml` step *Type check* — zero type findings over `src/` and `scripts/`, unannotated bodies included |
 | URS-007 | SRS-032 | HAZ-005 | RC-006 | TC-149 | `src/ocuval/eval/pipeline.py` `measure_volume` — HD95 with each spacing component on its own array axis, (separation, axial, lateral) for a (B-scans, rows, columns) volume |
 | URS-007, URS-010 | SRS-102 | HAZ-005, HAZ-016 | RC-006, RC-032 | TC-150 | `scripts/12_reevaluate_hd95.py` — the §17.12 HD95 re-evaluation; after each sealed bucket, stops unless everything but HD95 equals the 24 October corrected record |
 | URS-007, URS-010 | SRS-096 | HAZ-005, HAZ-016 | RC-006, RC-032 | TC-137 | `scripts/10_reevaluate.py` — the §17.11 re-evaluation chain: access counts checked first, the seeded reproducibility check must be IDENTICAL, then the open `val` buckets, then the six sealed buckets, writing only new files under `corrected/` |
@@ -91,12 +92,12 @@ implemented.
 
 - User requirements with at least one software requirement: **11 of 11**. Every URS in
   `docs/01` derives at least one SRS or NFR in `docs/02`.
-- Software requirements with a verifying test case **allocated**: **106 of 106**
+- Software requirements with a verifying test case **allocated**: **107 of 107**
   SRS and **8 of 8** NFR. Every SRS names a test case in its own row; each NFR is named by
   at least one row of `docs/07` §6 instead, the allocation running in that direction.
-- Test cases **registered** in `docs/07` §6: **141**.
-  Test cases **written**: **117**. Of those,
-  **117 are executed** by the suite and
+- Test cases **registered** in `docs/07` §6: **142**.
+  Test cases **written**: **118**. Of those,
+  **118 are executed** by the suite and
   **0 have never been run**. TC-080, TC-081 and TC-082 need a PACS, which is not available
   on this workstation; until 2026-10-16 they had never been run. CI's `pacs` job now runs them
   against an ephemeral Orthanc (SRS-094), and their first run passed (`docs/08` §5h). A

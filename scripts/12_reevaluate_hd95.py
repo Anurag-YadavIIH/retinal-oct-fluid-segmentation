@@ -39,7 +39,7 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 REPO = Path(__file__).resolve().parents[1]
 SECTION = "docs/07 section 17.12"
@@ -240,7 +240,8 @@ def run_step(step: Step) -> int:
     err = REPO / CHAIN_DIR / f"hd95_{step.name}.err.log"
     log(f"START {step.name}")
     with out.open("w", encoding="utf-8") as stdout, err.open("w", encoding="utf-8") as stderr:
-        code = subprocess.run(step.argv, cwd=REPO, stdout=stdout, stderr=stderr, check=False)
+        argv = cast(tuple[str, ...], step.argv)  # every run step carries one
+        code = subprocess.run(argv, cwd=REPO, stdout=stdout, stderr=stderr, check=False)
     log(f"END   {step.name} exit {code.returncode}")
     return code.returncode
 

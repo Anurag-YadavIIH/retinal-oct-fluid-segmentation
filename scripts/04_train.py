@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing import cast
 
 import yaml
 
@@ -182,7 +183,9 @@ def main(argv: list[str] | None = None) -> int:
         telemetry_interval=args.telemetry_interval or None,
     )
     best = max(
-        (r for r in history if r.val_dice is not None), key=lambda r: r.val_dice, default=None
+        (r for r in history if r.val_dice is not None),
+        key=lambda r: cast(float, r.val_dice),
+        default=None,
     )
     if best is not None:
         print(f"\nbest val dice {best.val_dice:.4f} at epoch {best.epoch}")

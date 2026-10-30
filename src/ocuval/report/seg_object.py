@@ -36,6 +36,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, cast
 
 import numpy as np
 import yaml
@@ -44,13 +45,18 @@ from highdicom.seg import SegmentAlgorithmTypeValues, Segmentation, SegmentDescr
 from highdicom.sr import CodedConcept
 from pydicom import Dataset
 from pydicom.sr.codedict import codes
+from pydicom.sr.coding import Code
 
 from ocuval.report.coding import FLUID_CODE_VALUES, declare_scheme, fluid_code
 
+# pydicom's stubs type each `codes.<scheme>` group as a union that includes `Code`, so an
+# attribute lookup on it does not type-check; the dictionary is the same object either way.
+CONCEPTS: Any = codes
+
 # Verified against pydicom's shipped concept dictionary, which carries the standard's
 # own tables. Changing either is a coded-concept change and belongs in docs/13.
-SEGMENTED_PROPERTY_CATEGORY = codes.SCT.MorphologicallyAbnormalStructure
-RETINA = codes.SCT.Retina
+SEGMENTED_PROPERTY_CATEGORY = cast(Code, CONCEPTS.SCT.MorphologicallyAbnormalStructure)
+RETINA = cast(Code, CONCEPTS.SCT.Retina)
 
 
 # SRS-002: label indices live in configs/data.yaml and nowhere else.
@@ -137,7 +143,7 @@ def build_segmentation(
     ):
         raise ValueError(
             f"segments {given} must be each configured fluid class exactly once, "
-            f"{sorted(indices, key=indices.get)} at label indices 1..{len(indices)} "
+            f"{sorted(indices, key=lambda k: indices[k])} at label indices 1..{len(indices)} "
             f"(SRS-038, SRS-002); an absent class is an empty mask, never left out"
         )
     segments = sorted(segments, key=lambda s: indices[s.label])
@@ -145,7 +151,7 @@ def build_segmentation(
     algorithm = AlgorithmIdentificationSequence(
         name="OcuVal fluid segmentation",
         version=software_version or __version__,
-        family=codes.DCM.ArtificialIntelligence,
+        family=cast(Code, CONCEPTS.DCM.ArtificialIntelligence),
     )
 
     descriptions = [
@@ -153,7 +159,7 @@ def build_segmentation(
             segment_number=indices[segment.label],
             segment_label=segment.label,
             segmented_property_category=SEGMENTED_PROPERTY_CATEGORY,
-            segmented_property_type=segment.coded_type,
+            segmented_property_type=cast(CodedConcept, segment.coded_type),
             algorithm_type=SegmentAlgorithmTypeValues.AUTOMATIC,
             algorithm_identification=algorithm,
             anatomic_regions=[RETINA],

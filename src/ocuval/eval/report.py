@@ -29,6 +29,7 @@ import re
 from dataclasses import dataclass, field
 from fractions import Fraction
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 
@@ -209,7 +210,7 @@ def difference(
     both = [(held_at[p], ref_at[p]) for p in held_patients if p in ref_at]
     rng = np.random.default_rng(b.seed)
 
-    def draw(size: int) -> np.ndarray:
+    def draw(size: int) -> np.ndarray | None:
         return rng.integers(0, size, size=(b.n_resamples, size)) if size else None
 
     dh, di, db = draw(len(held_only)), draw(len(ref_only)), draw(len(both))
@@ -668,11 +669,11 @@ def selection_rows(corrected: dict, val: dict) -> tuple[list[str], list[str]]:
                 chosen = f"**{sel.threshold}** (degenerate: {sel.degenerate}; fixed threshold used)"
             elif sel.ties > 1:
                 chosen = (
-                    f"**{sel.threshold}** ({f4(float(sel.j))}; tie across {sel.ties} grid "
-                    "points, smallest wins)"
+                    f"**{sel.threshold}** ({f4(float(cast(Fraction, sel.j)))}; "
+                    f"tie across {sel.ties} grid points, smallest wins)"
                 )
             else:
-                chosen = f"**{sel.threshold}** ({f4(float(sel.j))})"
+                chosen = f"**{sel.threshold}** ({f4(float(cast(Fraction, sel.j)))})"
             cells = []
             for arm in ARMS:
                 vol = rows_of(corrected[fold][arm], cls)
@@ -847,9 +848,9 @@ def generate(sets: RecordSets) -> Generated:
         cells = []
         for fold in FOLDS:
             for arm in ARMS:
-                rows = rows_of(cur[fold][arm], cls)
-                k = sum(not r["reference_present"] for r in rows)
-                cells.append(f"{k}/{len(rows)} ({pct(k, len(rows))}%)")
+                arm_rows = rows_of(cur[fold][arm], cls)
+                k = sum(not r["reference_present"] for r in arm_rows)
+                cells.append(f"{k}/{len(arm_rows)} ({pct(k, len(arm_rows))}%)")
         shares.append(f"| {cls} | " + " | ".join(cells) + " |")
     g.table("docs/10", H_SHARES, shares)
     s_h, s_i = absent_counts(cur, "SRF", "test"), absent_counts(cur, "SRF", "in_domain_ref")
@@ -908,9 +909,9 @@ def generate(sets: RecordSets) -> Generated:
         f"smaller than about {limit:.2f} Dice cannot be detected",
     )
     g.say("README", f"larger than about {limit:.2f} Dice", f"smaller than about {limit:.2f} on")
-    for (_, _, cls), c in pooled_excl.items():
-        p, lo, hi = c["diff"]
-        text = minus(f"{cls} {signed(p)} [{signed(lo)}, {signed(hi)}]")
+    for (_, _, cls), excluded in pooled_excl.items():
+        point, lo, hi = excluded["diff"]
+        text = minus(f"{cls} {signed(point)} [{signed(lo)}, {signed(hi)}]")
         g.say("docs/10", text)
         g.say("docs/12", text)
     present_pooled_lower = [k for k, c in pooled_excl.items()
@@ -952,7 +953,7 @@ def generate(sets: RecordSets) -> Generated:
     # --- section 7.2: fragility -------------------------------------------------------------
     u = sets.unseeded_cirrus["in_domain_ref"]["segmentation"]["all_vendors"]["SRF"]["dice"]
     s = old["cirrus"]["in_domain_ref"]["segmentation"]["all_vendors"]["SRF"]["dice"]
-    c = cur["cirrus"]["in_domain_ref"]["segmentation"]["all_vendors"]["SRF"]["dice"]
+    corrected_srf = cur["cirrus"]["in_domain_ref"]["segmentation"]["all_vendors"]["SRF"]["dice"]
     n_ref = cur["cirrus"]["in_domain_ref"]["n_patients"]
     srf_absent = sum(1 for r in rows_of(old["cirrus"]["in_domain_ref"], "SRF")
                      if not r["reference_present"])  # fmt: skip
@@ -965,7 +966,7 @@ def generate(sets: RecordSets) -> Generated:
         minus(draws_text),
         f"1/{n_ref} = {1 / n_ref:.4f}",
         f"The arm has {srf_absent} SRF-absent volumes",
-        f"The corrected seeded figure is {f4(c['value'])}",
+        f"The corrected seeded figure is {f4(corrected_srf['value'])}",
     )
     g.say("README", f"({abs(s['value'] - u['value']):.4f})")
 
@@ -975,9 +976,12 @@ def generate(sets: RecordSets) -> Generated:
     g.findings += sel_findings
 
     # --- section 8.8: lowest fold per class -------------------------------------------------
-    lowest = {c: min(FOLDS, key=lambda f, c=c:
-                     cur[f]["test"]["segmentation"]["all_vendors"][c]["dice"]["value"])
-              for c in CLASSES}  # fmt: skip
+    def held_out_dice(fold: str, cls: str) -> float:
+        return cur[fold]["test"]["segmentation"]["all_vendors"][cls]["dice"]["value"]
+
+    lowest: dict[str, str] = {}
+    for cls in CLASSES:
+        lowest[cls] = min(FOLDS, key=lambda fold: held_out_dice(fold, cls))
     if lowest["SRF"] == lowest["PED"] != lowest["IRF"]:
         g.say("docs/10", f"{lowest['SRF']} is lowest for SRF and PED, and {lowest['IRF']} for IRF")
 
