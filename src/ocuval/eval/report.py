@@ -228,6 +228,20 @@ def difference(
     return float(held.mean() - ref.mean()), float(low), float(high)
 
 
+def difference_as_published(
+    held: np.ndarray, ref: np.ndarray, b: Boot
+) -> tuple[float, float, float]:
+    """The estimator `docs/10` section 10 was published with: arms resampled independently,
+    held-out draws first. Kept for those superseded figures alone, by the author's decision of
+    2026-10-30 (SRS-097); every current figure uses `difference`, the joint draw (D2)."""
+    rng = np.random.default_rng(b.seed)
+    dh = rng.integers(0, len(held), size=(b.n_resamples, len(held)))
+    di = rng.integers(0, len(ref), size=(b.n_resamples, len(ref)))
+    d = held[dh].mean(axis=1) - ref[di].mean(axis=1)
+    low, high = np.percentile(d, [100 * b.alpha / 2, 100 * (1 - b.alpha / 2)])
+    return float(held.mean() - ref.mean()), float(low), float(high)
+
+
 def overlaps(a: dict, b: dict) -> bool:
     """Closed-interval overlap. A one-patient estimate stores its value as both ends."""
     return a["ci_low"] <= b["ci_high"] and b["ci_low"] <= a["ci_high"]
@@ -241,15 +255,22 @@ def arms(records: dict, comp: str, cls: str, present_only: bool, b: Boot):
     return (hp, h, estimate(h, hp, b)), (ip, i, estimate(i, ip, b))
 
 
-def comparisons(records: dict) -> dict:
-    """Every arm estimate and direct difference, keyed (view, comparison, class)."""
+def comparisons(records: dict, as_published: bool = False) -> dict:
+    """Every arm estimate and direct difference, keyed (view, comparison, class).
+
+    `as_published` uses the independent resample the superseded figures were published with.
+    """
     b = boot_of(records)
     out = {}
     for view, present in (("all-volume", False), ("class-present", True)):
         for comp in (*FOLDS, "pooled"):
             for cls in CLASSES:
                 (hp, h, he), (ip, i, ie) = arms(records, comp, cls, present, b)
-                diff = difference(hp, h, ip, i, b)
+                diff = (
+                    difference_as_published(h, i, b)
+                    if as_published
+                    else difference(hp, h, ip, i, b)
+                )
                 out[(view, comp, cls)] = {"held": he, "ref": ie, "diff": diff}
     return out
 
@@ -673,7 +694,8 @@ def generate(sets: RecordSets) -> Generated:
     """Every table and statement the documents must carry, from the records alone."""
     g = Generated()
     cur, old = sets.corrected, sets.superseded
-    comps, comps_old = comparisons(cur), comparisons(old)
+    # Section 10 stays as published, with the estimator it was published with (SRS-097).
+    comps, comps_old = comparisons(cur), comparisons(old, as_published=True)
     keys9 = [(f, c) for f in FOLDS for c in CLASSES]
 
     # --- section 3: per-fold Dice and HD95, overlap and directions --------------------------

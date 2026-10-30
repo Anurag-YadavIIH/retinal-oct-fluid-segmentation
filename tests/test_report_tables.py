@@ -96,6 +96,30 @@ def test_TC_138_shared_patients_are_drawn_once_for_both_arms():
     assert p2 == pytest.approx(held.mean() - ref[:6].mean()) and l2 <= p2 <= h2
 
 
+def test_TC_138_the_superseded_figures_keep_the_estimator_they_were_published_with():
+    """The author's decision of 2026-10-30: docs/10 section 10 stays as published."""
+    held, ref = np.array([0.2, 0.4, 0.9, 0.1]), np.array([0.5, 0.7, 0.3])
+    rng = np.random.default_rng(B.seed)  # as published: held-out draws, then in-domain
+    d = (held[rng.integers(0, 4, size=(B.n_resamples, 4))].mean(axis=1)
+         - ref[rng.integers(0, 3, size=(B.n_resamples, 3))].mean(axis=1))  # fmt: skip
+    expected = (held.mean() - ref.mean(), *np.percentile(d, [2.5, 97.5]))
+    assert report.difference_as_published(held, ref, B) == pytest.approx(expected)
+    # Disjoint arms: the two estimators agree. Shared patients: they do not.
+    assert report.difference(list("abcd"), held, list("efg"), ref, B) == pytest.approx(expected)
+    patients = [f"p{k}" for k in range(10)]
+    paired = np.linspace(0.0, 0.9, 10)
+    joint = report.difference(patients, paired + 0.1, patients, paired, B)
+    assert joint[1:] != pytest.approx(report.difference_as_published(paired + 0.1, paired, B)[1:])
+
+
+def test_TC_138_generate_uses_the_published_estimator_for_section_10_only():
+    import inspect
+
+    source = inspect.getsource(report.generate)
+    assert "comparisons(old, as_published=True)" in source
+    assert "comparisons(cur)" in source
+
+
 def test_TC_138_overlap_is_closed_and_a_single_patient_is_its_point():
     a = {"ci_low": 0.1, "ci_high": 0.3}
     assert report.overlaps(a, {"ci_low": 0.3, "ci_high": 0.5})
