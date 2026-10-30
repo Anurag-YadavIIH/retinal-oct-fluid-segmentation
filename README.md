@@ -1,85 +1,76 @@
 # OcuVal
 
-A study of whether software that finds fluid in eye scans still works on a scanner brand it was never trained on, built and documented the way medical device software is.
+A study of whether software that outlines fluid in eye scans still works on a scanner brand it never saw while learning, built and documented the way medical device software is.
 
-**Project report page:** [anurag-yadaviih.github.io/retinal-oct-fluid-segmentation](https://anurag-yadaviih.github.io/retinal-oct-fluid-segmentation/), with interactive charts and every table as a CSV download.
+**Not for clinical use.**
+
+The results were corrected and audited; see [Corrections and independent audit](https://anurag-yadaviih.github.io/retinal-oct-fluid-segmentation/#corrections) on the [project report page](https://anurag-yadaviih.github.io/retinal-oct-fluid-segmentation/).
 
 ## At a glance
 
-- **What:** a pipeline that outlines three types of fluid in retinal OCT scans, converts the scans to standard medical imaging (DICOM) files, and includes tested code for packaging results as DICOM.
-- **Question:** does it work as well on a scanner brand it never saw in training?
-- **Answer:** by the pre-registered test, no drop in performance on an unseen brand was established. The one difference found, in 1 of 9 comparisons, favoured the unseen brand and is consistent with which scans happened to be in each group. An analysis chosen after seeing the results, counting only scans that contain fluid, hints that the unseen brand does worse; that is suggestive, not proven. The study can only detect differences larger than about 0.14 Dice.
-- **How:** test data sealed until the end, the analysis written down before any results, training and evaluation reproducible, documented following medical device software standards (IEC 62304, ISO 14971).
+- **What:** software that outlines three kinds of fluid in eye scans, tested and documented the way a medical device would be.
+- **Question:** if it learns from two scanner brands, does it work as well on a third brand it has never seen?
+- **Result:** the test I wrote down in advance found a difference in 1 of 9 comparisons, and there the unseen brand scored higher. No drop on the unseen brand was established, but the test could only detect large differences.
+- **How:** the analysis was fixed before any result existed, the test scans stayed sealed until the end, every run can be repeated exactly, and an audit re-checked the whole pipeline.
 - **Built with:** Python, PyTorch, MONAI, pydicom, highdicom, GitHub Actions.
 
-> **The results below are final, after an audit; earlier figures were measured through defects and are kept.** The figures first published here put each prediction back into the scanner's own geometry without first removing the preprocessing padding, which misplaced the Cirrus and Spectralis predictions; I fixed that and evaluated every sealed test group again on 2026-10-24. I then had the whole pipeline audited. The audit found twelve defects, two of which changed what was measured: each prediction still sat about one pixel row too deep, and the detection score also read the padding. I fixed all twelve, each with a test shown failing first, and evaluated every group a last time on 2026-10-30. No average score moved by more than 0.0072 Dice, no detection figure changed at all, and the conclusions are unchanged ([`docs/10`](docs/10_analytical_validation_report.md) section 11). The earlier figures are kept, labelled, in [Earlier figures](#earlier-figures-measured-through-the-defect) below and in [`docs/10`](docs/10_analytical_validation_report.md) section 10.
+![Overlap score with 95% intervals on the unseen scanner brand and on new patients from the familiar brands, for each run and fluid type, with the three runs combined in the bottom rows.](docs/figures/fig2_dice_intervals.svg)
 
-> **Not for clinical use.** This is a research and portfolio project built on public challenge data. It has never been used on patients, has not been validated for patient care, and makes no clinical claim of any kind.
-
-![Dice score with 95% intervals on the unseen scanner brand and on new patients from the familiar brands, for each run and fluid type, with the three runs combined in the bottom rows.](docs/figures/fig2_dice_intervals.svg)
-
-*Figure 2 of [`docs/10`](docs/10_analytical_validation_report.md). In 11 of the 12 rows the unseen brand's interval (orange) overlaps the familiar brands' interval (blue). In the one that does not, the unseen brand scores higher, which is the one difference the pre-registered comparison established. The blue intervals are wide because each run's familiar-brand group has only 7 patients. The bottom three rows combine all three runs, an analysis I chose after seeing the results.*
-
-The difference between the two arms, with its own interval for each row, is shown in [Figure 4 of `docs/10` (section 5.4)](docs/10_analytical_validation_report.md#54-the-difference-bootstrapped-directly--post-hoc).
+*How well the outlines matched the expert's, on the unseen brand (orange) and on new patients from the familiar brands (blue), with the range each score could plausibly take. In 11 of the 12 rows the two ranges overlap. In the one that does not, the unseen brand scores higher. Figure 2 of [`docs/10`](docs/10_analytical_validation_report.md).*
 
 ## In plain words
 
-An OCT scan uses light to take cross-section pictures of the back of the eye, a bit like an ultrasound but far finer. In some common eye diseases, fluid collects in or under the retina, and doctors watch how much there is to decide on treatment and to see whether it is working. I trained a model that outlines three kinds of this fluid in OCT scans. Hospitals use scanners from different companies whose images look different, so I asked: if the model learns from two brands, does it still work on a third it has never seen? The honest answer is that the test I planned in advance found no drop on the new brand, but it could only have detected a large one, so it does not show that the model works on the new brand. A check I chose after seeing the results hints at a drop, but cannot prove one. The aim was a trustworthy measurement rather than the highest score, and part of why the scores are modest is the pattern described in [finding 2](#what-i-found): the model marks fluid in scans that have none of that type, though even counting only scans that do contain it, the scores stay moderate.
+An OCT scan uses light to take cross-section pictures of the back of the eye. In some common eye diseases, fluid collects in or under the retina, and doctors track how much there is to decide on treatment. I trained a model to outline three kinds of this fluid. Hospitals use scanners from different companies, and their pictures look different, so I asked whether a model that learned from two brands still works on a third. The test I planned in advance found no drop on the new brand, but it could only have seen a large one, so it does not prove the model works there. A check I chose afterwards hints at a smaller drop, but cannot prove it.
 
 ## What I found
 
-**1. No drop on the unseen brand was established, and the test was only sensitive to large differences.** I trained the model three times, each time leaving one scanner brand out, and tested it on the brand it had not seen. I compared that score with its score on new patients from the brands it had seen. The test I wrote down in advance asks whether the two scores' 95% intervals overlap. They did in 8 of the 9 comparisons (three brands, three kinds of fluid). In the ninth the unseen brand scored *higher*, for a fluid type where the familiar-brand group happened to hold mostly scans without that fluid (finding 2), so it is consistent with which scans were in each group. The gap went one way in some cases and the other way in others. Each comparison group from the familiar brands held only 7 patients, so the test could not reliably see a difference smaller than about 0.14 on the score used here (Dice, which runs from 0 to 1).
+The score I use is the **Dice score**: how much the model's outline overlaps the expert's, from 0 (no overlap) to 1 (a perfect match). The three kinds of fluid are **IRF** (fluid inside the retina), **SRF** (fluid under it) and **PED** (a pocket where the retina's bottom layer lifts away).
 
-An analysis I chose after seeing the results points the other way. Counting only scans that contain the fluid, and combining the three runs, the unseen brand scored lower for two of the three fluid types, with intervals that exclude zero. That hints at a real drop. But it was chosen after the fact, it is not corrected for the number of comparisons, and one of the two rests on 3 familiar-brand patients, so it is suggestive, not proven. The two views disagree because of how the score treats scans without fluid (finding 2). The full answer, with every interval, is in [`docs/10`](docs/10_analytical_validation_report.md).
+**1. No drop on the unseen brand was established, and the test could only see large differences.** I trained the model three times, each time leaving one scanner brand out, and tested it on the brand it had not seen. I compared that score with its score on new patients from the brands it had seen. The rule I wrote down in advance asks whether the two scores' 95% ranges overlap. They overlapped in 8 of the 9 comparisons (three brands, three kinds of fluid). In the ninth the unseen brand scored higher, in a group where most familiar-brand scans happened to contain none of that fluid. Each familiar-brand group held only 7 patients, so the test could not reliably see a difference smaller than about 0.14 on that scale.
 
-**2. The model marks fluid in scans that have none of that type.** In most scans without a given fluid type, the model still marks a little of it. The score treats that as a complete miss for the scan, which drags the average down. For two of the three fluid types (SRF and PED), the groups from the familiar brands happened to contain more such scans, so part of those comparisons reflects which scans were in each group rather than the scanner brand. [`docs/10`](docs/10_analytical_validation_report.md) §5.2 and §7.1.
+**2. A check I chose afterwards points the other way, but cannot prove it.** Counting only scans that contain the fluid, and combining the three runs, the unseen brand scored lower for two of the three fluid types, and for both the range of plausible differences leaves out zero. I chose this check after seeing the results, it is not corrected for making several comparisons, and one of the two rests on 3 familiar-brand patients. So it is a hint, not a finding. The two views disagree because of how the score treats scans without fluid, described next.
 
-**3. With only 7 patients, the score is fragile.** If one scan without fluid flips between "nothing marked" and "a few pixels marked", its score jumps from 1 to 0, and a 7-patient average moves by about 0.14. I saw a shift of about that size (0.1431) between two equally valid runs of the same model, before I made the evaluation reproducible. Both runs were measured through the defect described at the top, which does not change this arithmetic. The older run did not keep per-scan scores, so I cannot confirm that a single scan caused it. [`docs/10`](docs/10_analytical_validation_report.md) §7.2.
+**3. The model marks fluid in scans that have none of that kind.** In most scans without a given fluid, the model still marks a little of it, and the score counts that as a complete miss. The familiar-brand groups happened to contain more such scans, so part of those comparisons reflects which scans were in each group rather than the scanner brand. Looking at the largest false alarms, I saw some marked fluid in places where that kind of fluid cannot occur; I have not measured how often this happens. [`docs/10`](docs/10_analytical_validation_report.md) §5.2, §7.1, §7.4.
 
-**What an outline looks like.** This is the median unseen-brand scan. I chose it by a rule I fixed before rendering any image, so it was not picked for looking good. It is drawn from the predictions the final evaluation saved, checked against their recorded checksums, and it replaces earlier images drawn through the defects described at the top. It is a different scan from the median shown here before, because the final results ranked the scans slightly differently. The full set, including the worst scan and the largest false positives, is in [`docs/10`](docs/10_analytical_validation_report.md) §7.4. The challenge organiser gave written permission for a very small number of illustrative images.
+**4. An audit found twelve defects, and the results held.** After publishing, I had the whole pipeline audited. Two of the defects changed what was measured: each prediction sat about one pixel row too deep, and one score also read the blank border added around each image. I fixed all twelve, each with a test that failed before the fix, and evaluated every sealed test group once more. No average score moved by more than 0.0072 on the 0 to 1 scale, no detection result changed, and every conclusion above is the same. The earlier figures are kept, labelled, in [`docs/10`](docs/10_analytical_validation_report.md) section 10, and the audit is summarised in section 11.
 
-![One B-scan from the median unseen-brand scan: the expert's fluid outline on the left and the model's on the right.](docs/figures/bscan_median.png)
+## What the outlines look like
 
-*The median held-out scan by mean Dice over the fluid types its expert outline contains, shown on its B-scan with the most expert-outlined fluid. The model does not outline the fluid cavities that are clearly marked in the expert's outline. Left, the expert's outline; right, the model's. Chosen by the rule pre-registered in [`docs/07`](docs/07_vv_protocol.md) §21, from the numbers alone, before any image was rendered.*
+Six single slices from the unseen-brand scans, each showing the expert's outline on the left and the model's on the right. A rule I fixed before drawing any image chose them from the numbers alone, so none was picked for looking good. They illustrate; they are not results, and the false alarms are the worst cases, not typical ones. The challenge organiser gave written permission for a very small number of images.
 
-### Earlier figures measured through the defect
+| | |
+|---|---|
+| ![Lowest-scoring unseen-brand scan, expert's outline left and model's right.](docs/figures/bscan_worst.png) | ![Median unseen-brand scan, expert's outline left and model's right.](docs/figures/bscan_median.png) |
+| **Lowest-scoring scan.** The model marks no fluid on this slice. | **Middle-scoring scan.** The model misses fluid pockets the expert marked clearly. |
+| ![Highest-scoring unseen-brand scan, expert's outline left and model's right.](docs/figures/bscan_best.png) | ![Largest false alarm for IRF, expert's outline left and model's right.](docs/figures/bscan_fp_irf.png) |
+| **Highest-scoring scan.** Close to the expert's outline, but about a quarter smaller. | **Largest false alarm for IRF.** IRF marked where the expert found none. |
+| ![Largest false alarm for SRF, expert's outline left and model's right.](docs/figures/bscan_fp_srf.png) | ![Largest false alarm for PED, expert's outline left and model's right.](docs/figures/bscan_fp_ped.png) |
+| **Largest false alarm for SRF.** SRF marked where the expert found none. | **Largest false alarm for PED.** PED marked where the expert found none. |
 
-Until 2026-10-24 this page reported results measured through the defect described at the top. They are kept here so the change is visible; they are not results. Read that way, all 9 comparisons overlapped, so no difference was established in either direction; the direct check found one difference in 9, in the unseen brand's favour; the post-hoc check counting only scans with fluid found no difference when the three runs were combined; and the study could detect differences larger than about 0.14 Dice. Every earlier figure, labelled, is in [`docs/10`](docs/10_analytical_validation_report.md) section 10. From 2026-10-26 to 2026-10-30 it reported figures that still carried the one-row placement defect the audit found. Read that way, they showed what the final figures show: the same one difference in 9, in the unseen brand's favour, and the same post-hoc hint for two fluid types.
+The full captions are in [`docs/10`](docs/10_analytical_validation_report.md) §7.4.
 
 ## Why you can trust it
 
-The test scans were sealed: the code refuses to read them without a recorded reason and approval, and every access is logged. I wrote down the analysis before seeing any result, and anything decided afterwards is labelled post-hoc wherever it appears. Training and evaluation are reproducible: two runs of the evaluation had to match exactly, value for value, before any sealed scan was opened, and they did. When I found a defect in the evaluation after publishing, I fixed it, wrote down the re-evaluation rule before re-opening any sealed scan, ran it once, and kept the old figures beside the new. Every requirement traces to a test, and the traceability counts are checked in CI. [`docs/07`](docs/07_vv_protocol.md) §17, §17.11; [`docs/08`](docs/08_vv_report.md) §5g, §5i; [`docs/09`](docs/09_traceability_matrix.md).
+- **The analysis was written down first.** Every test, threshold and statistic was fixed in [`docs/07`](docs/07_vv_protocol.md) before the results it covers existed. Anything decided afterwards is labelled post-hoc wherever it appears.
+- **The test scans were sealed.** The code refuses to read them without a recorded reason and approval, and logs every access. Each later re-run of the evaluation was written down before any sealed scan was opened again.
+- **Every run can be repeated exactly.** Two runs of the evaluation had to match value for value before any sealed scan was opened, and they did. A test on this machine showed two training runs producing byte-identical model weights.
+- **The pipeline was audited.** The audit recomputed every score on the open validation scans with separately written code that shares nothing with the pipeline, and found no difference. Every derived number in the documents is regenerated from the evaluation records, and a commit is blocked if the documents disagree with them. Every prediction of the final evaluation is saved with a checksum, and no sealed test group can be opened until a dry run of the whole procedure has passed on made-up data.
+
+[`docs/08`](docs/08_vv_report.md) records every run; [`docs/09`](docs/09_traceability_matrix.md) traces every requirement to a test.
 
 ## Worth a closer look
 
-**A cross-check that caught a real defect before any result existed.** I first computed HD95 by pooling both directions of boundary distance into one list. Every test passed, because every test was written from the same understanding as the code. A check against an independent library (MONAI, TC-120) disagreed on 5 of 12 random cases while Dice agreed on all 12. I adopted the standard definition, the larger of the two directions, before reporting anything. [`docs/13`](docs/13_change_control_log.md), 2026-09-17.
+**A check that caught every prediction sitting one row too deep.** After publishing, I pushed made-up outlines of known shape through the real image preparation and back. They should have come back exactly where they started. On real outlines they came back about one to one and a half pixel rows lower, a shift no earlier test could see, because every earlier test compared the code with itself. I fixed it, re-ran the evaluation, and the results held. [`docs/13`](docs/13_change_control_log.md), 2026-10-29.
 
-**Refusing to make up scan details the data does not contain.** The dataset does not record which eye was scanned, but the DICOM standard requires that field and has no "unknown" value. The easy fix is to write a plausible value. The code refuses instead, or under an explicit research setting leaves the section out and logs it. A visible gap is safer than an invented fact every later reader would trust. [`docs/05`](docs/05_risk_management_file.md) RC-029 and HAZ-015; [`docs/11`](docs/11_dicom_conformance_statement.md).
+**A pixel-spacing mix-up that only real data could reveal.** The source files store pixel spacing in a different order from this project. Every made-up test used the project's own order, so none tested the conversion. For one brand, a swap would make a correct outline's fluid volume wrong by a factor of 6.0. A simple size check catches 0 of 210 swapped cases; checking against each brand's known spacing catches all 210. [`docs/13`](docs/13_change_control_log.md), 2026-09-23 and 2026-09-25.
 
-**A pixel-spacing mix-up that only real data could reveal.** The source files store pixel spacing in a different axis order from this project. Every synthetic test used the project's own order, so none ever tested the conversion. For one brand, a swap would make a correct outline's fluid volume wrong by a factor of 6.0. A simple size check catches 0 of 210 swapped cases; checking against each brand's known spacing catches all 210. The lesson: a test written in the code's own convention cannot test a conversion. [`docs/13`](docs/13_change_control_log.md), 2026-09-23 and 2026-09-25; [`docs/07`](docs/07_vv_protocol.md) §3 rule 7 and §13.3.
+**Refusing to make up scan details the data does not contain.** The dataset does not record which eye was scanned, but the medical imaging standard (DICOM) requires that field and has no "unknown" value. The easy fix is to write a plausible value. The code refuses instead, or under an explicit research setting leaves the field out and logs it. A visible gap is safer than an invented fact every later reader would trust. [`docs/05`](docs/05_risk_management_file.md) RC-029; [`docs/11`](docs/11_dicom_conformance_statement.md).
 
-**A data-use question settled by asking.** My own reading of the dataset agreement said publishing results here might not be allowed. Rather than pick the convenient reading, I asked a challenge organiser, who confirmed the same day that publishing results is permitted. My stricter reading stays in the record as the reason I asked. [`docs/06`](docs/06_data_management_plan.md) §2.2 and §2.2.1.
-
-**Reproducibility found to be false, then made true and proven.** A resume check passed while a resumed training run was actually seeing data in a different order (D2). One GPU operation fell back to a non-repeatable method 1308 times, with a warning each time that was easy to miss (D3). I fixed both, and two training runs now produce byte-identical weights (TC-121). Two differently configured runs started nine hours apart agree to every recorded digit until their learning-rate schedules diverge (TC-123). Evaluation then turned out not to be repeatable either: two runs of one model differed in 49 figures. I seeded it, and required two runs to match exactly before opening any sealed scan. They matched on 466 of 466 values. [`docs/08`](docs/08_vv_report.md) D2, D3, §5g.1; [`docs/13`](docs/13_change_control_log.md), 2026-10-04.
-
-**A sealed, pre-registered evaluation.** The analysis plan was committed before any held-out result existed. The test scans sit behind an unlock that needs a reason and an approver, and every access is logged. When one assumption written into the plan turned out to be false, I did not run the analysis that depended on it. I decided the replacement, committed it before computing anything, and labelled it post-hoc. [`docs/07`](docs/07_vv_protocol.md) §17, §17.10, §19, §19.5; [`docs/08`](docs/08_vv_report.md) §5g.
-
-## Glossary
-
-- **OCT (optical coherence tomography):** a scan that uses light to image the layers of the retina in cross-section.
-- **IRF (intraretinal fluid):** fluid collected within the layers of the retina.
-- **SRF (subretinal fluid):** fluid collected under the retina, between it and the layer beneath.
-- **PED (pigment epithelial detachment):** a pocket where the retina's bottom layer lifts away from the tissue under it.
-- **Scanner brand:** the company that made the OCT machine, called the vendor in the code and documents. This data has three: Cirrus (Zeiss), Spectralis (Heidelberg) and Topcon.
-- **Fold:** one round of training and testing. Here each fold leaves one brand out for testing.
-- **Dice:** overlap between the model's outline and the expert's, from 0 (none) to 1 (perfect).
-- **HD95:** how far, in millimetres, one outline's boundary strays from the other's: the distance that 95% of boundary points stay within, taking the worse of the two directions.
-- **Pre-registration:** writing down the analysis before seeing results, so the results cannot shape the method.
-- **Sealed test set:** test data the code will not read without a recorded, approved unlock, so it is used once and only as planned.
+**A rule for illustrations that failed review.** I wrote a rule to crop the example images to the retina before drawing them. The rule was followed exactly, and the images came out stretched, because I had let each crop fill the whole frame. I rejected them, recorded the rule and the run, and drew the images again without the crop. [`docs/07`](docs/07_vv_protocol.md) §21.12 and §21.13.
 
 ## Quick start
 
-Developed on Windows 11 with Python 3.11 and an NVIDIA GTX 1050; CI runs the tests on Ubuntu. Install from the lock, which is the environment the results were produced in. TC-099 fails if the installed environment drifts from it.
+Developed on Windows 11 with Python 3.11 and an NVIDIA GTX 1050; CI runs the tests on Ubuntu. Install from the lock file, which is the environment the results were produced in. A test (TC-099) fails if the installed environment drifts from it.
 
 ```bash
 git clone https://github.com/Anurag-YadavIIH/retinal-oct-fluid-segmentation.git
@@ -90,7 +81,7 @@ pip install -r requirements.lock
 pip install -e ".[dev]" --no-deps
 ```
 
-**The CUDA build of PyTorch cannot be expressed in the lock.** Training used `torch==2.3.1+cu121`, which is not on PyPI, so install it explicitly:
+**The GPU build of PyTorch cannot be expressed in the lock.** Training used `torch==2.3.1+cu121`, which is not on PyPI, so install it explicitly:
 
 ```bash
 pip install --index-url https://download.pytorch.org/whl/cu121 \
@@ -100,10 +91,11 @@ python -c "import torch; print(torch.__version__, torch.cuda.is_available())"   
 
 **Machine-specific settings** are environment variables and are never committed: `OCUVAL_CACHE_DIR` (where the frame cache lives) and `OCUVAL_DEID_SALT` (see [`docs/06`](docs/06_data_management_plan.md) §5.1). **The dataset is not downloaded automatically.** RETOUCH requires registration; `scripts/00_fetch_data.py` documents the manual steps.
 
-Tests, as CI runs them:
+Checks, as CI runs them:
 
 ```bash
 ruff check src tests scripts && ruff format --check src tests scripts
+mypy src scripts
 pytest -m "not requires_data and not requires_pacs"
 ```
 
@@ -119,38 +111,37 @@ python scripts/07_make_figures.py
 python scripts/08_build_site.py
 ```
 
-`test` and `in_domain_ref` are sealed: `05_evaluate.py` refuses them unless given `--unlock-bucket` with a reason and an approver, and records every access. Long runs are launched from an interactive terminal that is kept open ([`docs/07`](docs/07_vv_protocol.md) §17.8). DICOM objects produced here must stay on a local PACS, because the UID root is unregistered by declaration ([`docs/06`](docs/06_data_management_plan.md) §7.2).
+`test` and `in_domain_ref` are sealed: `05_evaluate.py` refuses them unless given `--unlock-bucket` with a reason and an approver, records every access, and needs a completed dry run of its chain. Long runs are launched from an interactive terminal that is kept open ([`docs/07`](docs/07_vv_protocol.md) §17.8). DICOM objects produced here must stay on a local archive, because their identifier root is unregistered by declaration ([`docs/06`](docs/06_data_management_plan.md) §7.2).
 
 ## Repository map
 
 | Path | Contents |
 |---|---|
 | [`docs/`](docs/) | The document set, from `01` intended use to `13` change-control log; `figures/` holds the result figures |
-| `src/ocuval/io/` | RETOUCH and MetaImage reading, DICOM writing, de-identification, DICOMweb client |
-| `src/ocuval/data/` | Patient-level splits, MONAI transforms, datamodule and frame cache |
-| `src/ocuval/models/` | Segmentation network, MC-dropout uncertainty |
-| `src/ocuval/training/` | Training loop, deterministic loss, checkpoints, accelerator telemetry |
-| `src/ocuval/eval/` | Metrics (numpy and scipy, cross-checked against MONAI), patient-level bootstrap, sealed splits, evaluation pipeline |
+| `src/ocuval/io/` | Reading the source scans, DICOM writing, de-identification, the archive client |
+| `src/ocuval/data/` | Patient-level splits, image preparation, data loading |
+| `src/ocuval/models/` | Segmentation network and its uncertainty estimate |
+| `src/ocuval/training/` | Training loop, checkpoints, hardware telemetry |
+| `src/ocuval/eval/` | Metrics, patient-level bootstrap, sealed splits, the evaluation and report pipeline, saved predictions |
 | `src/ocuval/report/` | DICOM Segmentation and Structured Report objects |
-| `src/ocuval/service/` | FastAPI inference service (stub) |
-| `scripts/` | Numbered pipeline entry points `00` to `08`, the evaluation chain, the exact record comparison |
+| `src/ocuval/service/` | Inference service (stub) |
+| `scripts/` | Numbered pipeline entry points `00` to `08`, and the evaluation and illustration chains `10` to `17` |
 | `site/`, `site_src/` | The report page, generated from the evaluation records by `scripts/08_build_site.py`, and its template |
 | `configs/` | Data, training and per-fold configuration |
 | `tests/` | pytest suite; each test name carries its `TC-nnn` identifier |
 
 ## Status and limitations
 
-**Works and is verified:** data conversion to DICOM and de-identification on all 70 scans; patient-level splits with a leakage test that gates CI; training and evaluation of all three folds; the sealed, reproducible evaluation and its report ([`docs/10`](docs/10_analytical_validation_report.md)); DICOM Segmentation and Structured Report objects, built and tested; storing and retrieving DICOM objects through a PACS, run in CI ([`docs/08`](docs/08_vv_report.md) §5h); a report generator that recomputes every derived figure in the documents from the records and blocks a commit that disagrees with them. Since the audit, every prediction of the final evaluation is saved with a checksum, so a later measuring defect can be corrected without running the model again; no sealed test group can be opened until a dry run of the whole procedure has passed on synthetic data; and a static type check runs in CI.
+**Works and is verified:** conversion of all 70 scans to DICOM, with de-identification; patient-level splits with a leakage test that gates CI; training and evaluation of all three runs; the sealed, reproducible evaluation and its report ([`docs/10`](docs/10_analytical_validation_report.md)); DICOM Segmentation and Structured Report objects; storing and retrieving DICOM objects through an archive in CI ([`docs/08`](docs/08_vv_report.md) §5h).
 
 **Not done:**
 
-- **Part of the PACS round-trip is unchecked.** The tests that store and retrieve DICOM objects through a PACS (TC-080 to TC-082) first ran on 2026-10-16, in CI, against a throwaway Orthanc archive that receives synthetic objects only, and passed ([`docs/08`](docs/08_vv_report.md) §5h). They do not yet check that the fluid volumes, the confidence value and the research-use label survive the trip.
-- **Writing the model's results as DICOM files.** The builders exist and are tested, but no pipeline step calls them yet; `scripts/06_push_to_pacs.py` is a stub.
+- **Writing the model's results as DICOM files.** The builders exist and are tested, but no pipeline step calls them yet.
 - **The inference service** is a stub.
-- **Optional analyses not run:** a RETOUCH leaderboard submission; and the ablation that would measure how much of the brand difference the per-scan brightness normalisation removes ([`docs/10`](docs/10_analytical_validation_report.md) §8.1).
-- **AUROC intervals exist only as a post-hoc analysis.** The final records keep each scan's detection score, so intervals were computed after the results were visible. For twelve of the eighteen the interval is not estimable: the model ranked every scan correctly in that group, so every resample scores a perfect 1, which says nothing about uncertainty ([`docs/10`](docs/10_analytical_validation_report.md) §4).
+- **Part of the archive round trip is unchecked:** the tests do not yet confirm that the fluid volumes, the confidence value and the research-use label survive it.
+- **Optional analyses not run:** a RETOUCH leaderboard submission, and measuring how much of the brand difference the per-scan brightness adjustment removes ([`docs/10`](docs/10_analytical_validation_report.md) §8.1).
 
-**Known weaknesses:** the familiar-brand comparison groups hold 7 patients per fold, so only large differences are detectable; the per-scan score is fragile when a fluid type is absent; the published results were re-measured twice after defects were found, and the illustrative images were redrawn each time; the models were trained with labels about one pixel row off their images (the training half of the defect the audit found), and they were not retrained, because retraining would be a new experiment; and the reproducibility claims are proven on this machine's GPU and software versions only.
+**Known weaknesses:** each familiar-brand comparison group holds 7 patients, so only large differences are detectable; the score is fragile when a fluid type is absent; the models were trained with labels about one pixel row off their images (half of a defect the audit found) and were not retrained, because retraining would be a new experiment; detection ranges were computed after the results were visible, and for twelve of the eighteen the interval is not estimable, because every resample scores a perfect 1; and the reproducibility claims are proven on this machine's GPU and software versions only.
 
 ## How this was built
 

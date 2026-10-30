@@ -742,7 +742,7 @@ def generate(sets: RecordSets) -> Generated:
     pooled_cmp = [comps[("all-volume", "pooled", c)] for c in CLASSES]
     pooled_overlap = sum(overlaps(c["held"], c["ref"]) for c in pooled_cmp)
     rows12 = len(keys9) + len(CLASSES)
-    g.say("README", f"They did in {n_overlap} of the 9 comparisons",
+    g.say("README", f"They overlapped in {n_overlap} of the 9 comparisons",
           f"In {n_overlap + pooled_overlap} of the {rows12} rows")  # fmt: skip
     apart = [(f, c) for (f, c), x in zip(keys9, fold_cmp, strict=True)
              if not overlaps(x["held"], x["ref"])]  # fmt: skip
@@ -817,7 +817,7 @@ def generate(sets: RecordSets) -> Generated:
         g.say("docs/10", f"lower bounds {span(lows, 4)} in the held-out arms")
         g.say("docs/12", f"lower bounds {span(lows, 4)}")
     g.say("docs/12", f"{word(len(none), True)} of the eighteen cells have AUROC")
-    g.say("README", f"For {word(len(none))} of the eighteen the interval is not estimable")
+    g.say("README", f"for {word(len(none))} of the eighteen the interval is not estimable")
     gap = max(
         (
             abs(a - b)
@@ -914,7 +914,17 @@ def generate(sets: RecordSets) -> Generated:
         "pooled",
         f"smaller than about {limit:.2f} Dice cannot be detected",
     )
-    g.say("README", f"larger than about {limit:.2f} Dice", f"smaller than about {limit:.2f} on")
+    g.say("README", f"smaller than about {limit:.2f} on that scale")
+    # The README's other record-derived counts: the scans, and the familiar-brand group size.
+    total = sum(cur[f]["test"]["n_patients"] for f in FOLDS)
+    ref_n = {cur[f]["in_domain_ref"]["n_patients"] for f in FOLDS}
+    if len(ref_n) == 1:
+        (n_ref_each,) = ref_n
+        g.say("README", f"conversion of all {total} scans",
+              f"Each familiar-brand group held only {n_ref_each} patients",
+              f"each familiar-brand comparison group holds {n_ref_each} patients")  # fmt: skip
+    else:
+        g.findings.append(f"in-domain arms differ in size: {sorted(ref_n)}")
     for (_, _, cls), excluded in pooled_excl.items():
         point, lo, hi = excluded["diff"]
         text = minus(f"{cls} {signed(point)} [{signed(lo)}, {signed(hi)}]")
@@ -974,7 +984,6 @@ def generate(sets: RecordSets) -> Generated:
         f"The arm has {srf_absent} SRF-absent volumes",
         f"The corrected seeded figure is {f4(corrected_srf['value'])}",
     )
-    g.say("README", f"({abs(s['value'] - u['value']):.4f})")
 
     # --- section 7.3: the validation-selected threshold -------------------------------------
     sel_rows, sel_findings = selection_rows(cur, sets.val)
@@ -1021,11 +1030,17 @@ def generate(sets: RecordSets) -> Generated:
         f"class-present Dice above all-volume in {present_beats_all(old)} of 18 cells",
     )
     g.say("docs/12", f"detection limit was about {limit_old:.2f} Dice")
-    g.say("README", f"larger than about {limit_old:.2f} Dice. Every earlier figure")
 
     # --- section 10.3: the section 17.12 records, measured through D1, as published ----------
     if sets.through_d1 is not None:
         d1 = sets.through_d1
+        # The audit's largest effect on an arm's mean Dice, which the README states.
+        moved = max(
+            abs(cur[f][a]["segmentation"]["all_vendors"][c]["dice"]["value"]
+                - d1[f][a]["segmentation"]["all_vendors"][c]["dice"]["value"])
+            for f in FOLDS for a in ARMS for c in CLASSES
+        )  # fmt: skip
+        g.say("README", f"No average score moved by more than {moved:.4f}")
         comps_d1 = comparisons(d1, as_published=True)
         labelled = RECORD_COLUMN.rstrip() + " "
         for doc in ("docs/10", "docs/12"):
