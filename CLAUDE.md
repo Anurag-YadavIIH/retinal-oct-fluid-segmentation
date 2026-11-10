@@ -170,36 +170,55 @@ Accuracy alone is never reported. The classes are imbalanced and it is misleadin
 
 ## 7. Current status
 
-**STATUS 2026-10-30: final figures after the audit; everything is on branch `audit-fixes`,
-not yet pushed.** The audit of 2026-10-28 found twelve defects, D1–D12 (`docs/13`, 2026-10-29;
-`docs/10` §11). Two changed what an evaluation measures: **D1**, the inversion put every
-prediction about one native row too deep, and **D4**, the detection score's maximum ran over
-the padding. Each defect was fixed with a test shown failing first. **The training half of D1 is
-not repaired**: training labels sat on average about one native row off their images, the models
-are not retrained, and retraining would be a new pre-registered experiment (SRS-074,
-limitation). The author ran the final re-evaluation under `docs/07` §17.13 on 2026-10-29/30:
-6 h 49 min 00 s measured, all nine gates passed (population and reference unchanged),
-reproducibility IDENTICAL including every saved map's checksum (`docs/08` §5k). Its B-scan step
-failed on a name rebound by the D5 fix and saved nothing (§5l.1). The B-scans were then drawn from
-the saved maps under §21.11 by `scripts/15_final_bscans.py`, behind the mandatory dry run, with no
-model: gate passed for all six, 3 min 12 s (§5l.2). Five picks are the same scans as §21.9; the
-median is a new topcon scan, kept with the author's caption sentence. **Effect of the audit:** no
-Dice moved by more than 0.0072 in any arm, no HD95 by more than 0.0298 mm, no detection figure at
-all. **Final headline, unchanged:** by the pre-registered criterion, 1 of 9 Dice comparisons
-establishes a difference, spectralis SRF, with the unseen vendor higher and consistent with case
-mix; no degradation is established. Post-hoc and class-present, the pooled IRF and PED difference
-intervals exclude zero with the held-out vendor lower: suggestive, not established. Detection
-limit about 0.14 Dice (derived, joint patient draw, `docs/10` §5.4). `docs/10` v0.7, `docs/12`
-v0.4, the README and the report page carry the final figures; §10 keeps every earlier set,
-labelled (§10.1 through the inversion defect, §10.2 wrong spacing axes, §10.3 through D1), with
-its intervals as published (the author's decision). The report check is at 0 differences.
-**Controls added by the audit:** every predicted label map of the final run saved with
-checksums (SRS-106, `artifacts/predictions_final/`, DMP-C13); no sealed bucket opens without a
-completed dry-run certificate at the current commit (SRS-107); every script a chain calls has an
-end-to-end test of its real `main` (TC-157); mypy over `src/` and `scripts/` with zero findings,
-in CI (SRS-109). `hd95-results` and `images` are ancestors of `audit-fixes`. Task 5 (wiring
-model output to DICOM, branch `wire-dicom`, nothing committed) waits for this branch to merge and
-is rebuilt from `main`. Next after the merge: the annotated tag `v1.2`, proposed, not made.
+**STATUS 2026-11-10: the study is complete and published; `main` is at `e7ea115`, tagged
+`v1.2.1`.** Tags: **`v1.2`** on `ddb458b` (2026-10-30, the audited results, `docs/10` v0.7) and
+**`v1.2.1`** on `e7ea115` (2026-10-30, presentation only, results unchanged). CI and the Pages
+deploy passed on both merge commits, and the live page was checked byte for byte against `main`.
+
+**The audit of 2026-10-28** found twelve defects, D1–D12 (`docs/13`, 2026-10-29; `docs/10` §11).
+Two changed what an evaluation measures: **D1**, the inversion put every prediction about one native
+row too deep, and **D4**, the detection score's maximum ran over the padding. Each was fixed with a
+test shown failing first. **The training half of D1 is not repaired**: training labels sat about one
+native row off their images, the models are not retrained, and retraining would be a new
+pre-registered experiment (SRS-074, limitation). The final re-evaluation under `docs/07` §17.13 ran
+2026-10-29/30: 6 h 49 min 00 s measured, all nine gates passed, reproducibility IDENTICAL including
+every saved map's checksum (`docs/08` §5k). **Effect of the audit:** no arm's Dice moved by more than
+0.0072, no HD95 by more than 0.0298 mm, no detection figure at all.
+
+**Final headline:** by the pre-registered criterion, 1 of 9 Dice comparisons establishes a
+difference, spectralis SRF, with the unseen vendor higher and consistent with case mix; no
+degradation is established. Post-hoc and class-present, the pooled IRF and PED difference intervals
+exclude zero with the held-out vendor lower: suggestive, not established. Detection limit about
+0.14 Dice (derived, joint patient draw, `docs/10` §5.4). `docs/10` v0.7, `docs/12` v0.4, the README
+and the report page carry these figures; `docs/10` §10 keeps every earlier set, labelled, with its
+intervals as published. The report check is at 0 differences.
+
+**Illustrative B-scans:** six, chosen by the §21 rule from the final records and drawn from the saved
+maps with no model. Published as re-rendered sharper under §21.13 (`docs/08` §5l.4). The §21.10
+attempt saved nothing (§5l.1), and the §21.12 cropped rendering was rejected on review because the
+rule stretched each crop (§5l.3). **Sealed access counts after all of this** (measured, the access
+log): cirrus `test` 12, `in_domain_ref` 6; spectralis `test` 10, `in_domain_ref` 4; topcon `test`
+10, `in_domain_ref` 4. Every access is in the log with its reason and approver; `docs/08` D5 and D6
+explain the earliest ones.
+
+**Presentation (`v1.2.1`):** the report page's corrections and the audit sit in their own section,
+"Corrections and independent audit", with only a link line at the top. The audit's independence is
+the recomputation of every validation metric by separately written code, not an outside party, and
+the page says so. The README is rewritten for a reader who reads nothing else. Every record-derived
+figure in it is checked by the report check, and the site no longer reads figures from it.
+
+**Controls added by the audit:** every predicted label map of the final run saved with checksums
+(SRS-106, `artifacts/predictions_final/`, DMP-C13); no sealed bucket opens without a completed
+dry-run certificate at the current commit (SRS-107); every script a chain calls has an end-to-end
+test of its real `main` (TC-157); mypy over `src/` and `scripts/` with zero findings, in CI
+(SRS-109).
+
+**Still open, and claimed nowhere as done:** the inference service (`src/ocuval/service/api.py` has
+only `GET /health`) and its Docker image; writing model output as DICOM (`scripts/06_push_to_pacs.py`
+raises `NotImplementedError`; branch `wire-dicom`, nothing committed, paused by the author's decision,
+to be rebuilt from `main` if resumed); the round trip's check of fluid volumes, confidence value and
+research-use designation (RC-014 unverified). Whether these stay open or are declared out of scope
+is the author's decision, not yet taken.
 
 **Phase before 2026-10-16: complete and published, 2026-10-15.** All three folds are trained and evaluated
 once, under one seeded, reproducible procedure (`docs/08` §5g). Tags: `v1.0` on `9195d4c`
@@ -247,7 +266,7 @@ softening.
    raises `NotImplementedError`.
 7. FastAPI service, Docker, full document set, GitHub Pages. **Partly done.** `docs/10`,
    `README.md` and the GitHub Pages report page (SRS-092, `scripts/08_build_site.py`) are
-   complete, and `docs/12`, the model card, is drafted (v0.2, 2026-10-24). **Not done:** the
+   complete, and `docs/12`, the model card, is drafted (v0.4, 2026-10-30). **Not done:** the
    inference service (`service/api.py` is a stub) and the Docker image.
 
 ### What is actually blocked, and on what
@@ -261,16 +280,14 @@ softening.
 | ~~Two GPU runs, open buckets~~ | **Done 2026-10-05:** seeded `val` evaluations of spectralis and topcon; §19.2 applied to all folds (`docs/08` §5g.7) |
 | **Neither** — open, simply not done | `scripts/06_push_to_pacs.py` and `service/api.py` are stubs |
 
-### Numbers, as of 2026-10-30
+### Numbers, as of 2026-11-10
 
-Identifiers: URS-001..011, **SRS-001..109**, NFR-001..008, **HAZ-001..016, RC-001..032**,
-SOUP-001..027, TC-000..TC-158 (**142 registered**).
+Identifiers: URS-001..011, **SRS-001..111**, NFR-001..008, **HAZ-001..016, RC-001..032**,
+SOUP-001..027, TC-000..TC-160 (**144 registered**).
 
-**142 test cases registered, 118 written, 118 executed, 0 written but never run, 24
-registered and unwritten** (read from `docs/09` 2026-10-30; TC-104 passed against them in the
-local suite run below). Those states are kept separate deliberately. A written test
-nobody has executed is not verification. TC-080..082 were the last written-but-never-run
-cases until CI's `pacs` job first ran them on 2026-10-16.
+**144 test cases registered, 120 written, 120 executed, 0 written but never run, 24
+registered and unwritten** (read from `docs/09`, 2026-11-10; TC-104 recomputes them). Those
+states are kept separate deliberately. A written test nobody has executed is not verification.
 
 **These figures are now recomputed by TC-104, not maintained by hand.** It parses what
 `docs/09` claims, recomputes it from `docs/02`, `docs/07` §6 and the `test_TC_nnn_` function
@@ -283,8 +300,10 @@ the test.
 Suite, measured in CI on `b7a12eb` (run 38622962858, Linux, 2026-10-14): **609 passed, 18
 skipped, 28 deselected** (`requires_data` and `requires_pacs`). Local runs use the same marker
 filter as CI unless a task needs the excluded tests, and every run's full summary line is
-kept. Measured locally on branch `audit-fixes` (Windows, 2026-10-30): **885 passed, 31 deselected**
-under the same filter; not a CI figure. With the records present, the `requires_data` tests
+kept. Measured in CI on `e7ea115` (run 41014477684, Linux, 2026-10-30): **883 passed, 18 skipped,
+31 deselected**, type check no issues in 60 files, `pacs` job 8 passed. Measured locally on branch
+`presentation` (Windows, 2026-10-30): **901 passed, 31 deselected** under the same filter; not a
+CI figure. With the records present, the `requires_data` tests
 pass too (16 passed, `test_gpu_determinism.py` excluded, as it always is). Risk controls: 32
 of 32 allocated a test, 28 verified by an executed test (`docs/09` as of 2026-10-30; not
 checked by TC-104).
@@ -304,7 +323,7 @@ as the coverage counts did. **Read it from `gh run list`**, never from this file
 | **1b** | Re-run under the final configuration after the AMP reversal and the loss adoption. **Criteria pre-registered in `docs/07` §15.6 before the run** | **done** — PASS on all five, resume crossed the warmup boundary (`docs/08` §5b) |
 | **2** | `cirrus_holdout` trained fully **and evaluated end to end** before any other fold begins | **done 2026-10-01.** Early stop at epoch 58, best epoch 33; one-time evaluation of `test` and `in_domain_ref` complete (`docs/08` §5c, §5d) |
 | **3** | `spectralis_holdout`, then `topcon_holdout` | **done.** Both trained and evaluated; topcon trained 2026-10-04 in one session from `d35e8e4`, early stopping after epoch 54, best 29, 265.3 s/epoch (`docs/08` §5f); all three folds evaluated seeded 2026-10-05 (`docs/08` §5g). History: **`spectralis_holdout` trained, 2026-10-03/04.** Session 1 (Claude Code, WMI, `5f66359`) was **terminated externally after epoch 9** (`docs/08` D8). Session 2 (the author, VS Code terminal, `7be924f`; training path identical) resumed at 10 and ended by **early stopping at epoch 54**, best epoch **29**, `fold_complete: true` (`docs/08` §5e). **338.8 s/epoch measured** over all 55 epochs; 5.18 h train time. Run dir `artifacts/runs/spectralis_holdout_stage3`. Secondary analyses pre-registered in `docs/07` §19 before it trained. Topcon's frame cache was placed on D: via `OCUVAL_CACHE_DIR`, because C: was short of space |
-| **4** | Uncertainty, subgroup analysis, `docs/10` | **done in substance, 2026-10-05.** All §17 results; §19.1, §19.2 (all folds), §19.3 under the post-hoc §19.5 rule; `docs/10` v0.1. Calibration not evaluated. `eval/report.py` is still a stub |
+| **4** | Uncertainty, subgroup analysis, `docs/10` | **done in substance, 2026-10-05.** All §17 results; §19.1, §19.2 (all folds), §19.3 under the post-hoc §19.5 rule; `docs/10` v0.1. Calibration not evaluated. `eval/report.py` was a stub then; done 2026-10-24 (SRS-097..099) |
 
 ### What remains open at `v1.1.1` — written 2026-10-06, updated 2026-10-15
 
