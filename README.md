@@ -134,12 +134,13 @@ python scripts/08_build_site.py
 
 **Works and is verified:** conversion of all 70 scans to DICOM, with de-identification; patient-level splits with a leakage test that gates CI; training and evaluation of all three runs; the sealed, reproducible evaluation and its report ([`docs/10`](docs/10_analytical_validation_report.md)); DICOM Segmentation and Structured Report objects; storing and retrieving DICOM objects through an archive in CI ([`docs/08`](docs/08_vv_report.md) §5h).
 
-**Not done:**
+**Outside this release, kept as future work:** I decided to leave three parts of the original plan for a later version. They are not abandoned, and none of the results above depends on them.
 
-- **Writing the model's results as DICOM files.** The builders exist and are tested, but no pipeline step calls them yet.
-- **The inference service** is a stub.
-- **Part of the archive round trip is unchecked:** the tests do not yet confirm that the fluid volumes, the confidence value and the research-use label survive it.
-- **Optional analyses not run:** a RETOUCH leaderboard submission, and measuring how much of the brand difference the per-scan brightness adjustment removes ([`docs/10`](docs/10_analytical_validation_report.md) §8.1).
+- **A service that runs the model on request**, and the container to ship it in. Only a health check exists so far.
+- **Saving the model's results as standard medical imaging (DICOM) files.** The code that builds those files exists and is tested, but no step of the pipeline calls it yet. The work started on a separate branch, which is kept, unmerged, with its design decisions.
+- **One check of the archive round trip.** Storing files in an archive and reading them back works and is tested. What is not yet checked is that the fluid volumes, the confidence value and the "research use only" label come back intact.
+
+**Optional analyses not run:** a RETOUCH leaderboard submission, and measuring how much of the brand difference the per-scan brightness adjustment removes ([`docs/10`](docs/10_analytical_validation_report.md) §8.1).
 
 **Known weaknesses:** each familiar-brand comparison group holds 7 patients, so only large differences are detectable; the score is fragile when a fluid type is absent; the models were trained with labels about one pixel row off their images (half of a defect the audit found) and were not retrained, because retraining would be a new experiment; detection ranges were computed after the results were visible, and for twelve of the eighteen the interval is not estimable, because every resample scores a perfect 1; and the reproducibility claims are proven on this machine's GPU and software versions only.
 
