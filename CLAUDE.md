@@ -213,12 +213,17 @@ dry-run certificate at the current commit (SRS-107); every script a chain calls 
 test of its real `main` (TC-157); mypy over `src/` and `scripts/` with zero findings, in CI
 (SRS-109).
 
-**Still open, and claimed nowhere as done:** the inference service (`src/ocuval/service/api.py` has
-only `GET /health`) and its Docker image; writing model output as DICOM (`scripts/06_push_to_pacs.py`
-raises `NotImplementedError`; branch `wire-dicom`, nothing committed, paused by the author's decision,
-to be rebuilt from `main` if resumed); the round trip's check of fluid volumes, confidence value and
-research-use designation (RC-014 unverified). Whether these stay open or are declared out of scope
-is the author's decision, not yet taken.
+**Out of scope for v1.x, not abandoned (the author's decision, 2026-11-10; `docs/13`).** Three items
+are future work outside this release: (1) the inference service (`src/ocuval/service/api.py` has only
+`GET /health`) and its Docker image; (2) writing model output as DICOM (`scripts/06_push_to_pacs.py`
+raises `NotImplementedError`); (3) the round trip's check that the fluid volumes, confidence value and
+research-use designation survive (**RC-014 stays unverified**; declaring it out of scope does not
+verify it). **Branch `wire-dicom` is kept, unmerged**, with its recorded design decisions: three
+commits of 2026-10-24/25, not the "nothing committed" this section once said. They record task 5's
+decisions and register SRS-100, SRS-101, TC-147 and TC-148, carry the research-use designation in
+every object (SRS-042), and mark every scan review-recommended with SR codes in `99OCUVAL`. SRS-100
+and SRS-101 stay reserved for it in `docs/02`. The branch exists **only on this workstation**, with
+no copy on GitHub. Its base predates the audit, so resuming it means rebuilding on `main`.
 
 **Phase before 2026-10-16: complete and published, 2026-10-15.** All three folds are trained and evaluated
 once, under one seeded, reproducible procedure (`docs/08` §5g). Tags: `v1.0` on `9195d4c`
@@ -278,7 +283,7 @@ softening.
 | ~~Docker not installed~~ | **Unblocked for CI 2026-10-16:** TC-080..TC-082 run in CI's `pacs` job against an ephemeral Orthanc (`docs/08` §5h). Docker is still not installed on this workstation, so the round-trip cannot run locally. Not blocked, simply not done: checking the fluid volumes, confidence value and research-use designation through it (§5h.3; RC-014 unverified) |
 | ~~An author decision: §19.3~~ | **Decided 2026-10-05:** the patient is the unit (`docs/07` §19.5, post-hoc), and the pooled result is recorded (`docs/08` §5g.8a) |
 | ~~Two GPU runs, open buckets~~ | **Done 2026-10-05:** seeded `val` evaluations of spectralis and topcon; §19.2 applied to all folds (`docs/08` §5g.7) |
-| **Neither** — open, simply not done | `scripts/06_push_to_pacs.py` and `service/api.py` are stubs |
+| **Neither** — out of scope for v1.x by decision (2026-11-10) | `scripts/06_push_to_pacs.py` and `service/api.py` are stubs; future work |
 
 ### Numbers, as of 2026-11-10
 

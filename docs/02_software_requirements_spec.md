@@ -5,7 +5,7 @@ Owner: Anurag Yadav
 Last reviewed: 2026-09-16
 Change history: docs/13_change_control_log.md
 
-Allocates SRS-001..SRS-099, SRS-102..SRS-105 and NFR-001..NFR-008 (SRS-100 and SRS-101 are reserved for branch `wire-dicom`, not yet merged). Every requirement here derives
+Allocates SRS-001..SRS-099, SRS-102..SRS-111 and NFR-001..NFR-008 (SRS-100 and SRS-101 are reserved for branch `wire-dicom`, kept unmerged: out of scope for v1.x, `docs/13` 2026-11-10). Every requirement here derives
 from a user requirement in docs/01. Hazard and test allocations are TBD until
 docs/05 and docs/07 exist; docs/09 tracks the gap. Section 3.10 maps every module
 under src/ocuval to the requirements it implements, which is the check CLAUDE.md
